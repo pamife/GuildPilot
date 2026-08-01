@@ -2,8 +2,8 @@ import { ChannelType } from "discord.js";
 import { discordClient, isBotReady } from "../bot/client";
 
 export async function getGuilds() {
-  if (!isBotReady) return [];
-  
+  if (!isBotReady()) return [];
+
   return discordClient.guilds.cache.map((guild) => ({
     id: guild.id,
     name: guild.name,
@@ -15,7 +15,7 @@ export async function getGuilds() {
 }
 
 export async function getGuildDetails(guildId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
 
   const guild = discordClient.guilds.cache.get(guildId) || (await discordClient.guilds.fetch(guildId));
   if (!guild) throw new Error("Guild not found.");
@@ -55,7 +55,8 @@ export async function getGuildDetails(guildId: string) {
       invites: invites ? invites.size : 0,
     },
     botStatus: {
-      ready: isBotReady,
+      ready: isBotReady(),
+      tag: discordClient.user?.tag || "GuildPilot Bot",
       ping: discordClient.ws.ping,
       uptime: discordClient.uptime,
     },
@@ -74,7 +75,7 @@ export async function updateGuildSettings(
     afkTimeout?: number;
   }
 ) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 

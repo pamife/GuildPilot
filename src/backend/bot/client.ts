@@ -11,12 +11,18 @@ export const discordClient = new Client({
   partials: [Partials.Channel, Partials.User],
 });
 
-export let isBotReady = false;
+export function isBotReady(): boolean {
+  return discordClient.isReady();
+}
 
 discordClient.once("ready", (client) => {
-  isBotReady = true;
   console.log(`[GuildPilot Bot] Logged in as ${client.user.tag}`);
-  broadcastEvent("botStatusChange", { ready: true, tag: client.user.tag, id: client.user.id });
+  broadcastEvent("botStatusChange", {
+    ready: true,
+    tag: client.user.tag,
+    id: client.user.id,
+    ping: client.ws.ping,
+  });
 });
 
 // Setup Discord Event Listeners for live updates

@@ -7,7 +7,7 @@ import { getGuildRoles } from "./roleService";
 const prisma = new PrismaClient();
 
 export async function saveServerTemplate(guildId: string, name: string, description?: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -51,7 +51,7 @@ export async function deleteTemplate(templateId: string) {
 }
 
 export async function applyTemplate(guildId: string, templateId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -122,7 +122,7 @@ export async function applyTemplate(guildId: string, templateId: string) {
 }
 
 export async function duplicateChannel(guildId: string, channelId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -149,7 +149,7 @@ export async function duplicateChannel(guildId: string, channelId: string) {
 }
 
 export async function duplicateCategory(guildId: string, categoryId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 

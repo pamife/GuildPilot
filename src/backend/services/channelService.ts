@@ -11,7 +11,7 @@ import {
 import { discordClient, isBotReady } from "../bot/client";
 
 export async function getGuildChannels(guildId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -59,7 +59,7 @@ export async function createChannel(
     slowmode?: number;
   }
 ) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -93,7 +93,7 @@ export async function updateChannel(
     permissionOverwrites?: Array<{ id: string; allow: string[]; deny: string[] }>;
   }
 ) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -127,7 +127,7 @@ export async function updateChannel(
 }
 
 export async function deleteChannel(guildId: string, channelId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 

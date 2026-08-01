@@ -2,7 +2,7 @@ import { TextChannel, VoiceChannel } from "discord.js";
 import { discordClient, isBotReady } from "../bot/client";
 
 export async function getGuildInvites(guildId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -32,7 +32,7 @@ export async function createInvite(
     temporary?: boolean;
   }
 ) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 

@@ -8,7 +8,7 @@ export async function bulkCreateChannels(
   guildId: string,
   channelsData: Array<{ name: string; type: number; parentId?: string }>
 ) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -33,7 +33,7 @@ export async function bulkRenameChannels(
   guildId: string,
   renameData: Array<{ id: string; name: string }>
 ) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 

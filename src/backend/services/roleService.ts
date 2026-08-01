@@ -2,7 +2,7 @@ import { PermissionsBitField, Role } from "discord.js";
 import { discordClient, isBotReady } from "../bot/client";
 
 export async function getGuildRoles(guildId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -36,7 +36,7 @@ export async function createRole(
     permissions?: string;
   }
 ) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -70,7 +70,7 @@ export async function updateRole(
     position?: number;
   }
 ) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -97,7 +97,7 @@ export async function updateRole(
 }
 
 export async function reorderRoles(guildId: string, rolePositions: Array<{ id: string; position: number }>) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -106,7 +106,7 @@ export async function reorderRoles(guildId: string, rolePositions: Array<{ id: s
 }
 
 export async function deleteRole(guildId: string, roleId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 

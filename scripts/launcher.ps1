@@ -5,8 +5,8 @@ Clear-Host
 
 Write-Host "   ______ _____  ____   ____ ___     ____   ____ _     ____ _____ " -ForegroundColor Cyan
 Write-Host "  / ___// / / / /  _/  / __// _ \   / __ \ /  _/ /    / __//_  _/ " -ForegroundColor Cyan
-Write-Host " / (_ // /_/ / _/ /   / _/ / ___/  / /_/ /_/ // /___ / _/   / /   " -ForegroundColor BrightCyan
-Write-Host " \___/ \____/ /___/  /___//_/     / .___//___/_____//___/  /_/    " -ForegroundColor BrightCyan
+Write-Host " / (_ // /_/ / _/ /   / _/ / ___/  / /_/ /_/ // /___ / _/   / /   " -ForegroundColor Cyan
+Write-Host " \___/ \____/ /___/  /___//_/     / .___//___/_____//___/  /_/    " -ForegroundColor Cyan
 Write-Host "                                  /_/                             " -ForegroundColor Magenta
 Write-Host " ================================================================" -ForegroundColor DarkGray
 Write-Host "      Local-Only Discord Server Management & Dashboard           " -ForegroundColor Yellow

@@ -1,7 +1,7 @@
 import { discordClient, isBotReady } from "../bot/client";
 
 export async function getGuildEmojis(guildId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -17,7 +17,7 @@ export async function getGuildEmojis(guildId: string) {
 }
 
 export async function createEmoji(guildId: string, name: string, image: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -31,7 +31,7 @@ export async function createEmoji(guildId: string, name: string, image: string) 
 }
 
 export async function updateEmoji(guildId: string, emojiId: string, name: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -47,7 +47,7 @@ export async function updateEmoji(guildId: string, emojiId: string, name: string
 }
 
 export async function deleteEmoji(guildId: string, emojiId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -59,7 +59,7 @@ export async function deleteEmoji(guildId: string, emojiId: string) {
 }
 
 export async function getGuildStickers(guildId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -74,7 +74,7 @@ export async function getGuildStickers(guildId: string) {
 }
 
 export async function createSticker(guildId: string, name: string, description: string, tags: string, file: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
@@ -95,7 +95,7 @@ export async function createSticker(guildId: string, name: string, description: 
 }
 
 export async function deleteSticker(guildId: string, stickerId: string) {
-  if (!isBotReady) throw new Error("Discord Bot is not connected.");
+  if (!isBotReady()) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
