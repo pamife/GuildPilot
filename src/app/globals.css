@@ -1,0 +1,39 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: 220 13% 18%;
+  --foreground: 210 16% 87%;
+}
+
+body {
+  color: #dbdee1;
+  background-color: #313338;
+  font-family: 'gg sans', 'Noto Sans', sans-serif;
+  overflow-x: hidden;
+}
+
+/* Custom Discord Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #2b2d31;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #1a1b1e;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #111214;
+}
+
+.discord-glass {
+  background: rgba(43, 45, 49, 0.85);
+  backdrop-filter: blur(12px);
+}
