@@ -6,6 +6,8 @@ export async function getGuildRoles(guildId: string) {
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
+  // Fetch full member cache so role.members.size is accurate
+  await guild.members.fetch().catch(() => null);
   const roles = await guild.roles.fetch();
 
   return roles
@@ -19,7 +21,7 @@ export async function getGuildRoles(guildId: string) {
       managed: r.managed,
       mentionable: r.mentionable,
       icon: r.iconURL(),
-      memberCount: r.members.size,
+      memberCount: r.name === "@everyone" ? guild.memberCount : r.members.size,
     }))
     .sort((a, b) => b.position - a.position);
 }
@@ -52,6 +54,7 @@ export async function createRole(
     color: newRole.hexColor,
     position: newRole.position,
     permissions: newRole.permissions.bitfield.toString(),
+    memberCount: 0,
   };
 }
 

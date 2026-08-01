@@ -19,8 +19,11 @@ import {
   Clock,
   X,
   Check,
+  Type,
+  Sparkles,
 } from "lucide-react";
 import { useToast } from "../ToastContainer";
+import { DISCORD_SYMBOL_PRESETS, FONT_STYLE_PRESETS, transformFont } from "@/lib/fontStyles";
 
 interface Channel {
   id: string;
@@ -57,11 +60,10 @@ export function ChannelManagerView({
   // Modals state
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isPermsOpen, setIsPermsOpen] = useState(false);
 
   // Form states
   const [newChannelName, setNewChannelName] = useState("");
-  const [newChannelType, setNewChannelType] = useState<number>(0); // 0: Text, 2: Voice, 4: Category, 15: Forum
+  const [newChannelType, setNewChannelType] = useState<number>(0);
   const [newParentId, setNewParentId] = useState<string>("");
 
   // Edit Form state
@@ -77,12 +79,21 @@ export function ChannelManagerView({
     .filter((c) => c.type !== 4 && !c.parentId)
     .sort((a, b) => a.position - b.position);
 
+  const applySymbolToName = (symbolPrefix: string, setter: (val: string) => void, currentVal: string) => {
+    // If name already starts with a symbol, strip it or prefix it
+    setter(`${symbolPrefix}${currentVal}`);
+  };
+
+  const applyFontToName = (style: any, setter: (val: string) => void, currentVal: string) => {
+    setter(transformFont(currentVal, style));
+  };
+
   const handleCreateSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newChannelName.trim()) return;
     try {
       await onCreateChannel({
-        name: newChannelName.toLowerCase().replace(/\s+/g, "-"),
+        name: newChannelName.trim(),
         type: newChannelType,
         parentId: newParentId || undefined,
       });
@@ -109,7 +120,7 @@ export function ChannelManagerView({
     if (!selectedChannel) return;
     try {
       await onUpdateChannel(selectedChannel.id, {
-        name: editName.toLowerCase().replace(/\s+/g, "-"),
+        name: editName.trim(),
         topic: editTopic,
         nsfw: editNsfw,
         slowmode: editSlowmode,
@@ -211,7 +222,7 @@ export function ChannelManagerView({
             <Hash className="w-6 h-6 text-discord-brand" />
             Channel Manager
           </h2>
-          <p className="text-sm text-discord-muted">Create, edit, duplicate, and configure channel structure.</p>
+          <p className="text-sm text-discord-muted">Create, edit, duplicate, and style channels with Discord symbols & aesthetic fonts.</p>
         </div>
         <button
           onClick={() => setIsCreateOpen(true)}
@@ -278,17 +289,19 @@ export function ChannelManagerView({
         })}
       </div>
 
-      {/* CREATE CHANNEL MODAL */}
+      {/* CREATE CHANNEL MODAL WITH FANCY STYLER */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#313338] border border-[#35373c] rounded-xl w-full max-w-md shadow-2xl overflow-hidden animate-in zoom-in-95">
+          <div className="bg-[#313338] border border-[#35373c] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95">
             <div className="flex items-center justify-between p-4 border-b border-[#35373c]">
-              <h3 className="text-lg font-bold text-discord-header">Create Channel</h3>
+              <h3 className="text-lg font-bold text-discord-header flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-discord-brand" /> Create Channel
+              </h3>
               <button onClick={() => setIsCreateOpen(false)} className="text-discord-muted hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleCreateSubmit} className="p-4 space-y-4">
+            <form onSubmit={handleCreateSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
                   Channel Type
@@ -312,11 +325,50 @@ export function ChannelManagerView({
                 <input
                   type="text"
                   required
-                  placeholder="e.g. general-chat"
+                  placeholder="e.g. 💬・general-chat"
                   value={newChannelName}
                   onChange={(e) => setNewChannelName(e.target.value)}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm font-semibold text-discord-header focus:outline-none focus:border-discord-brand"
                 />
+              </div>
+
+              {/* DISCORD SYMBOLS & DECORATION PRESETS */}
+              <div className="p-3 bg-[#1e1f22] border border-[#35373c] rounded-lg space-y-2">
+                <p className="text-xs font-bold text-discord-brand flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> Discord Channel Symbol Presets
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {DISCORD_SYMBOL_PRESETS.map((sym) => (
+                    <button
+                      key={sym.label}
+                      type="button"
+                      onClick={() => applySymbolToName(sym.prefix, setNewChannelName, newChannelName)}
+                      className="px-2 py-1 bg-[#2b2d31] hover:bg-discord-brand text-discord-header hover:text-white rounded text-xs transition-colors flex items-center gap-1 border border-[#35373c]"
+                    >
+                      <span>{sym.prefix}</span>
+                      <span className="text-[10px] text-discord-muted">{sym.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* DISCORD AESTHETIC FONT TRANSFORMERS */}
+              <div className="p-3 bg-[#1e1f22] border border-[#35373c] rounded-lg space-y-2">
+                <p className="text-xs font-bold text-discord-brand flex items-center gap-1.5">
+                  <Type className="w-3.5 h-3.5" /> Aesthetic Font Styles
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {FONT_STYLE_PRESETS.map((font) => (
+                    <button
+                      key={font.id}
+                      type="button"
+                      onClick={() => applyFontToName(font.id, setNewChannelName, newChannelName)}
+                      className="px-2.5 py-1 bg-[#2b2d31] hover:bg-discord-brand text-discord-header hover:text-white rounded text-xs transition-colors font-medium border border-[#35373c]"
+                    >
+                      {font.sample}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {newChannelType !== 4 && (
@@ -349,9 +401,9 @@ export function ChannelManagerView({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium"
+                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium shadow"
                 >
-                  Create
+                  Create Channel
                 </button>
               </div>
             </form>
@@ -359,17 +411,19 @@ export function ChannelManagerView({
         </div>
       )}
 
-      {/* EDIT CHANNEL MODAL */}
+      {/* EDIT CHANNEL MODAL WITH FANCY STYLER */}
       {isEditOpen && selectedChannel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           <div className="bg-[#313338] border border-[#35373c] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95">
             <div className="flex items-center justify-between p-4 border-b border-[#35373c]">
-              <h3 className="text-lg font-bold text-discord-header">Edit #{selectedChannel.name}</h3>
+              <h3 className="text-lg font-bold text-discord-header flex items-center gap-2">
+                <Settings className="w-5 h-5 text-discord-brand" /> Edit #{selectedChannel.name}
+              </h3>
               <button onClick={() => setIsEditOpen(false)} className="text-discord-muted hover:text-white">
                 <X className="w-5 h-5" />
               </button>
             </div>
-            <form onSubmit={handleEditSubmit} className="p-4 space-y-4 max-h-[80vh] overflow-y-auto">
+            <form onSubmit={handleEditSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
               <div>
                 <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
                   Channel Name
@@ -379,8 +433,47 @@ export function ChannelManagerView({
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm font-semibold text-discord-header focus:outline-none focus:border-discord-brand"
                 />
+              </div>
+
+              {/* DISCORD SYMBOLS & DECORATION PRESETS */}
+              <div className="p-3 bg-[#1e1f22] border border-[#35373c] rounded-lg space-y-2">
+                <p className="text-xs font-bold text-discord-brand flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5" /> Symbol Presets
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {DISCORD_SYMBOL_PRESETS.map((sym) => (
+                    <button
+                      key={sym.label}
+                      type="button"
+                      onClick={() => applySymbolToName(sym.prefix, setEditName, editName)}
+                      className="px-2 py-1 bg-[#2b2d31] hover:bg-discord-brand text-discord-header hover:text-white rounded text-xs transition-colors flex items-center gap-1 border border-[#35373c]"
+                    >
+                      <span>{sym.prefix}</span>
+                      <span className="text-[10px] text-discord-muted">{sym.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* DISCORD AESTHETIC FONT TRANSFORMERS */}
+              <div className="p-3 bg-[#1e1f22] border border-[#35373c] rounded-lg space-y-2">
+                <p className="text-xs font-bold text-discord-brand flex items-center gap-1.5">
+                  <Type className="w-3.5 h-3.5" /> Aesthetic Font Styles
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {FONT_STYLE_PRESETS.map((font) => (
+                    <button
+                      key={font.id}
+                      type="button"
+                      onClick={() => applyFontToName(font.id, setEditName, editName)}
+                      className="px-2.5 py-1 bg-[#2b2d31] hover:bg-discord-brand text-discord-header hover:text-white rounded text-xs transition-colors font-medium border border-[#35373c]"
+                    >
+                      {font.sample}
+                    </button>
+                  ))}
+                </div>
               </div>
 
               {selectedChannel.type !== 4 && (
@@ -462,7 +555,7 @@ export function ChannelManagerView({
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium"
+                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium shadow"
                 >
                   Save Changes
                 </button>
