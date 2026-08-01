@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Template {
+  id          String   @id @default(uuid())
+  name        String
+  description String?
+  guildId     String?
+  structure   String   // JSON payload containing channels, categories, roles, etc.
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  guildId   String
+  action    String
+  details   String
+  timestamp DateTime @default(now())
+}

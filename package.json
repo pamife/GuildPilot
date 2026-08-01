@@ -1,0 +1,61 @@
+{
+  "name": "guildpilot",
+  "version": "1.0.0",
+  "description": "Local-only Discord server management bot & modern web dashboard",
+  "main": "dist/backend/server.js",
+  "scripts": {
+    "dev:backend": "tsx watch src/backend/server.ts",
+    "dev:frontend": "next dev -p 3000",
+    "dev": "concurrently -k -p \"[{name}]\" -c \"blue.bold,cyan.bold\" -n \"Backend,Frontend\" \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "build:backend": "tsc -p tsconfig.server.json",
+    "build:frontend": "next build",
+    "build": "prisma generate && npm run build:backend && npm run build:frontend",
+    "start": "node dist/backend/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:push": "prisma db push"
+  },
+  "keywords": [
+    "discord",
+    "discord-bot",
+    "dashboard",
+    "local",
+    "management",
+    "typescript",
+    "prisma"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@prisma/client": "^5.15.0",
+    "axios": "^1.7.2",
+    "clsx": "^2.1.1",
+    "cookie-parser": "^1.4.6",
+    "discord.js": "^14.15.3",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2",
+    "framer-motion": "^11.2.10",
+    "jsonwebtoken": "^9.0.2",
+    "lucide-react": "^0.395.0",
+    "next": "^14.2.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "socket.io": "^4.7.5",
+    "socket.io-client": "^4.7.5",
+    "tailwind-merge": "^2.3.0"
+  },
+  "devDependencies": {
+    "@types/cookie-parser": "^1.4.7",
+    "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.14.2",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "autoprefixer": "^10.4.19",
+    "concurrently": "^8.2.2",
+    "postcss": "^8.4.38",
+    "prisma": "^5.15.0",
+    "tailwindcss": "^3.4.4",
+    "tsx": "^4.15.1",
+    "typescript": "^5.4.5"
+  }
+}
