@@ -4,13 +4,11 @@ import { broadcastEvent } from "../socket/socketManager";
 export const discordClient = new Client({
   intents: [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildEmojisAndStickers,
     GatewayIntentBits.GuildInvites,
     GatewayIntentBits.GuildVoiceStates,
-    GatewayIntentBits.GuildMessages,
   ],
-  partials: [Partials.Channel, Partials.GuildMember, Partials.User],
+  partials: [Partials.Channel, Partials.User],
 });
 
 export let isBotReady = false;

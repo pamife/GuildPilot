@@ -29,7 +29,7 @@ if not exist "dev.db" (
     echo.
 )
 
-echo [*] Starting GuildPilot Local Backend & Next.js Web Dashboard...
+echo [*] Starting GuildPilot Local Backend ^& Next.js Web Dashboard...
 echo [*] Dashboard URL: http://localhost:3000
 echo [*] Press Ctrl+C to stop the application.
 echo.
