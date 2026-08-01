@@ -1,4 +1,4 @@
-import { ChannelType, GuildChannel, TextChannel, VoiceChannel, ForumChannel } from "discord.js";
+import { ChannelType, GuildChannel, TextChannel, ForumChannel, GuildChannelTypes } from "discord.js";
 import { PrismaClient } from "@prisma/client";
 import { discordClient, isBotReady } from "../bot/client";
 import { getGuildChannels } from "./channelService";
@@ -107,11 +107,11 @@ export async function applyTemplate(guildId: string, templateId: string) {
       const parentId = ch.parentId ? categoryMap.get(ch.parentId) : undefined;
       await guild.channels.create({
         name: ch.name,
-        type: ch.type,
+        type: ch.type as GuildChannelTypes,
         parent: parentId,
-        topic: ch.topic,
-        nsfw: ch.nsfw,
-        rateLimitPerUser: ch.slowmode,
+        topic: ch.topic || undefined,
+        nsfw: ch.nsfw || false,
+        rateLimitPerUser: ch.slowmode || 0,
       });
     } catch (err) {
       console.error(`Failed to recreate channel ${ch.name}`, err);
@@ -126,7 +126,7 @@ export async function duplicateChannel(guildId: string, channelId: string) {
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
-  const channel = guild.channels.cache.get(channelId) as GuildChannel;
+  const channel = guild.channels.cache.get(channelId);
   if (!channel) throw new Error("Channel not found.");
 
   const isText = channel.type === ChannelType.GuildText;
@@ -134,11 +134,11 @@ export async function duplicateChannel(guildId: string, channelId: string) {
 
   const duplicated = await guild.channels.create({
     name: `${channel.name}-copy`,
-    type: channel.type,
+    type: channel.type as GuildChannelTypes,
     parent: channel.parentId || undefined,
     topic: isText || isForum ? (channel as TextChannel | ForumChannel).topic || undefined : undefined,
     nsfw: isText || isForum ? (channel as TextChannel | ForumChannel).nsfw : undefined,
-    rateLimitPerUser: isText || isForum ? (channel as TextChannel | ForumChannel).rateLimitPerUser : undefined,
+    rateLimitPerUser: isText || isForum ? (channel as TextChannel | ForumChannel).rateLimitPerUser || undefined : undefined,
   });
 
   return {
@@ -169,11 +169,11 @@ export async function duplicateCategory(guildId: string, categoryId: string) {
 
     await guild.channels.create({
       name: child.name,
-      type: child.type,
+      type: child.type as GuildChannelTypes,
       parent: newCategory.id,
       topic: isText || isForum ? (child as TextChannel | ForumChannel).topic || undefined : undefined,
       nsfw: isText || isForum ? (child as TextChannel | ForumChannel).nsfw : undefined,
-      rateLimitPerUser: isText || isForum ? (child as TextChannel | ForumChannel).rateLimitPerUser : undefined,
+      rateLimitPerUser: isText || isForum ? (child as TextChannel | ForumChannel).rateLimitPerUser || undefined : undefined,
     });
   }
 

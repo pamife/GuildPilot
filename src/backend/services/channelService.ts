@@ -1,4 +1,13 @@
-import { ChannelType, GuildChannel, TextChannel, VoiceChannel, CategoryChannel, ForumChannel, PermissionFlagsBits } from "discord.js";
+import {
+  ChannelType,
+  GuildChannel,
+  TextChannel,
+  VoiceChannel,
+  CategoryChannel,
+  ForumChannel,
+  GuildChannelTypes,
+  NonThreadGuildBasedChannel,
+} from "discord.js";
 import { discordClient, isBotReady } from "../bot/client";
 
 export async function getGuildChannels(guildId: string) {
@@ -8,40 +17,42 @@ export async function getGuildChannels(guildId: string) {
 
   const channels = await guild.channels.fetch();
 
-  return channels
-    .filter((c): c is GuildChannel => c !== null)
-    .map((c) => {
-      const isText = c.type === ChannelType.GuildText;
-      const isVoice = c.type === ChannelType.GuildVoice;
-      const isForum = c.type === ChannelType.GuildForum;
+  const result: any[] = [];
+  channels.forEach((c) => {
+    if (!c || c.isThread()) return;
 
-      return {
-        id: c.id,
-        name: c.name,
-        type: c.type,
-        position: c.position,
-        parentId: c.parentId,
-        topic: isText || isForum ? (c as TextChannel | ForumChannel).topic : null,
-        nsfw: isText || isForum ? (c as TextChannel | ForumChannel).nsfw : false,
-        slowmode: isText || isForum ? (c as TextChannel | ForumChannel).rateLimitPerUser : 0,
-        bitrate: isVoice ? (c as VoiceChannel).bitrate : null,
-        userLimit: isVoice ? (c as VoiceChannel).userLimit : null,
-        permissionOverwrites: c.permissionOverwrites.cache.map((po) => ({
-          id: po.id,
-          type: po.type, // 0 for Role, 1 for Member
-          allow: po.allow.bitfield.toString(),
-          deny: po.deny.bitfield.toString(),
-        })),
-      };
-    })
-    .sort((a, b) => a.position - b.position);
+    const isText = c.type === ChannelType.GuildText;
+    const isVoice = c.type === ChannelType.GuildVoice;
+    const isForum = c.type === ChannelType.GuildForum;
+
+    result.push({
+      id: c.id,
+      name: c.name,
+      type: c.type,
+      position: "position" in c ? c.position : 0,
+      parentId: c.parentId,
+      topic: isText || isForum ? (c as TextChannel | ForumChannel).topic : null,
+      nsfw: isText || isForum ? (c as TextChannel | ForumChannel).nsfw : false,
+      slowmode: isText || isForum ? (c as TextChannel | ForumChannel).rateLimitPerUser : 0,
+      bitrate: isVoice ? (c as VoiceChannel).bitrate : null,
+      userLimit: isVoice ? (c as VoiceChannel).userLimit : null,
+      permissionOverwrites: c.permissionOverwrites.cache.map((po) => ({
+        id: po.id,
+        type: po.type,
+        allow: po.allow.bitfield.toString(),
+        deny: po.deny.bitfield.toString(),
+      })),
+    });
+  });
+
+  return result.sort((a, b) => a.position - b.position);
 }
 
 export async function createChannel(
   guildId: string,
   data: {
     name: string;
-    type: ChannelType;
+    type: GuildChannelTypes;
     parentId?: string;
     topic?: string;
     nsfw?: boolean;
@@ -105,12 +116,12 @@ export async function updateChannel(
     }));
   }
 
-  const updated = await channel.edit(editPayload);
+  const updated: any = await channel.edit(editPayload);
   return {
     id: updated.id,
     name: updated.name,
     type: updated.type,
-    position: updated.position,
+    position: updated.position ?? 0,
     parentId: updated.parentId,
   };
 }

@@ -1,4 +1,4 @@
-import { ChannelType } from "discord.js";
+import { ChannelType, GuildChannelTypes } from "discord.js";
 import { discordClient, isBotReady } from "../bot/client";
 import { getGuildChannels } from "./channelService";
 import { getGuildRoles } from "./roleService";
@@ -6,7 +6,7 @@ import { getGuildEmojis } from "./emojiStickerService";
 
 export async function bulkCreateChannels(
   guildId: string,
-  channelsData: Array<{ name: string; type: ChannelType; parentId?: string }>
+  channelsData: Array<{ name: string; type: number; parentId?: string }>
 ) {
   if (!isBotReady) throw new Error("Discord Bot is not connected.");
   const guild = discordClient.guilds.cache.get(guildId);
@@ -17,7 +17,7 @@ export async function bulkCreateChannels(
     try {
       const ch = await guild.channels.create({
         name: item.name,
-        type: item.type,
+        type: item.type as GuildChannelTypes,
         parent: item.parentId || undefined,
       });
       created.push({ id: ch.id, name: ch.name, type: ch.type });
