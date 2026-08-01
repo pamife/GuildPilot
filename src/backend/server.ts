@@ -44,6 +44,11 @@ app.use("/api/guilds", inviteRoutes);
 app.use("/api/templates", templateRoutes);
 app.use("/api/utilities", utilityRoutes);
 
+// Root route: Redirect to Next.js Frontend Dashboard
+app.get("/", (req, res) => {
+  res.redirect("http://localhost:3000");
+});
+
 // Base Health Check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", name: "GuildPilot Backend", timestamp: new Date() });
