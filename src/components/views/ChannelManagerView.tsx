@@ -164,7 +164,11 @@ export function ChannelManagerView({
       <div className="flex items-center gap-2.5 min-w-0">
         {renderChannelIcon(ch.type)}
         <span className="text-sm font-medium text-discord-header truncate">{ch.name}</span>
-        {ch.nsfw && <Flame className="w-3.5 h-3.5 text-discord-red shrink-0" title="NSFW" />}
+        {ch.nsfw && (
+          <span title="NSFW">
+            <Flame className="w-3.5 h-3.5 text-discord-red shrink-0" />
+          </span>
+        )}
         {ch.slowmode ? (
           <span className="flex items-center gap-1 text-[10px] bg-[#1e1f22] px-1.5 py-0.5 rounded text-discord-yellow">
             <Clock className="w-3 h-3" /> {ch.slowmode}s
