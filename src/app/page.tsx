@@ -148,6 +148,9 @@ function DashboardContent() {
         tag: data.tag,
         ping: prev?.ping || 0,
       }));
+      if (data.ready) {
+        fetchGuilds();
+      }
       showToast(data.ready ? `Bot ${data.tag} is online` : "Bot disconnected", data.ready ? "success" : "error");
     };
 
@@ -375,6 +378,7 @@ function DashboardContent() {
         botStatus={botStatus}
         ownerUser={ownerUser}
         onLogout={handleLogout}
+        onRefreshGuilds={fetchGuilds}
       />
 
       {/* Main View Shell */}

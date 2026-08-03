@@ -4,7 +4,20 @@ import { discordClient, isBotReady } from "../bot/client";
 export async function getGuilds() {
   if (!isBotReady()) return [];
 
-  return discordClient.guilds.cache.map((guild) => ({
+  let guildsList = Array.from(discordClient.guilds.cache.values());
+  if (guildsList.length === 0) {
+    try {
+      const fetchedOAuthGuilds = await discordClient.guilds.fetch();
+      const resolved = await Promise.all(
+        fetchedOAuthGuilds.map((g) => g.fetch().catch(() => null))
+      );
+      guildsList = resolved.filter(Boolean) as any[];
+    } catch (e) {
+      // Fallback to cache
+    }
+  }
+
+  return guildsList.map((guild) => ({
     id: guild.id,
     name: guild.name,
     icon: guild.iconURL(),

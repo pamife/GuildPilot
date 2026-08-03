@@ -19,6 +19,8 @@ import {
   Radio,
   Activity,
   Ticket,
+  Check,
+  RefreshCw,
 } from "lucide-react";
 
 export type ViewType =
@@ -51,6 +53,7 @@ interface SidebarProps {
   botStatus: { ready: boolean; tag: string; ping: number } | null;
   ownerUser: { username: string; avatar: string | null } | null;
   onLogout: () => void;
+  onRefreshGuilds?: () => void;
 }
 
 export function Sidebar({
@@ -62,7 +65,9 @@ export function Sidebar({
   botStatus,
   ownerUser,
   onLogout,
+  onRefreshGuilds,
 }: SidebarProps) {
+  const [isServerDropdownOpen, setIsServerDropdownOpen] = React.useState(false);
   const selectedGuild = guilds.find((g) => g.id === selectedGuildId) || guilds[0];
 
   const navigationItems = [
@@ -82,12 +87,16 @@ export function Sidebar({
   return (
     <aside className="w-64 bg-discord-sidebar flex flex-col h-screen border-r border-[#1f2023] shrink-0 select-none">
       {/* Header / Server Selector */}
-      <div className="p-3 border-b border-[#1f2023] bg-discord-darkest/40">
-        <div className="relative group">
+      <div className="p-3 border-b border-[#1f2023] bg-discord-darkest/40 relative z-30">
+        <div className="relative">
           <label className="text-[10px] font-bold uppercase tracking-wider text-discord-muted mb-1 block px-2">
             Selected Server
           </label>
-          <div className="flex items-center justify-between p-2 rounded-md bg-[#1e1f22] border border-[#35373c] hover:border-discord-brand transition-colors cursor-pointer">
+
+          <div
+            onClick={() => setIsServerDropdownOpen((prev) => !prev)}
+            className="flex items-center justify-between p-2 rounded-lg bg-[#1e1f22] border border-[#35373c] hover:border-discord-brand transition-colors cursor-pointer"
+          >
             <div className="flex items-center gap-2.5 overflow-hidden">
               {selectedGuild?.icon ? (
                 <img
@@ -105,26 +114,66 @@ export function Sidebar({
                   {selectedGuild?.name || "Select Server"}
                 </p>
                 <p className="text-xs text-discord-muted truncate">
-                  {selectedGuild ? `${selectedGuild.memberCount} members` : "No server"}
+                  {selectedGuild ? `${selectedGuild.memberCount} members` : "No server available"}
                 </p>
               </div>
             </div>
-            <ChevronDown className="w-4 h-4 text-discord-muted shrink-0" />
+            <ChevronDown className={`w-4 h-4 text-discord-muted shrink-0 transition-transform ${isServerDropdownOpen ? "rotate-180" : ""}`} />
           </div>
 
-          {/* Server dropdown select */}
-          {guilds.length > 1 && (
-            <select
-              value={selectedGuildId || ""}
-              onChange={(e) => onSelectGuild(e.target.value)}
-              className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
-            >
-              {guilds.map((g) => (
-                <option key={g.id} value={g.id} className="bg-[#2b2d31] text-white">
-                  {g.name}
-                </option>
-              ))}
-            </select>
+          {/* Interactive Server Selector Dropdown Menu */}
+          {isServerDropdownOpen && (
+            <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#1e1f22] border border-[#35373c] rounded-xl shadow-2xl p-2 space-y-1 max-h-64 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 z-50">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-discord-muted px-2 py-1 flex items-center justify-between">
+                <span>Your Discord Servers</span>
+                {onRefreshGuilds && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onRefreshGuilds();
+                    }}
+                    title="Refresh Servers List"
+                    className="p-1 hover:text-white transition-colors"
+                  >
+                    <RefreshCw className="w-3 h-3" />
+                  </button>
+                )}
+              </div>
+
+              {guilds.length === 0 ? (
+                <p className="text-xs text-discord-muted p-3 text-center">No servers found. Is bot connected?</p>
+              ) : (
+                guilds.map((g) => {
+                  const isSelected = g.id === selectedGuildId;
+                  return (
+                    <button
+                      key={g.id}
+                      onClick={() => {
+                        onSelectGuild(g.id);
+                        setIsServerDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
+                        isSelected
+                          ? "bg-discord-brand text-white font-bold"
+                          : "text-discord-muted hover:bg-[#2b2d31] hover:text-white"
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 overflow-hidden">
+                        {g.icon ? (
+                          <img src={g.icon} alt="" className="w-6 h-6 rounded-full shrink-0" />
+                        ) : (
+                          <div className="w-6 h-6 rounded-full bg-discord-brand/40 flex items-center justify-center font-bold text-white text-[10px] shrink-0">
+                            {g.name.substring(0, 2).toUpperCase()}
+                          </div>
+                        )}
+                        <span className="truncate">{g.name}</span>
+                      </div>
+                      {isSelected && <Check className="w-4 h-4 shrink-0 text-white" />}
+                    </button>
+                  );
+                })
+              )}
+            </div>
           )}
         </div>
       </div>
