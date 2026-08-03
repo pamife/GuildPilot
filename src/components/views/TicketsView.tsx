@@ -339,7 +339,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const handleRemoveReasonQuestion = (reasonIndex: number, qIndex: number) => {
     const updatedReasons = [...panelForm.reasons];
     const targetReason = { ...updatedReasons[reasonIndex] };
-    targetReason.questions = targetReason.questions?.filter((_, i) => i !== qIndex) || [];
+    targetReason.questions = targetReason.questions?.filter((_: any, i: number) => i !== qIndex) || [];
     updatedReasons[reasonIndex] = targetReason;
     setPanelForm({ ...panelForm, reasons: updatedReasons });
   };
