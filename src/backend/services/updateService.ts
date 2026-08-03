@@ -77,3 +77,69 @@ export function markUpdateAsRead(): boolean {
   }
   return false;
 }
+
+export async function checkOrTriggerUpdate(installIfAvailable = true): Promise<{
+  hasUpdate: boolean;
+  localCommit: string;
+  remoteCommit: string;
+  message: string;
+}> {
+  const { exec } = await import("child_process");
+  const projectDir = process.cwd();
+  const scriptPath = path.join(projectDir, "scripts", "auto-update.sh");
+
+  return new Promise((resolve) => {
+    exec("git fetch origin main && git rev-parse HEAD && git rev-parse origin/main", { cwd: projectDir }, (err, stdout) => {
+      if (err) {
+        return resolve({
+          hasUpdate: false,
+          localCommit: "unknown",
+          remoteCommit: "unknown",
+          message: "Failed to connect to remote GitHub repository.",
+        });
+      }
+
+      const lines = stdout.trim().split("\n").map((l) => l.trim()).filter(Boolean);
+      const localCommit = lines[0] ? lines[0].substring(0, 7) : "unknown";
+      const remoteCommit = lines[1] ? lines[1].substring(0, 7) : "unknown";
+
+      if (localCommit === remoteCommit) {
+        return resolve({
+          hasUpdate: false,
+          localCommit,
+          remoteCommit,
+          message: `System is up to date (Commit: ${localCommit}).`,
+        });
+      }
+
+      // Update is available!
+      if (installIfAvailable) {
+        const isWin = process.platform === "win32";
+        const cmd = isWin ? `bash "${scriptPath}"` : `"${scriptPath}"`;
+
+        exec(cmd, { cwd: projectDir }, (updateErr, updateStdout, updateStderr) => {
+          if (updateErr) {
+            console.error("[UpdateService] Update script execution error:", updateStderr || updateErr.message);
+          } else {
+            console.log("[UpdateService] Update script executed successfully:", updateStdout);
+          }
+        });
+
+        return resolve({
+          hasUpdate: true,
+          localCommit,
+          remoteCommit,
+          message: `New update found (${remoteCommit})! Installing update in background...`,
+        });
+      } else {
+        return resolve({
+          hasUpdate: true,
+          localCommit,
+          remoteCommit,
+          message: `New update available on GitHub (${remoteCommit}).`,
+        });
+      }
+    });
+  });
+}
+

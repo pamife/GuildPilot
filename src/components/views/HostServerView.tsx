@@ -93,6 +93,32 @@ export function HostServerView() {
     (p.user && p.user.toLowerCase().includes(searchProc.toLowerCase()))
   );
 
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+
+  const handleCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      const res = await fetch(`${apiUrl}/api/host-server/check-update`, { method: "POST" });
+      const data = await res.json();
+      if (data && data.message) {
+        if (data.hasUpdate) {
+          setUpdateInfo((prev: any) => ({
+            ...prev,
+            status: "success",
+            message: data.message,
+            commitShort: data.remoteCommit,
+            timestamp: new Date().toISOString(),
+          }));
+        }
+      }
+    } catch (err) {
+      console.error("Update check failed:", err);
+    } finally {
+      setCheckingUpdate(false);
+    }
+  };
+
   return (
     <div className="space-y-6 text-discord-header">
       {/* Header Banner */}
@@ -273,30 +299,43 @@ export function HostServerView() {
       </div>
 
       {/* GitHub Auto-Sync & Update Status Banner */}
-      {updateInfo && updateInfo.commit && (
-        <div className="p-4 rounded-xl bg-gradient-to-r from-[#1e1f22] via-[#2b2d31] to-[#1e1f22] border border-[#35373c] shadow-lg flex flex-wrap items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className={`p-2.5 rounded-xl border ${updateInfo.status === "error" ? "bg-discord-red/20 border-discord-red/40 text-discord-red" : "bg-discord-green/20 border-discord-green/40 text-discord-green"}`}>
-              <ShieldCheck className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="text-sm font-bold text-white flex items-center gap-2">
-                GitHub Auto-Update Engine
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${updateInfo.status === "error" ? "bg-discord-red/20 text-discord-red" : "bg-discord-green/20 text-discord-green font-bold"}`}>
-                  Commit {updateInfo.commitShort || updateInfo.commit.substring(0, 7)}
-                </span>
-              </h3>
-              <p className="text-xs text-discord-muted mt-0.5">
-                {updateInfo.message}
-              </p>
-            </div>
+      <div className="p-4 rounded-xl bg-gradient-to-r from-[#1e1f22] via-[#2b2d31] to-[#1e1f22] border border-[#35373c] shadow-lg flex flex-wrap items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className={`p-2.5 rounded-xl border ${updateInfo?.status === "error" ? "bg-discord-red/20 border-discord-red/40 text-discord-red" : "bg-discord-green/20 border-discord-green/40 text-discord-green"}`}>
+            <ShieldCheck className="w-5 h-5" />
           </div>
-          <div className="text-right text-xs text-discord-muted font-mono">
-            <span>Last Update: </span>
-            <strong className="text-white">{new Date(updateInfo.timestamp).toLocaleString()}</strong>
+          <div>
+            <h3 className="text-sm font-bold text-white flex items-center gap-2">
+              GitHub Auto-Update Engine
+              {updateInfo?.commitShort && (
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${updateInfo.status === "error" ? "bg-discord-red/20 text-discord-red" : "bg-discord-green/20 text-discord-green font-bold"}`}>
+                  Commit {updateInfo.commitShort}
+                </span>
+              )}
+            </h3>
+            <p className="text-xs text-discord-muted mt-0.5">
+              {updateInfo?.message || "Automatischer Abgleich mit GitHub main Branch."}
+            </p>
           </div>
         </div>
-      )}
+
+        <div className="flex items-center gap-4">
+          {updateInfo?.timestamp && (
+            <div className="text-right text-xs text-discord-muted font-mono hidden sm:block">
+              <span>Stand: </span>
+              <strong className="text-white">{new Date(updateInfo.timestamp).toLocaleString()}</strong>
+            </div>
+          )}
+          <button
+            onClick={handleCheckUpdate}
+            disabled={checkingUpdate}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-discord-brand hover:bg-discord-brandHover active:scale-95 text-white font-semibold text-xs transition-all shadow-md disabled:opacity-50"
+          >
+            <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdate ? "animate-spin" : ""}`} />
+            {checkingUpdate ? "Suche Updates..." : "Nach Updates suchen"}
+          </button>
+        </div>
+      </div>
 
       {/* Live Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
