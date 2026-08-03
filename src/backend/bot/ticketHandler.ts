@@ -4,6 +4,8 @@ import {
   ButtonInteraction,
   StringSelectMenuInteraction,
   ModalSubmitInteraction,
+  ChatInputCommandInteraction,
+  Message,
   ChannelType,
   PermissionFlagsBits,
   EmbedBuilder,
@@ -18,6 +20,9 @@ import {
   TextChannel,
   Role,
   AttachmentBuilder,
+  SlashCommandBuilder,
+  REST,
+  Routes,
 } from "discord.js";
 import {
   getTicketPanelById,
@@ -31,10 +36,91 @@ import {
 } from "../services/ticketService";
 import { generateHtmlTranscript } from "../services/transcriptService";
 
+// Register Slash Commands globally for bot
+export async function registerSlashCommands(client: Client) {
+  if (!client.user) return;
+
+  const ticketCommand = new SlashCommandBuilder()
+    .setName("ticket")
+    .setDescription("Ticket Management Commands")
+    .addSubcommand((sub) =>
+      sub
+        .setName("add")
+        .setDescription("Add a user to the current ticket channel")
+        .addUserOption((opt) => opt.setName("user").setDescription("User to add").setRequired(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("remove")
+        .setDescription("Remove a user from the current ticket channel")
+        .addUserOption((opt) => opt.setName("user").setDescription("User to remove").setRequired(true))
+    )
+    .addSubcommand((sub) =>
+      sub
+        .setName("close")
+        .setDescription("Close the current ticket channel")
+        .addStringOption((opt) => opt.setName("reason").setDescription("Reason for closing ticket").setRequired(false))
+    )
+    .addSubcommand((sub) => sub.setName("claim").setDescription("Claim the current ticket"))
+    .addSubcommand((sub) => sub.setName("reopen").setDescription("Reopen a closed ticket channel"))
+    .addSubcommand((sub) => sub.setName("transcript").setDescription("Generate an HTML transcript for the ticket"));
+
+  try {
+    const token = process.env.DISCORD_TOKEN;
+    if (token) {
+      const rest = new REST({ version: "10" }).setToken(token);
+      await rest.put(Routes.applicationCommands(client.user.id), {
+        body: [ticketCommand.toJSON()],
+      });
+      console.log("[TheGodGen Bot] Successfully registered Slash Commands (/ticket)");
+    }
+  } catch (err: any) {
+    console.error("[TheGodGen Bot] Failed to register Slash Commands:", err.message || err);
+  }
+}
+
 export function setupTicketInteractions(client: Client) {
+  registerSlashCommands(client);
+
+  // Track staff message count in open ticket channels
+  client.on("messageCreate", async (message: Message) => {
+    try {
+      if (message.author.bot || !message.guild || message.channel.type !== ChannelType.GuildText) return;
+
+      const ticket = await getTicketByChannelId(message.channelId);
+      if (!ticket || ticket.status === "CLOSED") return;
+
+      const panel = ticket.panelId ? await getTicketPanelById(ticket.panelId) : null;
+      const settings = await getTicketSettings(message.guild.id);
+
+      const supportRoles: string[] = panel ? JSON.parse(panel.supportRoles || "[]") : [];
+      const defaultSupportRoles: string[] = JSON.parse(settings.defaultSupportRoles || "[]");
+      const allSupportRoles = Array.from(new Set([...supportRoles, ...defaultSupportRoles]));
+
+      const isStaff =
+        message.member &&
+        ("roles" in message.member) &&
+        (message.member.roles as any).cache.some((r: Role) => allSupportRoles.includes(r.id));
+
+      if (isStaff || message.author.id !== ticket.userId) {
+        const counts: Record<string, number> = JSON.parse(ticket.staffMessageCounts || "{}");
+        const current = counts[message.author.id] || 0;
+        counts[message.author.id] = current + 1;
+
+        await updateTicketStatus(ticket.id, ticket.status as any, {
+          staffMessageCounts: JSON.stringify(counts),
+        });
+      }
+    } catch (e) {
+      console.error("[TicketHandler] Message counter error:", e);
+    }
+  });
+
   client.on("interactionCreate", async (interaction: Interaction) => {
     try {
-      if (interaction.isButton()) {
+      if (interaction.isChatInputCommand()) {
+        await handleSlashCommandInteraction(interaction);
+      } else if (interaction.isButton()) {
         await handleButtonInteraction(interaction);
       } else if (interaction.isStringSelectMenu()) {
         await handleSelectMenuInteraction(interaction);
@@ -42,7 +128,7 @@ export function setupTicketInteractions(client: Client) {
         await handleModalInteraction(interaction);
       }
     } catch (err) {
-      console.error("[TicketHandler] Error handling interaction:", err);
+      console.error("[TicketHandler] Interaction error:", err);
       if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
         await interaction.reply({
           content: "❌ An error occurred while processing this ticket action.",
@@ -75,8 +161,6 @@ export async function deployTicketPanelEmbed(client: Client, panelId: string): P
   if (panel.footer) embed.setFooter({ text: panel.footer });
 
   const components: any[] = [];
-
-  // Parse multi-reasons
   const reasons: any[] = JSON.parse(panel.reasons || "[]");
 
   if (reasons.length > 0) {
@@ -96,7 +180,6 @@ export async function deployTicketPanelEmbed(client: Client, panelId: string): P
     components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
   }
 
-  // Button option
   let style = ButtonStyle.Primary;
   if (panel.buttonColor === "Secondary") style = ButtonStyle.Secondary;
   if (panel.buttonColor === "Success") style = ButtonStyle.Success;
@@ -119,6 +202,61 @@ export async function deployTicketPanelEmbed(client: Client, panelId: string): P
   });
 
   return message.id;
+}
+
+// Slash Command Handler
+async function handleSlashCommandInteraction(interaction: ChatInputCommandInteraction) {
+  if (interaction.commandName !== "ticket") return;
+
+  const subcommand = interaction.options.getSubcommand();
+  const ticket = await getTicketByChannelId(interaction.channelId);
+
+  if (!ticket && subcommand !== "create") {
+    return interaction.reply({ content: "❌ This command can only be used inside a ticket channel.", ephemeral: true });
+  }
+
+  if (subcommand === "add") {
+    const targetUser = interaction.options.getUser("user", true);
+    const channel = interaction.channel as TextChannel;
+    if (channel && ticket) {
+      await channel.permissionOverwrites.edit(targetUser.id, { ViewChannel: true, SendMessages: true });
+      await createTicketLog({
+        guildId: ticket.guildId,
+        ticketId: ticket.id,
+        ticketNumber: ticket.ticketNumber,
+        action: "USER_ADDED",
+        executorId: interaction.user.id,
+        executorTag: interaction.user.tag,
+        details: `Added ${targetUser.tag} via /ticket add`,
+      });
+      await interaction.reply({ content: `✅ Added ${targetUser} to the ticket.` });
+    }
+  } else if (subcommand === "remove") {
+    const targetUser = interaction.options.getUser("user", true);
+    const channel = interaction.channel as TextChannel;
+    if (channel && ticket) {
+      await channel.permissionOverwrites.delete(targetUser.id);
+      await createTicketLog({
+        guildId: ticket.guildId,
+        ticketId: ticket.id,
+        ticketNumber: ticket.ticketNumber,
+        action: "USER_REMOVED",
+        executorId: interaction.user.id,
+        executorTag: interaction.user.tag,
+        details: `Removed ${targetUser.tag} via /ticket remove`,
+      });
+      await interaction.reply({ content: `✅ Removed ${targetUser} from the ticket.` });
+    }
+  } else if (subcommand === "close") {
+    const reason = interaction.options.getString("reason") || "Resolved";
+    await handleTicketCloseExecute(interaction as any, ticket!.id, reason);
+  } else if (subcommand === "claim") {
+    await handleTicketClaim(interaction as any, ticket!.id);
+  } else if (subcommand === "reopen") {
+    await handleTicketReopen(interaction as any, ticket!.id);
+  } else if (subcommand === "transcript") {
+    await handleTicketTranscript(interaction as any, ticket!.id);
+  }
 }
 
 async function handleButtonInteraction(interaction: ButtonInteraction) {
@@ -163,7 +301,6 @@ async function handleSelectMenuInteraction(interaction: StringSelectMenuInteract
   }
 }
 
-// Determines whether to prompt intake modal questions or create ticket directly
 async function triggerTicketProcess(
   interaction: ButtonInteraction | StringSelectMenuInteraction,
   panelId: string,
@@ -179,12 +316,10 @@ async function triggerTicketProcess(
   const selectedReason = reasons.find((r) => r.value === selectedValue || r.label === selectedValue);
   const reasonQuestions: any[] = selectedReason?.questions || [];
 
-  // Priority: Use questions defined for this specific ticket type/reason, fallback to global panel questions
   const targetQuestions = reasonQuestions.length > 0 ? reasonQuestions : globalQuestions;
-  const allQuestions = targetQuestions.slice(0, 5); // Max 5 modal questions per Discord limit
+  const allQuestions = targetQuestions.slice(0, 5);
 
   if (allQuestions.length > 0) {
-    // Show Modal Form to ask user pre-ticket questions
     const modal = new ModalBuilder()
       .setCustomId(`ticket_intake_modal:${panel.id}:${selectedValue || "default"}`)
       .setTitle(panel.embedTitle?.substring(0, 45) || "Ticket Information");
@@ -203,7 +338,6 @@ async function triggerTicketProcess(
     return interaction.showModal(modal);
   }
 
-  // If no questions, proceed directly to create ticket
   await interaction.deferReply({ ephemeral: true });
   await handleTicketOpen(interaction, panel, selectedReason);
 }
@@ -229,13 +363,12 @@ async function handleTicketOpen(
     }
   }
 
-  // Parse support roles
-  const supportRoles: string[] = JSON.parse(panel.supportRoles || "[]");
+  // Supporter Roles
+  const panelSupportRoles: string[] = JSON.parse(panel.supportRoles || "[]");
   const defaultSupportRoles: string[] = JSON.parse(settings.defaultSupportRoles || "[]");
   const reasonSupportRoles: string[] = selectedReason?.supportRoles || [];
-  const allSupportRoles = Array.from(new Set([...supportRoles, ...defaultSupportRoles, ...reasonSupportRoles]));
+  const allSupportRoles = Array.from(new Set([...panelSupportRoles, ...defaultSupportRoles, ...reasonSupportRoles]));
 
-  // Naming format
   let channelName = settings.namingFormat || "ticket-{username}";
   channelName = channelName.replace("{username}", interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, ""));
   if (channelName.includes("{number}")) {
@@ -243,10 +376,9 @@ async function handleTicketOpen(
     channelName = channelName.replace("{number}", String(count).padStart(4, "0"));
   }
 
-  // Target category
   const categoryId = selectedReason?.categoryId || panel.categoryId || settings.defaultCategoryId || undefined;
 
-  // Build permission overwrites
+  // Build permission overwrites for creator and all supporter roles
   const permissionOverwrites: any[] = [
     {
       id: interaction.guild.id,
@@ -276,7 +408,6 @@ async function handleTicketOpen(
     });
   });
 
-  // Create ticket channel
   const ticketChannel = await interaction.guild.channels.create({
     name: channelName,
     type: ChannelType.GuildText,
@@ -284,7 +415,6 @@ async function handleTicketOpen(
     permissionOverwrites,
   });
 
-  // Record ticket in DB
   const ticketRecord = await createTicketRecord({
     guildId: interaction.guild.id,
     panelId: panel.id,
@@ -295,9 +425,8 @@ async function handleTicketOpen(
     categoryId: categoryId,
   });
 
-  // Build custom welcome embed with assets & form answers
   const welcomeTitle = panel.welcomeTitle || `Support Ticket #${ticketRecord.ticketNumber}`;
-  let welcomeDesc = panel.welcomeDescription || `Welcome ${interaction.user}! A member of our support team will be with you shortly.`;
+  const welcomeDesc = panel.welcomeDescription || `Welcome ${interaction.user}! A member of our support team will be with you shortly.`;
 
   const welcomeEmbed = new EmbedBuilder()
     .setTitle(welcomeTitle)
@@ -318,7 +447,6 @@ async function handleTicketOpen(
     });
   }
 
-  // Include Form Answers if intake questions were answered
   if (formAnswers && formAnswers.length > 0) {
     const formattedAnswers = formAnswers
       .map((fa) => `**${fa.label}**:\n${fa.answer}`)
@@ -335,7 +463,6 @@ async function handleTicketOpen(
   if (panel.welcomeImage) welcomeEmbed.setImage(panel.welcomeImage);
   if (panel.welcomeFooter) welcomeEmbed.setFooter({ text: panel.welcomeFooter });
 
-  // Control buttons row
   const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder().setCustomId(`ticket_close:${ticketRecord.id}`).setLabel("Close").setEmoji("🔒").setStyle(ButtonStyle.Secondary),
     new ButtonBuilder().setCustomId(`ticket_claim:${ticketRecord.id}`).setLabel("Claim").setEmoji("👤").setStyle(ButtonStyle.Primary),
@@ -344,6 +471,7 @@ async function handleTicketOpen(
     new ButtonBuilder().setCustomId(`ticket_transcript:${ticketRecord.id}`).setLabel("Transcript").setEmoji("📄").setStyle(ButtonStyle.Secondary)
   );
 
+  // Ping all supporter roles
   const supportPings = allSupportRoles.map((r) => `<@&${r}>`).join(" ");
 
   await ticketChannel.send({
@@ -379,8 +507,17 @@ async function handleTicketClosePrompt(interaction: ButtonInteraction, ticketId:
   await handleTicketCloseExecute(interaction, ticketId);
 }
 
-async function handleTicketCloseExecute(interaction: ButtonInteraction, ticketId: string) {
-  await interaction.deferReply();
+// Executes ticket close and sends log message matching exact image attachment layout!
+async function handleTicketCloseExecute(
+  interaction: ButtonInteraction | ChatInputCommandInteraction,
+  ticketId: string,
+  closeReason = "resolved"
+) {
+  if (interaction.deferred || interaction.replied) {
+    // Already responded
+  } else {
+    await interaction.deferReply();
+  }
 
   const ticket = await getTicketById(ticketId);
   if (!ticket) {
@@ -394,9 +531,13 @@ async function handleTicketCloseExecute(interaction: ButtonInteraction, ticketId
     }).catch(() => {});
   }
 
+  const now = new Date();
+
   await updateTicketStatus(ticket.id, "CLOSED", {
     closedByUserId: interaction.user.id,
     closedByTag: interaction.user.tag,
+    closeReason,
+    closedTimestamp: now,
   });
 
   await createTicketLog({
@@ -406,7 +547,7 @@ async function handleTicketCloseExecute(interaction: ButtonInteraction, ticketId
     action: "CLOSED",
     executorId: interaction.user.id,
     executorTag: interaction.user.tag,
-    details: `Ticket #${ticket.ticketNumber} closed by ${interaction.user.tag}`,
+    details: `Ticket #${ticket.ticketNumber} closed by ${interaction.user.tag} (Reason: ${closeReason})`,
   });
 
   const closedEmbed = new EmbedBuilder()
@@ -425,10 +566,95 @@ async function handleTicketCloseExecute(interaction: ButtonInteraction, ticketId
     embeds: [closedEmbed],
     components: [row],
   });
+
+  // Post Ticket Log Embed to Log Channel matching attached screenshot!
+  const settings = await getTicketSettings(ticket.guildId);
+  if (settings.logChannelId && interaction.guild) {
+    const logChannel = (await interaction.guild.channels.fetch(settings.logChannelId).catch(() => null)) as TextChannel;
+    if (logChannel && logChannel.isTextBased()) {
+      await sendTicketCloseLogEmbed(logChannel, ticket, interaction.user, closeReason, now);
+    }
+  }
+}
+
+// Sends ticket close embed matching the user's attachment screenshot!
+async function sendTicketCloseLogEmbed(
+  logChannel: TextChannel,
+  ticket: any,
+  closedBy: any,
+  closeReason: string,
+  closeDate: Date
+) {
+  try {
+    const openDateStr = new Date(ticket.openTimestamp || ticket.createdAt).toLocaleString("de-DE", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const closeDateStr = closeDate.toLocaleString("de-DE", {
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+
+    const staffCounts: Record<string, number> = JSON.parse(ticket.staffMessageCounts || "{}");
+    const staffList = Object.entries(staffCounts)
+      .map(([userId, count]) => `[\` ${count} \`] - <@${userId}>`)
+      .join("\n");
+
+    const embed = new EmbedBuilder()
+      .setTitle("Ticket Closed")
+      .setColor("#FEE75C") // Gold border accent bar on left matching screenshot
+      .addFields(
+        { name: "Ticket Name", value: `\`${ticket.channelId ? `ticket-${ticket.ticketNumber}` : "ticket-closed"}\``, inline: true },
+        { name: "Ticket Author", value: `<@${ticket.userId}>`, inline: true },
+        { name: "Closed By", value: `<@${closedBy.id}>`, inline: true },
+        { name: "Open Date", value: `\`${openDateStr}\``, inline: true },
+        { name: "Close Date", value: `\`${closeDateStr}\``, inline: true },
+        { name: "Ticket Close Reason", value: closeReason || "resolved", inline: false },
+        {
+          name: "Staff Message Count",
+          value: staffList.length > 0 ? staffList : "[\` 1 \`] - <@" + closedBy.id + ">",
+          inline: false,
+        }
+      );
+
+    // Add View Transcript Button matching screenshot
+    let components: any[] = [];
+    if (ticket.channelId) {
+      const channel = (await logChannel.guild.channels.fetch(ticket.channelId).catch(() => null)) as TextChannel;
+      if (channel) {
+        const filePath = await generateHtmlTranscript(channel, {
+          number: ticket.ticketNumber,
+          creatorTag: ticket.userTag,
+        }).catch(() => null);
+
+        if (filePath) {
+          const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/guilds/${ticket.guildId}/tickets/transcripts/${ticket.id}/download`;
+          const btn = new ButtonBuilder()
+            .setLabel("View Transcript 🔗")
+            .setStyle(ButtonStyle.Link)
+            .setURL(downloadUrl);
+          components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(btn));
+        }
+      }
+    }
+
+    await logChannel.send({ embeds: [embed], components });
+  } catch (e) {
+    console.error("[TicketHandler] Error sending ticket close log embed:", e);
+  }
 }
 
 async function handleTicketClaim(interaction: ButtonInteraction, ticketId: string) {
-  await interaction.deferReply();
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply();
+  }
 
   const ticket = await getTicketById(ticketId);
   if (!ticket) {
@@ -467,7 +693,9 @@ async function handleTicketClaim(interaction: ButtonInteraction, ticketId: strin
 }
 
 async function handleTicketReopen(interaction: ButtonInteraction, ticketId: string) {
-  await interaction.deferReply();
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply();
+  }
 
   const ticket = await getTicketById(ticketId);
   if (!ticket) {
@@ -545,7 +773,7 @@ async function handleTicketDelete(interaction: ButtonInteraction, ticketId: stri
         executorTag: interaction.user.tag,
         details: `Ticket #${ticket.ticketNumber} channel deleted`,
       });
-      await deleteTicketRecord(ticket.id).catch(() => {});
+      // We retain the ticket DB record so stats and Webpanel history persist even after channel deletion!
     }
     if (channel) {
       await channel.delete().catch(() => {});
@@ -590,7 +818,9 @@ async function handleTicketRemUserPrompt(interaction: ButtonInteraction, ticketI
 }
 
 async function handleTicketTranscript(interaction: ButtonInteraction, ticketId: string) {
-  await interaction.deferReply({ ephemeral: true });
+  if (!interaction.deferred && !interaction.replied) {
+    await interaction.deferReply({ ephemeral: true });
+  }
 
   const ticket = await getTicketById(ticketId);
   const channel = interaction.channel as TextChannel;

@@ -37,6 +37,10 @@ import {
   MessageSquarePlus,
   AlignLeft,
   ListOrdered,
+  Users,
+  Award,
+  BarChart3,
+  Terminal,
 } from "lucide-react";
 
 type SubPage = "dashboard" | "panels" | "tickets-list" | "categories" | "settings" | "logs";
@@ -61,6 +65,7 @@ interface TicketReason {
   emoji: string;
   description: string;
   categoryId?: string;
+  supportRoles?: string[];
   questions?: IntakeQuestion[];
 }
 
@@ -101,7 +106,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const [selectedPreviewReasonIdx, setSelectedPreviewReasonIdx] = useState<number>(0);
   const [expandedReasonIdx, setExpandedReasonIdx] = useState<number | null>(null);
 
-  // Panel Form State with Full Live Preview defaults
+  // Panel Form State with OLED defaults
   const [panelForm, setPanelForm] = useState<any>({
     name: "General Support",
     description: "Main support panel for member inquiries.",
@@ -124,8 +129,8 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
     buttonText: "Create Ticket",
     buttonEmoji: "📩",
     buttonColor: "Primary",
-    allowedRoles: [],
-    supportRoles: [],
+    allowedRoles: [] as string[],
+    supportRoles: [] as string[],
     maxOpenTickets: 1,
     autoCloseHours: 0,
     transcriptEnabled: true,
@@ -136,12 +141,6 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const [newReasonEmoji, setNewReasonEmoji] = useState("❓");
   const [newReasonDesc, setNewReasonDesc] = useState("");
   const [newReasonCat, setNewReasonCat] = useState("");
-
-  // Global Question Form state inside Panel Modal
-  const [newQTitle, setNewQTitle] = useState("");
-  const [newQPlaceholder, setNewQPlaceholder] = useState("");
-  const [newQStyle, setNewQStyle] = useState<"short" | "paragraph">("short");
-  const [newQRequired, setNewQRequired] = useState(true);
 
   // Per-Reason Question Form state
   const [reasonQTitle, setReasonQTitle] = useState("");
@@ -175,7 +174,9 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       if (settingsRes.data.guildId) {
         setSettings({
           ...settingsRes.data,
-          defaultSupportRoles: JSON.parse(settingsRes.data.defaultSupportRoles || "[]"),
+          defaultSupportRoles: typeof settingsRes.data.defaultSupportRoles === "string"
+            ? JSON.parse(settingsRes.data.defaultSupportRoles || "[]")
+            : settingsRes.data.defaultSupportRoles || [],
         });
       }
       setLogs(logsRes.data);
@@ -262,7 +263,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       buttonEmoji: "📩",
       buttonColor: "Primary",
       allowedRoles: [],
-      supportRoles: [],
+      supportRoles: roles.slice(0, 2).map((r) => r.id),
       maxOpenTickets: 1,
       autoCloseHours: 0,
       transcriptEnabled: true,
@@ -274,6 +275,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
 
   const handleOpenEditPanel = (panel: any) => {
     setEditingPanel(panel);
+
     let parsedAllowed: any[] = [];
     try {
       parsedAllowed = typeof panel.allowedRoles === "string" ? JSON.parse(panel.allowedRoles || "[]") : panel.allowedRoles || [];
@@ -370,6 +372,14 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
     targetReason.questions = targetReason.questions?.filter((_: any, i: number) => i !== qIndex) || [];
     updatedReasons[reasonIndex] = targetReason;
     setPanelForm({ ...panelForm, reasons: updatedReasons });
+  };
+
+  const handleToggleSupportRole = (roleId: string) => {
+    const current = panelForm.supportRoles || [];
+    const updated = current.includes(roleId)
+      ? current.filter((id: string) => id !== roleId)
+      : [...current, roleId];
+    setPanelForm({ ...panelForm, supportRoles: updated });
   };
 
   const handleSavePanel = async () => {
@@ -487,28 +497,28 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       : panelForm.questions || [];
 
   return (
-    <div className="flex flex-col h-full bg-[#313338] text-discord-header overflow-hidden">
-      {/* Top Header & Subpage Navigation */}
-      <div className="p-4 bg-[#2b2d31] border-b border-[#35373c] flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-md">
+    <div className="flex flex-col h-full bg-[#000000] text-zinc-100 overflow-hidden font-sans select-none">
+      {/* OLED Top Header & Subpage Navigation */}
+      <div className="p-4 bg-[#050507] border-b border-[#18181b] flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-2xl">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-discord-brand/20 border border-discord-brand/40 flex items-center justify-center text-discord-brand">
+          <div className="w-10 h-10 rounded-2xl bg-discord-brand/20 border border-discord-brand/40 flex items-center justify-center text-discord-brand shadow-lg shadow-discord-brand/10">
             <Ticket className="w-5 h-5" />
           </div>
           <div>
             <h1 className="text-lg font-bold text-white flex items-center gap-2">
-              Ticket System
-              <span className="text-xs px-2 py-0.5 rounded-full bg-discord-brand/20 text-discord-brand border border-discord-brand/30">
-                TheGodGen v1.0
+              Ticket Control Engine
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-discord-brand/20 text-discord-brand border border-discord-brand/30 uppercase tracking-widest">
+                OLED Edition v2.0
               </span>
             </h1>
-            <p className="text-xs text-discord-muted">
-              Custom Discord Ticket Engine with Ticket-Type Modal Intake Forms & Live Embed Previews
+            <p className="text-xs text-zinc-400">
+              Supporter Role Access, Custom Discord Slash Commands & Persistent Ticket History
             </p>
           </div>
         </div>
 
-        {/* Subpages Tabs */}
-        <div className="flex items-center gap-1 bg-[#1e1f22] p-1 rounded-xl border border-[#35373c]">
+        {/* Subpage Tabs */}
+        <div className="flex items-center gap-1 bg-[#090a0f] p-1 rounded-2xl border border-[#18181b]">
           {[
             { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
             { id: "panels", label: "Panels", icon: Layers },
@@ -523,10 +533,10 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
               <button
                 key={tab.id}
                 onClick={() => setActiveSubPage(tab.id as SubPage)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                   isActive
-                    ? "bg-discord-brand text-white shadow"
-                    : "text-discord-muted hover:text-white hover:bg-[#2b2d31]"
+                    ? "bg-discord-brand text-white shadow-lg shadow-discord-brand/20 font-bold"
+                    : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -537,62 +547,62 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
         </div>
       </div>
 
-      {/* Main Content Area */}
-      <div className="flex-1 p-6 overflow-y-auto space-y-6">
+      {/* Main Content Area - OLED Black */}
+      <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-[#000000]">
         {/* ========================================================= */}
         {/* 1. DASHBOARD SUBPAGE */}
         {/* ========================================================= */}
         {activeSubPage === "dashboard" && (
           <div className="space-y-6">
-            {/* Stat Cards */}
+            {/* Stat Cards - OLED Dark */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="p-4 rounded-xl bg-[#2b2d31] border border-[#383a40] flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] flex items-center justify-between shadow-xl hover:border-discord-brand/40 transition-all">
                 <div>
-                  <span className="text-xs text-discord-muted block">Total Tickets</span>
+                  <span className="text-xs text-zinc-500 font-semibold block">Total Tickets</span>
                   <span className="text-2xl font-bold text-white font-mono">{stats.total || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-discord-brand/10 text-discord-brand">
-                  <Ticket className="w-6 h-6" />
+                <div className="p-3 rounded-2xl bg-discord-brand/10 text-discord-brand border border-discord-brand/20">
+                  <Ticket className="w-5 h-5" />
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#2b2d31] border border-[#383a40] flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] flex items-center justify-between shadow-xl hover:border-emerald-500/40 transition-all">
                 <div>
-                  <span className="text-xs text-discord-muted block">Open Tickets</span>
-                  <span className="text-2xl font-bold text-discord-green font-mono">{stats.open || 0}</span>
+                  <span className="text-xs text-zinc-500 font-semibold block">Open Tickets</span>
+                  <span className="text-2xl font-bold text-emerald-400 font-mono">{stats.open || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-discord-green/10 text-discord-green">
-                  <Clock className="w-6 h-6" />
+                <div className="p-3 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20">
+                  <Clock className="w-5 h-5" />
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#2b2d31] border border-[#383a40] flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] flex items-center justify-between shadow-xl hover:border-sky-500/40 transition-all">
                 <div>
-                  <span className="text-xs text-discord-muted block">Claimed Tickets</span>
+                  <span className="text-xs text-zinc-500 font-semibold block">Claimed Tickets</span>
                   <span className="text-2xl font-bold text-sky-400 font-mono">{stats.claimed || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-sky-500/10 text-sky-400">
-                  <UserCheck className="w-6 h-6" />
+                <div className="p-3 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20">
+                  <UserCheck className="w-5 h-5" />
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#2b2d31] border border-[#383a40] flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] flex items-center justify-between shadow-xl hover:border-rose-500/40 transition-all">
                 <div>
-                  <span className="text-xs text-discord-muted block">Closed Tickets</span>
-                  <span className="text-2xl font-bold text-discord-red font-mono">{stats.closed || 0}</span>
+                  <span className="text-xs text-zinc-500 font-semibold block">Closed Tickets</span>
+                  <span className="text-2xl font-bold text-rose-400 font-mono">{stats.closed || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-discord-red/10 text-discord-red">
-                  <Lock className="w-6 h-6" />
+                <div className="p-3 rounded-2xl bg-rose-500/10 text-rose-400 border border-rose-500/20">
+                  <Lock className="w-5 h-5" />
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-[#2b2d31] border border-[#383a40] flex items-center justify-between">
+              <div className="p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] flex items-center justify-between shadow-xl hover:border-amber-500/40 transition-all">
                 <div>
-                  <span className="text-xs text-discord-muted block">Active Panels</span>
+                  <span className="text-xs text-zinc-500 font-semibold block">Active Panels</span>
                   <span className="text-2xl font-bold text-amber-400 font-mono">{stats.panelsCount || 0}</span>
                 </div>
-                <div className="p-3 rounded-xl bg-amber-500/10 text-amber-400">
-                  <Layers className="w-6 h-6" />
+                <div className="p-3 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                  <Layers className="w-5 h-5" />
                 </div>
               </div>
             </div>
@@ -600,62 +610,62 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
             {/* Quick Actions & Recent Activity Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Quick Actions */}
-              <div className="p-5 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-4">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider text-discord-muted">
-                  Quick Actions
+              <div className="p-5 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                  <Terminal className="w-4 h-4 text-discord-brand" /> Quick Operations
                 </h3>
                 <div className="space-y-2">
                   <button
                     onClick={handleOpenCreatePanel}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#1e1f22] border border-[#35373c] hover:border-discord-brand hover:bg-[#232428] text-white text-sm font-medium transition-all"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#000000] border border-[#18181b] hover:border-discord-brand hover:bg-[#12131a] text-white text-xs font-semibold transition-all"
                   >
                     <span className="flex items-center gap-2">
-                      <Plus className="w-4 h-4 text-discord-brand" /> Create New Ticket Panel
+                      <Plus className="w-4 h-4 text-discord-brand" /> Create Ticket Panel
                     </span>
-                    <span className="text-xs text-discord-muted">Deploy</span>
+                    <span className="text-[10px] font-mono text-zinc-500">Deploy</span>
                   </button>
 
                   <button
                     onClick={() => setActiveSubPage("settings")}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#1e1f22] border border-[#35373c] hover:border-discord-brand hover:bg-[#232428] text-white text-sm font-medium transition-all"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#000000] border border-[#18181b] hover:border-sky-500 hover:bg-[#12131a] text-white text-xs font-semibold transition-all"
                   >
                     <span className="flex items-center gap-2">
-                      <Settings className="w-4 h-4 text-sky-400" /> Ticket Settings
+                      <Users className="w-4 h-4 text-sky-400" /> Configure Supporter Roles
                     </span>
-                    <span className="text-xs text-discord-muted">Config</span>
+                    <span className="text-[10px] font-mono text-zinc-500">Roles</span>
                   </button>
 
                   <button
                     onClick={() => setActiveSubPage("logs")}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#1e1f22] border border-[#35373c] hover:border-discord-brand hover:bg-[#232428] text-white text-sm font-medium transition-all"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#000000] border border-[#18181b] hover:border-emerald-500 hover:bg-[#12131a] text-white text-xs font-semibold transition-all"
                   >
                     <span className="flex items-center gap-2">
-                      <History className="w-4 h-4 text-emerald-400" /> View Audit Logs
+                      <History className="w-4 h-4 text-emerald-400" /> Audit Log History
                     </span>
-                    <span className="text-xs text-discord-muted">Audit</span>
+                    <span className="text-[10px] font-mono text-zinc-500">Audit</span>
                   </button>
                 </div>
               </div>
 
               {/* Recent Ticket Activity */}
-              <div className="lg:col-span-2 p-5 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-4">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider text-discord-muted">
-                  Recent Ticket Activity
+              <div className="lg:col-span-2 p-5 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-400" /> Real-time Ticket Events
                 </h3>
                 <div className="space-y-2 max-h-64 overflow-y-auto">
                   {logs.length === 0 ? (
-                    <p className="text-xs text-discord-muted py-6 text-center">No ticket activity logged yet.</p>
+                    <p className="text-xs text-zinc-500 py-6 text-center">No ticket activity logged yet.</p>
                   ) : (
                     logs.slice(0, 5).map((log: any) => (
-                      <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-[#1e1f22] border border-[#35373c]">
+                      <div key={log.id} className="flex items-center justify-between p-3 rounded-xl bg-[#000000] border border-[#18181b]">
                         <div className="flex items-center gap-3">
                           <span className="font-mono text-xs font-bold text-discord-brand">#{log.ticketNumber}</span>
                           <div>
                             <span className="text-xs font-semibold text-white block">{log.action}</span>
-                            <span className="text-[11px] text-discord-muted">{log.details || `Executed by ${log.executorTag}`}</span>
+                            <span className="text-[11px] text-zinc-500">{log.details || `Executed by ${log.executorTag}`}</span>
                           </div>
                         </div>
-                        <span className="text-[10px] text-discord-muted font-mono">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                        <span className="text-[10px] text-zinc-500 font-mono">{new Date(log.timestamp).toLocaleTimeString()}</span>
                       </div>
                     ))
                   )}
@@ -673,11 +683,11 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-white">Ticket Panels</h2>
-                <p className="text-xs text-discord-muted">Configure and deploy interactive ticket creation embeds with intake forms per ticket type.</p>
+                <p className="text-xs text-zinc-400">Configure and deploy interactive ticket embeds with supporter role access & pre-ticket questions.</p>
               </div>
               <button
                 onClick={handleOpenCreatePanel}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-sm shadow transition-all transform hover:scale-[1.02]"
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow-lg shadow-discord-brand/20 transition-all transform hover:scale-[1.02]"
               >
                 <Plus className="w-4 h-4" /> Create Panel
               </button>
@@ -687,29 +697,29 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {panels.map((panel) => {
                 const reasonsList: TicketReason[] = JSON.parse(panel.reasons || "[]");
-                const totalReasonQuestions = reasonsList.reduce((acc, r) => acc + (r.questions?.length || 0), 0);
+                const supportRoleIds: string[] = JSON.parse(panel.supportRoles || "[]");
                 return (
-                  <div key={panel.id} className="p-5 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-4 relative overflow-hidden">
+                  <div key={panel.id} className="p-5 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-4 relative overflow-hidden shadow-2xl hover:border-discord-brand/40 transition-all">
                     <div className="w-full h-1.5 absolute top-0 left-0" style={{ backgroundColor: panel.embedColor || "#5865F2" }} />
                     <div className="flex items-start justify-between">
                       <div>
                         <h3 className="text-base font-bold text-white">{panel.name}</h3>
-                        <p className="text-xs text-discord-muted line-clamp-1">{panel.description || "No description."}</p>
+                        <p className="text-xs text-zinc-400 line-clamp-1">{panel.description || "No description."}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         {reasonsList.length > 0 ? (
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
                             📋 {reasonsList.length} Ticket Types
                           </span>
                         ) : (
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1e1f22] text-discord-brand border border-[#35373c]">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#18181b] text-discord-brand border border-[#27272a]">
                             {panel.buttonColor} Button
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="space-y-1.5 text-xs text-discord-muted bg-[#1e1f22] p-3 rounded-lg border border-[#35373c]">
+                    <div className="space-y-2 text-xs text-zinc-400 bg-[#000000] p-3 rounded-xl border border-[#18181b]">
                       <div className="flex justify-between">
                         <span>Target Channel:</span>
                         <strong className="text-white font-mono">
@@ -717,9 +727,9 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         </strong>
                       </div>
                       <div className="flex justify-between">
-                        <span>Pre-Ticket Questions:</span>
-                        <strong className="text-white">
-                          {totalReasonQuestions > 0 ? `${totalReasonQuestions} Questions configured` : "Standard Ticket"}
+                        <span>Supporter Roles:</span>
+                        <strong className="text-sky-400 font-mono">
+                          {supportRoleIds.length > 0 ? `${supportRoleIds.length} Roles Allowed` : "Default Roles"}
                         </strong>
                       </div>
                     </div>
@@ -727,20 +737,20 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                     <div className="flex items-center gap-2 pt-2">
                       <button
                         onClick={() => handleDeployPanel(panel.id)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow transition-all"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow-lg shadow-discord-brand/20 transition-all"
                       >
                         <Send className="w-3.5 h-3.5" /> Deploy Panel
                       </button>
                       <button
                         onClick={() => handleOpenEditPanel(panel)}
-                        className="p-2 rounded-lg bg-[#1e1f22] hover:bg-[#35373c] text-discord-muted hover:text-white transition-colors"
+                        className="p-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-zinc-400 hover:text-white transition-colors"
                         title="Edit Panel"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeletePanel(panel.id)}
-                        className="p-2 rounded-lg bg-[#1e1f22] hover:bg-discord-red/20 text-discord-muted hover:text-discord-red transition-colors"
+                        className="p-2 rounded-xl bg-[#18181b] hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors"
                         title="Delete Panel"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -754,14 +764,14 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
         )}
 
         {/* ========================================================= */}
-        {/* 3. TICKETS LIST SUBPAGE */}
+        {/* 3. TICKETS LIST SUBPAGE (PERSISTENT HISTORY) */}
         {/* ========================================================= */}
         {activeSubPage === "tickets-list" && (
           <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#1e1f22] border border-[#35373c] text-xs">
-                  <Search className="w-3.5 h-3.5 text-discord-muted" />
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#090a0f] border border-[#18181b] text-xs">
+                  <Search className="w-3.5 h-3.5 text-zinc-500" />
                   <input
                     type="text"
                     placeholder="Search creator, #number, claimer..."
@@ -774,7 +784,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                   />
                 </div>
 
-                <div className="flex items-center gap-1 bg-[#1e1f22] p-1 rounded-lg border border-[#35373c] text-xs">
+                <div className="flex items-center gap-1 bg-[#090a0f] p-1 rounded-xl border border-[#18181b] text-xs">
                   {["ALL", "OPEN", "CLAIMED", "CLOSED"].map((st) => (
                     <button
                       key={st}
@@ -782,10 +792,10 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         setTicketStatusFilter(st);
                         setCurrentPage(1);
                       }}
-                      className={`px-3 py-1 rounded font-semibold transition-colors ${
+                      className={`px-3 py-1 rounded-lg font-semibold transition-colors ${
                         ticketStatusFilter === st
-                          ? "bg-discord-brand text-white"
-                          : "text-discord-muted hover:text-white"
+                          ? "bg-discord-brand text-white font-bold"
+                          : "text-zinc-400 hover:text-white"
                       }`}
                     >
                       {st}
@@ -794,66 +804,66 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                 </div>
               </div>
 
-              <span className="text-xs text-discord-muted font-mono">
-                Showing {filteredTickets.length} tickets
+              <span className="text-xs text-zinc-500 font-mono">
+                Showing {filteredTickets.length} tickets (Saved in Persistent Database)
               </span>
             </div>
 
-            {/* Tickets Table */}
-            <div className="bg-[#2b2d31] rounded-xl border border-[#383a40] overflow-hidden shadow-lg">
+            {/* Persistent Tickets Table */}
+            <div className="bg-[#090a0f] rounded-2xl border border-[#18181b] overflow-hidden shadow-2xl">
               <table className="w-full text-left text-xs">
-                <thead className="bg-[#1e1f22] text-discord-muted font-bold uppercase tracking-wider border-b border-[#35373c]">
+                <thead className="bg-[#000000] text-zinc-500 font-bold uppercase tracking-wider border-b border-[#18181b]">
                   <tr>
-                    <th className="p-3">Ticket</th>
-                    <th className="p-3">Creator</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3">Claimed By</th>
-                    <th className="p-3">Created At</th>
-                    <th className="p-3 text-right">Actions</th>
+                    <th className="p-3.5">Ticket</th>
+                    <th className="p-3.5">Creator</th>
+                    <th className="p-3.5">Status</th>
+                    <th className="p-3.5">Claimed By</th>
+                    <th className="p-3.5">Open Date</th>
+                    <th className="p-3.5 text-right">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#35373c]/40 font-mono">
+                <tbody className="divide-y divide-[#18181b]/60 font-mono">
                   {paginatedTickets.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="p-8 text-center text-discord-muted">
-                        No tickets match the selected filters.
+                      <td colSpan={6} className="p-8 text-center text-zinc-500">
+                        No tickets recorded in database matching search filters.
                       </td>
                     </tr>
                   ) : (
                     paginatedTickets.map((ticket) => (
-                      <tr key={ticket.id} className="hover:bg-[#18191c]/50 transition-colors">
-                        <td className="p-3 font-bold text-discord-brand">#{ticket.ticketNumber}</td>
-                        <td className="p-3 font-sans text-white font-medium flex items-center gap-2">
+                      <tr key={ticket.id} className="hover:bg-[#12131a] transition-colors">
+                        <td className="p-3.5 font-bold text-discord-brand">#{ticket.ticketNumber}</td>
+                        <td className="p-3.5 font-sans text-white font-medium flex items-center gap-2">
                           {ticket.userAvatar && <img src={ticket.userAvatar} className="w-5 h-5 rounded-full" alt="" />}
                           <span>{ticket.userTag}</span>
                         </td>
-                        <td className="p-3 font-sans">
+                        <td className="p-3.5 font-sans">
                           <span
-                            className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                            className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
                               ticket.status === "OPEN"
-                                ? "bg-discord-green/20 text-discord-green"
+                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                                 : ticket.status === "CLAIMED"
-                                ? "bg-sky-500/20 text-sky-400"
-                                : "bg-discord-red/20 text-discord-red"
+                                ? "bg-sky-500/20 text-sky-400 border border-sky-500/30"
+                                : "bg-rose-500/20 text-rose-400 border border-rose-500/30"
                             }`}
                           >
                             {ticket.status}
                           </span>
                         </td>
-                        <td className="p-3 font-sans text-discord-muted">
+                        <td className="p-3.5 font-sans text-zinc-400">
                           {ticket.claimedByTag ? (
                             <span className="text-sky-400 font-medium">👤 {ticket.claimedByTag}</span>
                           ) : (
                             "--"
                           )}
                         </td>
-                        <td className="p-3 text-discord-muted">{new Date(ticket.createdAt).toLocaleString()}</td>
-                        <td className="p-3 text-right font-sans">
+                        <td className="p-3.5 text-zinc-400">{new Date(ticket.createdAt).toLocaleString()}</td>
+                        <td className="p-3.5 text-right font-sans">
                           <button
                             onClick={() => setSelectedTicket(ticket)}
-                            className="px-2.5 py-1 rounded bg-[#1e1f22] hover:bg-[#35373c] text-white text-xs font-semibold transition-colors flex items-center gap-1 ml-auto"
+                            className="px-3 py-1 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-white text-xs font-semibold transition-colors flex items-center gap-1 ml-auto"
                           >
-                            <Eye className="w-3.5 h-3.5" /> Inspect
+                            <Eye className="w-3.5 h-3.5" /> Inspect Details
                           </button>
                         </td>
                       </tr>
@@ -872,43 +882,43 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Create Category Form */}
-              <div className="p-5 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-4">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider text-discord-muted">
+              <div className="p-5 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
                   Add Ticket Category
                 </h3>
                 <div className="space-y-3 text-xs">
                   <div>
-                    <label className="block text-discord-muted mb-1 font-semibold">Category Name</label>
+                    <label className="block text-zinc-400 mb-1 font-semibold">Category Name</label>
                     <input
                       type="text"
                       placeholder="e.g. Technical Support"
                       value={newCatName}
                       onChange={(e) => setNewCatName(e.target.value)}
-                      className="w-full p-2.5 rounded-lg bg-[#1e1f22] border border-[#35373c] text-white outline-none focus:border-discord-brand"
+                      className="w-full p-2.5 rounded-xl bg-[#000000] border border-[#18181b] text-white outline-none focus:border-discord-brand"
                     />
                   </div>
                   <div>
-                    <label className="block text-discord-muted mb-1 font-semibold">Emoji</label>
+                    <label className="block text-zinc-400 mb-1 font-semibold">Emoji</label>
                     <input
                       type="text"
                       placeholder="🎫"
                       value={newCatEmoji}
                       onChange={(e) => setNewCatEmoji(e.target.value)}
-                      className="w-full p-2.5 rounded-lg bg-[#1e1f22] border border-[#35373c] text-white outline-none focus:border-discord-brand"
+                      className="w-full p-2.5 rounded-xl bg-[#000000] border border-[#18181b] text-white outline-none focus:border-discord-brand"
                     />
                   </div>
                   <div>
-                    <label className="block text-discord-muted mb-1 font-semibold">Description</label>
+                    <label className="block text-zinc-400 mb-1 font-semibold">Description</label>
                     <textarea
                       placeholder="Short category description..."
                       value={newCatDesc}
                       onChange={(e) => setNewCatDesc(e.target.value)}
-                      className="w-full p-2.5 rounded-lg bg-[#1e1f22] border border-[#35373c] text-white outline-none focus:border-discord-brand h-20"
+                      className="w-full p-2.5 rounded-xl bg-[#000000] border border-[#18181b] text-white outline-none focus:border-discord-brand h-20"
                     />
                   </div>
                   <button
                     onClick={handleCreateCategory}
-                    className="w-full py-2.5 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow transition-all"
+                    className="w-full py-2.5 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow-lg shadow-discord-brand/20 transition-all"
                   >
                     Save Category
                   </button>
@@ -917,27 +927,27 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
 
               {/* Categories List */}
               <div className="md:col-span-2 space-y-3">
-                <h3 className="text-sm font-bold text-white uppercase tracking-wider text-discord-muted">
+                <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
                   Configured Categories
                 </h3>
                 <div className="space-y-2">
                   {categories.length === 0 ? (
-                    <p className="text-xs text-discord-muted p-6 bg-[#2b2d31] rounded-xl border border-[#383a40] text-center">
+                    <p className="text-xs text-zinc-500 p-6 bg-[#090a0f] rounded-2xl border border-[#18181b] text-center">
                       No custom ticket categories created yet.
                     </p>
                   ) : (
                     categories.map((cat) => (
-                      <div key={cat.id} className="flex items-center justify-between p-4 rounded-xl bg-[#2b2d31] border border-[#383a40]">
+                      <div key={cat.id} className="flex items-center justify-between p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] shadow-xl">
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">{cat.emoji || "🎫"}</span>
                           <div>
                             <h4 className="text-sm font-bold text-white">{cat.name}</h4>
-                            <p className="text-xs text-discord-muted">{cat.description || "No description."}</p>
+                            <p className="text-xs text-zinc-400">{cat.description || "No description."}</p>
                           </div>
                         </div>
                         <button
                           onClick={() => handleDeleteCategory(cat.id)}
-                          className="p-2 rounded-lg bg-[#1e1f22] hover:bg-discord-red/20 text-discord-muted hover:text-discord-red transition-colors"
+                          className="p-2 rounded-xl bg-[#18181b] hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -951,21 +961,58 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
         )}
 
         {/* ========================================================= */}
-        {/* 5. SETTINGS SUBPAGE */}
+        {/* 5. SETTINGS SUBPAGE (SUPPORTER ROLES) */}
         {/* ========================================================= */}
         {activeSubPage === "settings" && (
           <div className="max-w-3xl space-y-6">
-            <div className="p-6 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-6">
-              <h2 className="text-base font-bold text-white">Global Ticket Settings</h2>
+            <div className="p-6 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-6 shadow-2xl">
+              <h2 className="text-base font-bold text-white flex items-center gap-2">
+                <Shield className="w-5 h-5 text-discord-brand" /> Global Supporter Roles & Ticket Settings
+              </h2>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              {/* Supporter Roles Picker */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-zinc-300">
+                  Default Supporter / Staff Roles (Pings + Channel Access)
+                </label>
+                <p className="text-[11px] text-zinc-500">
+                  Select Discord roles that will receive full view/reply access to all ticket channels and get pinged when a ticket is opened.
+                </p>
+                <div className="flex flex-wrap gap-2 pt-2">
+                  {roles.map((r) => {
+                    const isSelected = settings.defaultSupportRoles?.includes(r.id);
+                    return (
+                      <button
+                        key={r.id}
+                        type="button"
+                        onClick={() => {
+                          const current = settings.defaultSupportRoles || [];
+                          const updated = isSelected ? current.filter((id: string) => id !== r.id) : [...current, r.id];
+                          setSettings({ ...settings, defaultSupportRoles: updated });
+                        }}
+                        className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                          isSelected
+                            ? "bg-discord-brand text-white shadow-lg shadow-discord-brand/20 border border-discord-brand/40"
+                            : "bg-[#000000] text-zinc-400 border border-[#18181b] hover:text-white"
+                        }`}
+                      >
+                        <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color || "#5865F2" }} />
+                        <span>{r.name}</span>
+                        {isSelected && <CheckCircle2 className="w-3.5 h-3.5 text-white" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-2">
                 {/* Naming Format */}
                 <div>
-                  <label className="block text-discord-muted mb-1.5 font-semibold">Ticket Channel Naming Format</label>
+                  <label className="block text-zinc-400 mb-1.5 font-semibold">Ticket Channel Naming Format</label>
                   <select
                     value={settings.namingFormat}
                     onChange={(e) => setSettings({ ...settings, namingFormat: e.target.value })}
-                    className="w-full p-2.5 rounded-lg bg-[#1e1f22] border border-[#35373c] text-white outline-none focus:border-discord-brand"
+                    className="w-full p-2.5 rounded-xl bg-[#000000] border border-[#18181b] text-white outline-none focus:border-discord-brand"
                   >
                     <option value="ticket-{username}">ticket-username (e.g. ticket-john)</option>
                     <option value="{username}-ticket">username-ticket (e.g. john-ticket)</option>
@@ -975,11 +1022,11 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
 
                 {/* Default Category */}
                 <div>
-                  <label className="block text-discord-muted mb-1.5 font-semibold">Default Channel Category</label>
+                  <label className="block text-zinc-400 mb-1.5 font-semibold">Default Channel Category</label>
                   <select
                     value={settings.defaultCategoryId || ""}
                     onChange={(e) => setSettings({ ...settings, defaultCategoryId: e.target.value })}
-                    className="w-full p-2.5 rounded-lg bg-[#1e1f22] border border-[#35373c] text-white outline-none focus:border-discord-brand"
+                    className="w-full p-2.5 rounded-xl bg-[#000000] border border-[#18181b] text-white outline-none focus:border-discord-brand"
                   >
                     <option value="">-- Select Category --</option>
                     {categoryChannels.map((c) => (
@@ -992,11 +1039,11 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
 
                 {/* Transcript Log Channel */}
                 <div>
-                  <label className="block text-discord-muted mb-1.5 font-semibold">Transcript Log Channel</label>
+                  <label className="block text-zinc-400 mb-1.5 font-semibold">Log Channel (Ticket Close Log Embed)</label>
                   <select
                     value={settings.logChannelId || ""}
                     onChange={(e) => setSettings({ ...settings, logChannelId: e.target.value })}
-                    className="w-full p-2.5 rounded-lg bg-[#1e1f22] border border-[#35373c] text-white outline-none focus:border-discord-brand"
+                    className="w-full p-2.5 rounded-xl bg-[#000000] border border-[#18181b] text-white outline-none focus:border-discord-brand"
                   >
                     <option value="">-- Select Text Channel --</option>
                     {textChannels.map((c) => (
@@ -1009,7 +1056,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
 
                 {/* Delete Delay */}
                 <div>
-                  <label className="block text-discord-muted mb-1.5 font-semibold">
+                  <label className="block text-zinc-400 mb-1.5 font-semibold">
                     Delete Countdown Delay ({settings.deleteDelaySeconds}s)
                   </label>
                   <input
@@ -1023,38 +1070,9 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                 </div>
               </div>
 
-              {/* Toggles */}
-              <div className="space-y-3 pt-2 text-xs">
-                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-[#1e1f22] border border-[#35373c]">
-                  <input
-                    type="checkbox"
-                    checked={settings.closeConfirmation}
-                    onChange={(e) => setSettings({ ...settings, closeConfirmation: e.target.checked })}
-                    className="w-4 h-4 accent-discord-brand"
-                  />
-                  <div>
-                    <span className="font-semibold text-white block">Require Close Confirmation</span>
-                    <span className="text-discord-muted text-[11px]">Prompt users with a confirmation modal before closing tickets.</span>
-                  </div>
-                </label>
-
-                <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg bg-[#1e1f22] border border-[#35373c]">
-                  <input
-                    type="checkbox"
-                    checked={settings.autoArchive}
-                    onChange={(e) => setSettings({ ...settings, autoArchive: e.target.checked })}
-                    className="w-4 h-4 accent-discord-brand"
-                  />
-                  <div>
-                    <span className="font-semibold text-white block">Auto Archive Closed Tickets</span>
-                    <span className="text-discord-muted text-[11px]">Automatically archive closed ticket channels after 24h.</span>
-                  </div>
-                </label>
-              </div>
-
               <button
                 onClick={handleSaveSettings}
-                className="px-6 py-2.5 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow transition-all"
+                className="px-6 py-2.5 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow-lg shadow-discord-brand/20 transition-all"
               >
                 Save Ticket Settings
               </button>
@@ -1068,34 +1086,34 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
         {activeSubPage === "logs" && (
           <div className="space-y-4">
             <h2 className="text-base font-bold text-white">Ticket Audit Logs</h2>
-            <div className="bg-[#2b2d31] rounded-xl border border-[#383a40] overflow-hidden shadow-lg">
+            <div className="bg-[#090a0f] rounded-2xl border border-[#18181b] overflow-hidden shadow-2xl">
               <table className="w-full text-left text-xs">
-                <thead className="bg-[#1e1f22] text-discord-muted font-bold uppercase tracking-wider border-b border-[#35373c]">
+                <thead className="bg-[#000000] text-zinc-500 font-bold uppercase tracking-wider border-b border-[#18181b]">
                   <tr>
-                    <th className="p-3">Action</th>
-                    <th className="p-3">Ticket</th>
-                    <th className="p-3">Executor</th>
-                    <th className="p-3">Details</th>
-                    <th className="p-3 text-right">Timestamp</th>
+                    <th className="p-3.5">Action</th>
+                    <th className="p-3.5">Ticket</th>
+                    <th className="p-3.5">Executor</th>
+                    <th className="p-3.5">Details</th>
+                    <th className="p-3.5 text-right">Timestamp</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[#35373c]/40 font-mono">
+                <tbody className="divide-y divide-[#18181b]/60 font-mono">
                   {logs.length === 0 ? (
                     <tr>
-                      <td colSpan={5} className="p-8 text-center text-discord-muted">No ticket audit logs recorded.</td>
+                      <td colSpan={5} className="p-8 text-center text-zinc-500">No ticket audit logs recorded.</td>
                     </tr>
                   ) : (
                     logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-[#18191c]/50">
-                        <td className="p-3 font-sans font-bold text-discord-header">
-                          <span className="px-2 py-0.5 rounded bg-[#1e1f22] border border-[#35373c] text-discord-brand text-[10px]">
+                      <tr key={log.id} className="hover:bg-[#12131a]">
+                        <td className="p-3.5 font-sans font-bold text-white">
+                          <span className="px-2 py-0.5 rounded-full bg-[#000000] border border-[#18181b] text-discord-brand text-[10px]">
                             {log.action}
                           </span>
                         </td>
-                        <td className="p-3 font-bold text-discord-brand">#{log.ticketNumber}</td>
-                        <td className="p-3 font-sans text-white">{log.executorTag}</td>
-                        <td className="p-3 font-sans text-discord-muted">{log.details || "--"}</td>
-                        <td className="p-3 text-right text-discord-muted">{new Date(log.timestamp).toLocaleString()}</td>
+                        <td className="p-3.5 font-bold text-discord-brand">#{log.ticketNumber}</td>
+                        <td className="p-3.5 font-sans text-white">{log.executorTag}</td>
+                        <td className="p-3.5 font-sans text-zinc-400">{log.details || "--"}</td>
+                        <td className="p-3.5 text-right text-zinc-500">{new Date(log.timestamp).toLocaleString()}</td>
                       </tr>
                     ))
                   )}
@@ -1107,48 +1125,45 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       </div>
 
       {/* ========================================================= */}
-      {/* PANEL EDITOR MODAL WITH PER-TICKET-REASON QUESTION BUILDER */}
+      {/* PANEL EDITOR MODAL WITH SUPPORTER ROLE PICKER */}
       {/* ========================================================= */}
       {isPanelModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#2b2d31] border border-[#383a40] rounded-2xl max-w-6xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
-            {/* Modal Header */}
-            <div className="p-4 bg-[#1e1f22] border-b border-[#35373c] flex items-center justify-between">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-[#090a0f] border border-[#18181b] rounded-3xl max-w-6xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-4 bg-[#000000] border-b border-[#18181b] flex items-center justify-between">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Layers className="w-5 h-5 text-discord-brand" />
-                {editingPanel ? "Edit Ticket Panel & Ticket-Type Form Questions" : "Create New Ticket Panel"}
+                {editingPanel ? "Edit Ticket Panel & Supporter Roles" : "Create New Ticket Panel"}
               </h3>
               <button
                 onClick={() => setIsPanelModalOpen(false)}
-                className="text-discord-muted hover:text-white text-lg font-bold"
+                className="text-zinc-500 hover:text-white text-lg font-bold"
               >
                 ✕
               </button>
             </div>
 
-            {/* Modal Body: Form (Left) & Live Embed Preview (Right) */}
             <div className="flex-1 p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs">
-              {/* Form Inputs (7 Cols) */}
               <div className="lg:col-span-7 space-y-5">
-                {/* 1. Basic Panel Settings */}
-                <div className="space-y-3 bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
+                {/* Basic Settings */}
+                <div className="space-y-3 bg-[#000000] p-4 rounded-2xl border border-[#18181b]">
                   <h4 className="font-bold text-white text-xs uppercase tracking-wider text-discord-brand">1. Basic Panel Settings</h4>
                   <div className="grid grid-cols-2 gap-3">
                     <div>
-                      <label className="block text-discord-muted mb-1 font-semibold">Panel Name</label>
+                      <label className="block text-zinc-400 mb-1 font-semibold">Panel Name</label>
                       <input
                         type="text"
                         value={panelForm.name}
                         onChange={(e) => setPanelForm({ ...panelForm, name: e.target.value })}
-                        className="w-full p-2.5 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white outline-none focus:border-discord-brand"
+                        className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
                       />
                     </div>
                     <div>
-                      <label className="block text-discord-muted mb-1 font-semibold">Target Channel</label>
+                      <label className="block text-zinc-400 mb-1 font-semibold">Target Channel</label>
                       <select
                         value={panelForm.channelId}
                         onChange={(e) => setPanelForm({ ...panelForm, channelId: e.target.value })}
-                        className="w-full p-2.5 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white outline-none focus:border-discord-brand"
+                        className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
                       >
                         <option value="">-- Select Channel --</option>
                         {textChannels.map((c) => (
@@ -1161,340 +1176,47 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                   </div>
                 </div>
 
-                {/* 2. Multiple Ticket Reasons & Per-Type Form Questions */}
-                <div className="space-y-3 bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-white text-xs uppercase tracking-wider text-discord-brand flex items-center gap-1.5">
-                      2. Ticket Types & Custom Intake Questions
-                    </h4>
-                    <span className="text-[10px] text-discord-muted font-mono">{panelForm.reasons?.length || 0} Ticket Types</span>
-                  </div>
-                  <p className="text-[11px] text-discord-muted">
-                    Each ticket type can have its own specific modal questions asked before creating the channel (e.g. Bug Report asks for reproduction steps, Billing asks for transaction ID).
+                {/* Supporter Roles Picker for Panel */}
+                <div className="space-y-3 bg-[#000000] p-4 rounded-2xl border border-[#18181b]">
+                  <h4 className="font-bold text-white text-xs uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
+                    <Shield className="w-4 h-4" /> Supporter Roles for this Panel
+                  </h4>
+                  <p className="text-[11px] text-zinc-500">
+                    Roles granted channel access and pinged when a user opens a ticket from this panel.
                   </p>
-
-                  {/* Reasons List */}
-                  <div className="space-y-3">
-                    {panelForm.reasons && panelForm.reasons.length > 0 ? (
-                      panelForm.reasons.map((r: TicketReason, idx: number) => {
-                        const isExpanded = expandedReasonIdx === idx;
-                        const reasonQuestions = r.questions || [];
-                        return (
-                          <div key={idx} className="rounded-lg bg-[#2b2d31] border border-[#35373c] overflow-hidden">
-                            <div className="p-3 flex items-center justify-between bg-[#232428]">
-                              <div className="flex items-center gap-2">
-                                <span className="text-base">{r.emoji}</span>
-                                <div>
-                                  <span className="font-bold text-white block">{r.label}</span>
-                                  <span className="text-[10px] text-discord-muted">{r.description}</span>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                <button
-                                  onClick={() => {
-                                    setExpandedReasonIdx(isExpanded ? null : idx);
-                                    setSelectedPreviewReasonIdx(idx);
-                                  }}
-                                  className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1 ${
-                                    reasonQuestions.length > 0
-                                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                                      : "bg-[#1e1f22] text-discord-muted border border-[#35373c] hover:text-white"
-                                  }`}
-                                >
-                                  <span>📋 {reasonQuestions.length} Questions</span>
-                                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
-                                </button>
-                                <button
-                                  onClick={() => handleRemoveReason(idx)}
-                                  className="p-1 text-discord-muted hover:text-discord-red transition-colors"
-                                >
-                                  <Trash2 className="w-3.5 h-3.5" />
-                                </button>
-                              </div>
-                            </div>
-
-                            {/* Accordion Body: Questions Builder for THIS Ticket Reason */}
-                            {isExpanded && (
-                              <div className="p-4 bg-[#1e1f22] border-t border-[#35373c] space-y-3">
-                                <span className="font-semibold text-emerald-400 text-[11px] block uppercase tracking-wider">
-                                  Questions for: {r.label}
-                                </span>
-
-                                {/* Existing Questions for this reason */}
-                                <div className="space-y-2">
-                                  {reasonQuestions.length > 0 ? (
-                                    reasonQuestions.map((rq: IntakeQuestion, qIdx: number) => (
-                                      <div key={rq.id} className="flex items-center justify-between p-2.5 rounded bg-[#2b2d31] border border-[#35373c]">
-                                        <div className="flex items-center gap-2">
-                                          <span className="w-4 h-4 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[9px] flex items-center justify-center">
-                                            Q{qIdx + 1}
-                                          </span>
-                                          <div>
-                                            <span className="font-bold text-white block">{rq.label}</span>
-                                            <span className="text-[10px] text-discord-muted">
-                                              {rq.style} • {rq.required ? "Required" : "Optional"}
-                                            </span>
-                                          </div>
-                                        </div>
-                                        <button
-                                          onClick={() => handleRemoveReasonQuestion(idx, qIdx)}
-                                          className="p-1 text-discord-muted hover:text-discord-red"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      </div>
-                                    ))
-                                  ) : (
-                                    <p className="text-[11px] text-discord-muted italic">No specific questions for this ticket type yet.</p>
-                                  )}
-                                </div>
-
-                                {/* Add Question Form for this specific reason */}
-                                {reasonQuestions.length < 5 && (
-                                  <div className="pt-2 border-t border-[#35373c] space-y-2">
-                                    <span className="font-semibold text-white text-[11px] block">Add Question to {r.label}</span>
-                                    <div className="grid grid-cols-2 gap-2">
-                                      <input
-                                        type="text"
-                                        placeholder="Question (e.g. Transaction ID)"
-                                        value={reasonQTitle}
-                                        onChange={(e) => setReasonQTitle(e.target.value)}
-                                        className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
-                                      />
-                                      <input
-                                        type="text"
-                                        placeholder="Placeholder (e.g. TX-123)"
-                                        value={reasonQPlaceholder}
-                                        onChange={(e) => setReasonQPlaceholder(e.target.value)}
-                                        className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
-                                      />
-                                    </div>
-                                    <div className="flex items-center gap-4 text-[11px]">
-                                      <label className="flex items-center gap-1 text-discord-muted font-semibold cursor-pointer">
-                                        <input
-                                          type="radio"
-                                          name={`rqstyle_${idx}`}
-                                          checked={reasonQStyle === "short"}
-                                          onChange={() => setReasonQStyle("short")}
-                                          className="accent-discord-brand"
-                                        />
-                                        Single Line
-                                      </label>
-                                      <label className="flex items-center gap-1 text-discord-muted font-semibold cursor-pointer">
-                                        <input
-                                          type="radio"
-                                          name={`rqstyle_${idx}`}
-                                          checked={reasonQStyle === "paragraph"}
-                                          onChange={() => setReasonQStyle("paragraph")}
-                                          className="accent-discord-brand"
-                                        />
-                                        Multi Line
-                                      </label>
-                                      <label className="flex items-center gap-1 text-discord-muted font-semibold cursor-pointer ml-auto">
-                                        <input
-                                          type="checkbox"
-                                          checked={reasonQRequired}
-                                          onChange={(e) => setReasonQRequired(e.target.checked)}
-                                          className="accent-discord-brand"
-                                        />
-                                        Required
-                                      </label>
-                                    </div>
-                                    <button
-                                      onClick={() => handleAddReasonQuestion(idx)}
-                                      className="px-3 py-1 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1"
-                                    >
-                                      <Plus className="w-3.5 h-3.5" /> Add Question to {r.label}
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        );
-                      })
-                    ) : (
-                      <p className="text-[11px] text-discord-muted italic">No ticket types added. The panel will display a single button.</p>
-                    )}
-                  </div>
-
-                  {/* Add Reason Form */}
-                  <div className="pt-2 border-t border-[#35373c] space-y-2">
-                    <span className="font-semibold text-white text-[11px] block">Add New Ticket Type</span>
-                    <div className="grid grid-cols-3 gap-2">
-                      <input
-                        type="text"
-                        placeholder="Label (e.g. Bug Report)"
-                        value={newReasonLabel}
-                        onChange={(e) => setNewReasonLabel(e.target.value)}
-                        className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Emoji (e.g. 🐛)"
-                        value={newReasonEmoji}
-                        onChange={(e) => setNewReasonEmoji(e.target.value)}
-                        className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
-                      />
-                      <input
-                        type="text"
-                        placeholder="Short description..."
-                        value={newReasonDesc}
-                        onChange={(e) => setNewReasonDesc(e.target.value)}
-                        className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
-                      />
-                    </div>
-                    <button
-                      onClick={handleAddReason}
-                      className="px-3 py-1.5 rounded-lg bg-discord-brand/20 border border-discord-brand/40 text-discord-brand font-bold text-xs hover:bg-discord-brand hover:text-white transition-all flex items-center gap-1"
-                    >
-                      <Plus className="w-3.5 h-3.5" /> Add Ticket Type
-                    </button>
-                  </div>
-                </div>
-
-                {/* 3. Panel Embed Customization */}
-                <div className="space-y-3 bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
-                  <h4 className="font-bold text-white text-xs uppercase tracking-wider text-discord-brand">3. Panel Embed & Banner Images</h4>
-
-                  <div>
-                    <label className="block text-discord-muted mb-1 font-semibold">Embed Title</label>
-                    <input
-                      type="text"
-                      value={panelForm.embedTitle}
-                      onChange={(e) => setPanelForm({ ...panelForm, embedTitle: e.target.value })}
-                      className="w-full p-2.5 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white outline-none focus:border-discord-brand"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-discord-muted mb-1 font-semibold">Embed Description</label>
-                    <textarea
-                      value={panelForm.embedDescription}
-                      onChange={(e) => setPanelForm({ ...panelForm, embedDescription: e.target.value })}
-                      className="w-full p-2.5 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white outline-none focus:border-discord-brand h-16"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-discord-muted mb-1 font-semibold">Thumbnail URL (Icon Top Right)</label>
-                      <input
-                        type="text"
-                        placeholder="https://..."
-                        value={panelForm.thumbnail || ""}
-                        onChange={(e) => setPanelForm({ ...panelForm, thumbnail: e.target.value })}
-                        className="w-full p-2 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white font-mono outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-discord-muted mb-1 font-semibold">Large Banner Image URL</label>
-                      <input
-                        type="text"
-                        placeholder="https://..."
-                        value={panelForm.image || ""}
-                        onChange={(e) => setPanelForm({ ...panelForm, image: e.target.value })}
-                        className="w-full p-2 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white font-mono outline-none"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-discord-muted mb-1 font-semibold">Embed Color Hex</label>
-                      <div className="flex items-center gap-2">
-                        <input
-                          type="color"
-                          value={panelForm.embedColor}
-                          onChange={(e) => setPanelForm({ ...panelForm, embedColor: e.target.value })}
-                          className="w-8 h-8 rounded border-none cursor-pointer bg-transparent"
-                        />
-                        <input
-                          type="text"
-                          value={panelForm.embedColor}
-                          onChange={(e) => setPanelForm({ ...panelForm, embedColor: e.target.value })}
-                          className="w-full p-2 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white font-mono outline-none"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="block text-discord-muted mb-1 font-semibold">Footer Text</label>
-                      <input
-                        type="text"
-                        value={panelForm.footer}
-                        onChange={(e) => setPanelForm({ ...panelForm, footer: e.target.value })}
-                        className="w-full p-2.5 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white outline-none focus:border-discord-brand"
-                      />
-                    </div>
-                  </div>
-                </div>
-
-                {/* 4. Welcome Embed Customization inside Ticket */}
-                <div className="space-y-3 bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
-                  <h4 className="font-bold text-white text-xs uppercase tracking-wider text-emerald-400">4. Ticket Welcome Message & Images</h4>
-
-                  <div>
-                    <label className="block text-discord-muted mb-1 font-semibold">Welcome Embed Title</label>
-                    <input
-                      type="text"
-                      value={panelForm.welcomeTitle || ""}
-                      onChange={(e) => setPanelForm({ ...panelForm, welcomeTitle: e.target.value })}
-                      className="w-full p-2.5 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white outline-none focus:border-discord-brand"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-discord-muted mb-1 font-semibold">Welcome Embed Description</label>
-                    <textarea
-                      value={panelForm.welcomeDescription || ""}
-                      onChange={(e) => setPanelForm({ ...panelForm, welcomeDescription: e.target.value })}
-                      className="w-full p-2.5 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white outline-none focus:border-discord-brand h-16"
-                    />
+                  <div className="flex flex-wrap gap-2 pt-1">
+                    {roles.map((r) => {
+                      const isSelected = panelForm.supportRoles?.includes(r.id);
+                      return (
+                        <button
+                          key={r.id}
+                          type="button"
+                          onClick={() => handleToggleSupportRole(r.id)}
+                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                            isSelected
+                              ? "bg-sky-500/20 text-sky-400 border border-sky-500/40"
+                              : "bg-[#090a0f] text-zinc-500 border border-[#18181b] hover:text-white"
+                          }`}
+                        >
+                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color || "#38bdf8" }} />
+                          <span>{r.name}</span>
+                          {isSelected && <Check className="w-3.5 h-3.5" />}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
-              {/* Right Column: Live Discord Mockups (5 Cols) */}
-              <div className="lg:col-span-5 space-y-3 bg-[#1e1f22] p-5 rounded-xl border border-[#35373c] flex flex-col">
-                <div className="flex items-center justify-between border-b border-[#35373c] pb-2">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-discord-muted">
-                    Interactive Discord Preview
+              {/* Live Preview Column */}
+              <div className="lg:col-span-5 space-y-3 bg-[#000000] p-5 rounded-2xl border border-[#18181b] flex flex-col">
+                <div className="flex items-center justify-between border-b border-[#18181b] pb-2">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
+                    Discord Embed Preview
                   </span>
-
-                  <div className="flex items-center gap-1 bg-[#2b2d31] p-1 rounded-lg border border-[#35373c]">
-                    <button
-                      onClick={() => setPreviewTab("panel")}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                        previewTab === "panel" ? "bg-discord-brand text-white" : "text-discord-muted hover:text-white"
-                      }`}
-                    >
-                      Panel
-                    </button>
-                    <button
-                      onClick={() => setPreviewTab("questions")}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                        previewTab === "questions" ? "bg-purple-600 text-white" : "text-discord-muted hover:text-white"
-                      }`}
-                    >
-                      Form Modal
-                    </button>
-                    <button
-                      onClick={() => setPreviewTab("welcome")}
-                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
-                        previewTab === "welcome" ? "bg-emerald-600 text-white" : "text-discord-muted hover:text-white"
-                      }`}
-                    >
-                      Welcome
-                    </button>
-                  </div>
                 </div>
 
-                {/* Discord Message Mockup Container */}
-                <div className="flex-1 bg-[#313338] p-4 rounded-xl border border-[#383a40] space-y-3 font-sans overflow-y-auto max-h-[600px]">
-                  {/* Bot Author Header */}
+                <div className="flex-1 bg-[#090a0f] p-4 rounded-2xl border border-[#18181b] space-y-3 font-sans">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-discord-brand flex items-center justify-center font-bold text-white text-xs">
                       TGG
@@ -1503,252 +1225,86 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                       <span className="text-xs font-bold text-white flex items-center gap-1">
                         TheGodGen Bot <span className="bg-discord-brand text-white text-[9px] px-1 rounded font-semibold">BOT</span>
                       </span>
-                      <span className="text-[10px] text-discord-muted">Today at 12:00 PM</span>
+                      <span className="text-[10px] text-zinc-500">Today at 12:00 PM</span>
                     </div>
                   </div>
 
-                  {/* Panel Embed Preview Tab */}
-                  {previewTab === "panel" && (
-                    <div className="space-y-3">
-                      <div
-                        className="p-3.5 rounded-lg bg-[#2b2d31] space-y-2 border-l-4 relative overflow-hidden"
-                        style={{ borderColor: panelForm.embedColor || "#5865F2" }}
-                      >
-                        {panelForm.thumbnail && (
-                          <img src={panelForm.thumbnail} alt="" className="w-16 h-16 rounded-md object-cover absolute top-3 right-3 border border-[#35373c]" />
-                        )}
-
-                        {panelForm.embedTitle && (
-                          <h4 className="text-sm font-bold text-white pr-16">{panelForm.embedTitle}</h4>
-                        )}
-                        {panelForm.embedDescription && (
-                          <p className="text-xs text-[#dbdee1] whitespace-pre-wrap leading-relaxed">
-                            {panelForm.embedDescription}
-                          </p>
-                        )}
-
-                        {panelForm.image && (
-                          <div className="pt-2">
-                            <img src={panelForm.image} alt="Banner" className="w-full max-h-40 object-cover rounded-md border border-[#35373c]" />
-                          </div>
-                        )}
-
-                        {panelForm.footer && (
-                          <span className="text-[10px] text-discord-muted block pt-1 border-t border-[#35373c]">
-                            {panelForm.footer}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Dropdown Reasons Preview */}
-                      {panelForm.reasons && panelForm.reasons.length > 0 && (
-                        <div className="p-2.5 rounded-md bg-[#2b2d31] border border-[#35373c] flex items-center justify-between text-xs text-discord-muted">
-                          <span>Select a ticket reason...</span>
-                          <ChevronDown className="w-4 h-4" />
-                        </div>
-                      )}
-
-                      {/* Button Mockup */}
-                      <div className="pt-1">
-                        <button
-                          disabled
-                          className={`flex items-center gap-1.5 px-4 py-2 rounded font-semibold text-xs text-white shadow opacity-90 ${
-                            panelForm.buttonColor === "Success"
-                              ? "bg-discord-green"
-                              : panelForm.buttonColor === "Danger"
-                              ? "bg-discord-red"
-                              : panelForm.buttonColor === "Secondary"
-                              ? "bg-[#4e5058]"
-                              : "bg-discord-brand"
-                          }`}
-                        >
-                          <span>{panelForm.buttonEmoji}</span>
-                          <span>{panelForm.buttonText || "Create Ticket"}</span>
-                        </button>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Form Questions Modal Preview Tab */}
-                  {previewTab === "questions" && (
-                    <div className="bg-[#2b2d31] p-4 rounded-xl border border-[#35373c] space-y-3">
-                      {/* Ticket Reason Selector for Preview */}
-                      {panelForm.reasons && panelForm.reasons.length > 0 && (
-                        <div className="pb-2 border-b border-[#35373c]">
-                          <label className="text-[10px] font-bold text-discord-muted block mb-1">Preview Ticket Type:</label>
-                          <select
-                            value={selectedPreviewReasonIdx}
-                            onChange={(e) => setSelectedPreviewReasonIdx(Number(e.target.value))}
-                            className="w-full p-1.5 rounded bg-[#1e1f22] border border-[#35373c] text-white text-xs font-bold"
-                          >
-                            {panelForm.reasons.map((r: TicketReason, idx: number) => (
-                              <option key={idx} value={idx}>
-                                {r.emoji} {r.label} ({r.questions?.length || 0} questions)
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-                      )}
-
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-white text-xs">
-                          {activePreviewReason ? `${activePreviewReason.emoji} ${activePreviewReason.label}` : panelForm.embedTitle || "Ticket Form"}
-                        </span>
-                        <span className="text-discord-muted text-xs">✕</span>
-                      </div>
-
-                      {activePreviewQuestions.length > 0 ? (
-                        activePreviewQuestions.map((q: IntakeQuestion, idx: number) => (
-                          <div key={idx} className="space-y-1">
-                            <label className="text-[11px] font-semibold text-discord-muted block">
-                              {q.label} {q.required && <span className="text-discord-red">*</span>}
-                            </label>
-                            {q.style === "paragraph" ? (
-                              <div className="p-2 rounded bg-[#1e1f22] border border-[#35373c] text-discord-muted text-[10px] h-14">
-                                {q.placeholder}
-                              </div>
-                            ) : (
-                              <div className="p-2 rounded bg-[#1e1f22] border border-[#35373c] text-discord-muted text-[10px]">
-                                {q.placeholder}
-                              </div>
-                            )}
-                          </div>
-                        ))
-                      ) : (
-                        <p className="text-xs text-discord-muted py-4 text-center">No questions configured for this ticket type.</p>
-                      )}
-
-                      <button disabled className="w-full py-2 bg-discord-brand text-white font-bold text-xs rounded opacity-90">
-                        Submit Ticket Information
-                      </button>
-                    </div>
-                  )}
-
-                  {/* Welcome Embed Preview Tab */}
-                  {previewTab === "welcome" && (
-                    <div className="space-y-3">
-                      <div
-                        className="p-3.5 rounded-lg bg-[#2b2d31] space-y-2 border-l-4 relative overflow-hidden"
-                        style={{ borderColor: panelForm.welcomeColor || "#5865F2" }}
-                      >
-                        <h4 className="text-sm font-bold text-white pr-14">
-                          {panelForm.welcomeTitle || "👋 Welcome to your ticket!"}
-                        </h4>
-                        <p className="text-xs text-[#dbdee1] whitespace-pre-wrap leading-relaxed">
-                          {panelForm.welcomeDescription || "Support staff will be with you shortly."}
-                        </p>
-
-                        {activePreviewQuestions.length > 0 && (
-                          <div className="p-2.5 rounded bg-[#1e1f22] border border-[#35373c] text-[11px] space-y-1.5">
-                            <span className="font-bold text-discord-brand block">📋 Submitted Intake Form ({activePreviewReason?.label || "General"})</span>
-                            {activePreviewQuestions.map((q: IntakeQuestion, idx: number) => (
-                              <div key={idx}>
-                                <strong className="text-white">{q.label}:</strong>
-                                <span className="text-discord-muted block pl-2">{q.placeholder}</span>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        <span className="text-[10px] text-discord-muted block pt-1 border-t border-[#35373c]">
-                          {panelForm.welcomeFooter || "TheGodGen Ticket Engine"}
-                        </span>
-                      </div>
-
-                      {/* Ticket Control Buttons Row */}
-                      <div className="flex flex-wrap gap-1.5 pt-1">
-                        <button disabled className="px-2.5 py-1 rounded bg-[#4e5058] text-white text-[11px] font-semibold">🔒 Close</button>
-                        <button disabled className="px-2.5 py-1 rounded bg-discord-brand text-white text-[11px] font-semibold">👤 Claim</button>
-                        <button disabled className="px-2.5 py-1 rounded bg-[#4e5058] text-white text-[11px] font-semibold">➕ Add</button>
-                        <button disabled className="px-2.5 py-1 rounded bg-[#4e5058] text-white text-[11px] font-semibold">📄 Transcript</button>
-                      </div>
-                    </div>
-                  )}
+                  <div className="p-3.5 rounded-xl bg-[#000000] border-l-4 space-y-2 border-[#5865F2]">
+                    <h4 className="text-sm font-bold text-white">{panelForm.embedTitle || panelForm.name}</h4>
+                    <p className="text-xs text-zinc-400">{panelForm.embedDescription}</p>
+                  </div>
                 </div>
               </div>
             </div>
 
-            {/* Modal Footer */}
-            <div className="p-4 bg-[#1e1f22] border-t border-[#35373c] flex items-center justify-end gap-3">
+            <div className="p-4 bg-[#000000] border-t border-[#18181b] flex items-center justify-end gap-3">
               <button
                 onClick={() => setIsPanelModalOpen(false)}
-                className="px-4 py-2 rounded-lg bg-[#2b2d31] hover:bg-[#35373c] text-white text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-white text-xs font-semibold"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSavePanel}
-                className="px-5 py-2 rounded-lg bg-discord-brand hover:bg-discord-brandHover text-white text-xs font-bold shadow"
+                className="px-5 py-2 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white text-xs font-bold shadow-lg shadow-discord-brand/20"
               >
-                Save Panel & Form Questions
+                Save Panel
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* ========================================================= */}
       {/* TICKET DETAIL INSPECTOR MODAL */}
-      {/* ========================================================= */}
       {selectedTicket && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
-          <div className="bg-[#2b2d31] border border-[#383a40] rounded-2xl max-w-2xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-[#35373c] pb-3">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+          <div className="bg-[#090a0f] border border-[#18181b] rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-[#18181b] pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Ticket className="w-5 h-5 text-discord-brand" />
                 Ticket #{selectedTicket.ticketNumber} Details
               </h3>
-              <button onClick={() => setSelectedTicket(null)} className="text-discord-muted hover:text-white">✕</button>
+              <button onClick={() => setSelectedTicket(null)} className="text-zinc-500 hover:text-white">✕</button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-xs bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
+            <div className="grid grid-cols-2 gap-4 text-xs bg-[#000000] p-4 rounded-2xl border border-[#18181b]">
               <div>
-                <span className="text-discord-muted block">Creator:</span>
+                <span className="text-zinc-500 block">Creator:</span>
                 <span className="text-white font-bold">{selectedTicket.userTag}</span>
               </div>
               <div>
-                <span className="text-discord-muted block">Status:</span>
-                <span className="font-bold text-discord-green">{selectedTicket.status}</span>
+                <span className="text-zinc-500 block">Status:</span>
+                <span className="font-bold text-emerald-400">{selectedTicket.status}</span>
               </div>
               <div>
-                <span className="text-discord-muted block">Claimed By:</span>
+                <span className="text-zinc-500 block">Claimed By:</span>
                 <span className="text-white font-medium">{selectedTicket.claimedByTag || "Unclaimed"}</span>
               </div>
               <div>
-                <span className="text-discord-muted block">Created At:</span>
+                <span className="text-zinc-500 block">Open Date:</span>
                 <span className="text-white">{new Date(selectedTicket.createdAt).toLocaleString()}</span>
               </div>
             </div>
 
-            {/* Quick Actions */}
             <div className="flex flex-wrap gap-2 pt-2">
               <button
                 onClick={() => handleTicketAction(selectedTicket.id, "close")}
-                className="px-3 py-1.5 rounded-lg bg-discord-red/20 hover:bg-discord-red/30 text-discord-red text-xs font-bold transition-all flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-xs font-bold transition-all flex items-center gap-1.5"
               >
                 <Lock className="w-3.5 h-3.5" /> Close Ticket
               </button>
               <button
                 onClick={() => handleTicketAction(selectedTicket.id, "reopen")}
-                className="px-3 py-1.5 rounded-lg bg-discord-green/20 hover:bg-discord-green/30 text-discord-green text-xs font-bold transition-all flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-bold transition-all flex items-center gap-1.5"
               >
                 <Unlock className="w-3.5 h-3.5" /> Reopen Ticket
               </button>
               <button
                 onClick={() => handleTicketAction(selectedTicket.id, "transcript")}
-                className="px-3 py-1.5 rounded-lg bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 text-xs font-bold transition-all flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-xl bg-sky-500/20 hover:bg-sky-500/30 text-sky-400 text-xs font-bold transition-all flex items-center gap-1.5"
               >
                 <FileText className="w-3.5 h-3.5" /> Generate Transcript
               </button>
-              {selectedTicket.transcriptUrl && (
-                <a
-                  href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}${selectedTicket.transcriptUrl}`}
-                  download
-                  className="px-3 py-1.5 rounded-lg bg-discord-brand hover:bg-discord-brandHover text-white text-xs font-bold transition-all flex items-center gap-1.5"
-                >
-                  <Download className="w-3.5 h-3.5" /> Download Transcript
-                </a>
-              )}
             </div>
           </div>
         </div>

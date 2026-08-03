@@ -85,46 +85,46 @@ export function Sidebar({
   ];
 
   return (
-    <aside className="w-64 bg-discord-sidebar flex flex-col h-screen border-r border-[#1f2023] shrink-0 select-none">
+    <aside className="w-64 bg-[#000000] flex flex-col h-screen border-r border-[#18181b] shrink-0 select-none">
       {/* Header / Server Selector */}
-      <div className="p-3 border-b border-[#1f2023] bg-discord-darkest/40 relative z-30">
+      <div className="p-3 border-b border-[#18181b] bg-[#050507] relative z-30">
         <div className="relative">
-          <label className="text-[10px] font-bold uppercase tracking-wider text-discord-muted mb-1 block px-2">
+          <label className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 mb-1 block px-2">
             Selected Server
           </label>
 
           <div
             onClick={() => setIsServerDropdownOpen((prev) => !prev)}
-            className="flex items-center justify-between p-2 rounded-lg bg-[#1e1f22] border border-[#35373c] hover:border-discord-brand transition-colors cursor-pointer"
+            className="flex items-center justify-between p-2 rounded-xl bg-[#090a0f] border border-[#27272a] hover:border-discord-brand transition-all cursor-pointer shadow-inner"
           >
             <div className="flex items-center gap-2.5 overflow-hidden">
               {selectedGuild?.icon ? (
                 <img
                   src={selectedGuild.icon}
                   alt={selectedGuild.name}
-                  className="w-8 h-8 rounded-full object-cover shrink-0"
+                  className="w-8 h-8 rounded-full object-cover shrink-0 border border-[#27272a]"
                 />
               ) : (
-                <div className="w-8 h-8 rounded-full bg-discord-brand flex items-center justify-center font-bold text-white text-xs shrink-0">
+                <div className="w-8 h-8 rounded-full bg-discord-brand/20 border border-discord-brand/40 flex items-center justify-center font-bold text-discord-brand text-xs shrink-0">
                   {selectedGuild?.name ? selectedGuild.name.substring(0, 2).toUpperCase() : "GP"}
                 </div>
               )}
               <div className="truncate">
-                <p className="text-sm font-semibold text-discord-header truncate">
+                <p className="text-sm font-bold text-white truncate">
                   {selectedGuild?.name || "Select Server"}
                 </p>
-                <p className="text-xs text-discord-muted truncate">
+                <p className="text-[11px] text-zinc-400 truncate">
                   {selectedGuild ? `${selectedGuild.memberCount} members` : "No server available"}
                 </p>
               </div>
             </div>
-            <ChevronDown className={`w-4 h-4 text-discord-muted shrink-0 transition-transform ${isServerDropdownOpen ? "rotate-180" : ""}`} />
+            <ChevronDown className={`w-4 h-4 text-zinc-400 shrink-0 transition-transform ${isServerDropdownOpen ? "rotate-180" : ""}`} />
           </div>
 
           {/* Interactive Server Selector Dropdown Menu */}
           {isServerDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#1e1f22] border border-[#35373c] rounded-xl shadow-2xl p-2 space-y-1 max-h-64 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 z-50">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-discord-muted px-2 py-1 flex items-center justify-between">
+            <div className="absolute top-full left-0 right-0 mt-1.5 bg-[#090a0f] border border-[#27272a] rounded-xl shadow-2xl p-2 space-y-1 max-h-64 overflow-y-auto animate-in fade-in zoom-in-95 duration-150 z-50">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-2 py-1 flex items-center justify-between">
                 <span>Your Discord Servers</span>
                 {onRefreshGuilds && (
                   <button
@@ -141,7 +141,7 @@ export function Sidebar({
               </div>
 
               {guilds.length === 0 ? (
-                <p className="text-xs text-discord-muted p-3 text-center">No servers found. Is bot connected?</p>
+                <p className="text-xs text-zinc-500 p-3 text-center">No servers found. Is bot connected?</p>
               ) : (
                 guilds.map((g) => {
                   const isSelected = g.id === selectedGuildId;
@@ -155,14 +155,14 @@ export function Sidebar({
                       className={`w-full flex items-center justify-between p-2 rounded-lg text-xs transition-colors ${
                         isSelected
                           ? "bg-discord-brand text-white font-bold"
-                          : "text-discord-muted hover:bg-[#2b2d31] hover:text-white"
+                          : "text-zinc-400 hover:bg-[#18181b] hover:text-white"
                       }`}
                     >
                       <div className="flex items-center gap-2 overflow-hidden">
                         {g.icon ? (
                           <img src={g.icon} alt="" className="w-6 h-6 rounded-full shrink-0" />
                         ) : (
-                          <div className="w-6 h-6 rounded-full bg-discord-brand/40 flex items-center justify-center font-bold text-white text-[10px] shrink-0">
+                          <div className="w-6 h-6 rounded-full bg-discord-brand/20 flex items-center justify-center font-bold text-discord-brand text-[10px] shrink-0">
                             {g.name.substring(0, 2).toUpperCase()}
                           </div>
                         )}
@@ -178,25 +178,9 @@ export function Sidebar({
         </div>
       </div>
 
-      {/* Navigation Items */}
-      <nav className="flex-1 overflow-y-auto p-2 space-y-1">
-        <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-discord-muted">
-          System & Host
-        </div>
-
-        <button
-          onClick={() => onSelectView("host-server")}
-          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 ${
-            currentView === "host-server"
-              ? "bg-discord-brand text-white shadow-md font-semibold"
-              : "text-discord-muted hover:bg-[#35373c]/60 hover:text-discord-header"
-          }`}
-        >
-          <Activity className={`w-4 h-4 ${currentView === "host-server" ? "text-white" : "text-sky-400"}`} />
-          <span className="truncate">Host Server Monitor</span>
-        </button>
-
-        <div className="px-2 pt-3 py-1 text-[10px] font-bold uppercase tracking-wider text-discord-muted">
+      {/* Navigation Links */}
+      <nav className="flex-1 p-2 space-y-1 overflow-y-auto">
+        <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-3 py-1.5">
           Server Management
         </div>
 
@@ -207,57 +191,68 @@ export function Sidebar({
             <button
               key={item.id}
               onClick={() => onSelectView(item.id as ViewType)}
-              className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 ${
+              className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
                 isActive
-                  ? "bg-discord-brand text-white shadow-md font-semibold"
-                  : "text-discord-muted hover:bg-[#35373c]/60 hover:text-discord-header"
+                  ? "bg-discord-brand text-white shadow-lg shadow-discord-brand/20 font-bold"
+                  : "text-zinc-400 hover:text-white hover:bg-[#0c0d12]"
               }`}
             >
-              <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-discord-muted"}`} />
-              <span className="truncate">{item.label}</span>
+              <Icon className={`w-4 h-4 ${isActive ? "text-white" : "text-zinc-400"}`} />
+              <span>{item.label}</span>
             </button>
           );
         })}
+
+        <div className="pt-4 border-t border-[#18181b] my-2">
+          <div className="text-[10px] font-bold uppercase tracking-wider text-zinc-500 px-3 py-1.5">
+            System & Infrastructure
+          </div>
+          <button
+            onClick={() => onSelectView("host-server")}
+            className={`w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold transition-all ${
+              currentView === "host-server"
+                ? "bg-emerald-600 text-white shadow-lg shadow-emerald-600/20 font-bold"
+                : "text-zinc-400 hover:text-white hover:bg-[#0c0d12]"
+            }`}
+          >
+            <Server className={`w-4 h-4 ${currentView === "host-server" ? "text-white" : "text-emerald-400"}`} />
+            <span>Host Server & System</span>
+          </button>
+        </div>
       </nav>
 
-      {/* Footer: Bot Status & User Badge */}
-      <div className="p-3 border-t border-[#1f2023] bg-discord-darkest/60 space-y-2">
-        {/* Bot status */}
-        <div className="flex items-center justify-between px-2 py-1.5 rounded bg-[#1e1f22] text-xs">
+      {/* Bot & User Status Footer */}
+      <div className="p-3 border-t border-[#18181b] bg-[#050507] space-y-2">
+        {/* Bot Status */}
+        <div className="flex items-center justify-between p-2 rounded-xl bg-[#090a0f] border border-[#18181b] text-xs">
           <div className="flex items-center gap-2">
-            <Radio className={`w-3.5 h-3.5 ${botStatus?.ready ? "text-discord-green animate-pulse" : "text-discord-red"}`} />
-            <span className="font-medium text-discord-header">
-              {botStatus?.ready ? "Bot Online" : "Bot Disconnected"}
+            <span className={`w-2.5 h-2.5 rounded-full ${botStatus?.ready ? "bg-emerald-500 shadow-sm shadow-emerald-500" : "bg-rose-500 animate-pulse"}`} />
+            <span className="font-semibold text-zinc-300 text-[11px]">
+              {botStatus?.ready ? botStatus.tag : "Bot Offline"}
             </span>
           </div>
           {botStatus?.ready && (
-            <span className="text-[10px] font-mono text-discord-muted">{botStatus.ping}ms</span>
+            <span className="text-[10px] font-mono text-zinc-500">{botStatus.ping}ms</span>
           )}
         </div>
 
-        {/* Owner User Badge */}
-        <div className="flex items-center justify-between p-2 rounded-md bg-[#232428]">
+        {/* User Info */}
+        <div className="flex items-center justify-between pt-1 px-1">
           <div className="flex items-center gap-2 overflow-hidden">
-            {ownerUser?.avatar ? (
-              <img src={ownerUser.avatar} alt="Owner" className="w-7 h-7 rounded-full object-cover" />
-            ) : (
-              <div className="w-7 h-7 rounded-full bg-discord-brand/80 flex items-center justify-center font-bold text-white text-xs">
-                {ownerUser?.username ? ownerUser.username.substring(0, 1).toUpperCase() : "O"}
-              </div>
-            )}
-            <div className="truncate">
-              <p className="text-xs font-semibold text-discord-header truncate">
-                {ownerUser?.username || "Local Owner"}
-              </p>
-              <p className="text-[10px] text-discord-green font-medium">Dashboard Owner</p>
+            <div className="w-7 h-7 rounded-full bg-discord-brand/20 border border-discord-brand/40 flex items-center justify-center text-discord-brand font-bold text-xs shrink-0">
+              {ownerUser?.username ? ownerUser.username.substring(0, 1).toUpperCase() : "U"}
             </div>
+            <span className="text-xs font-bold text-white truncate">
+              {ownerUser?.username || "Dashboard User"}
+            </span>
           </div>
+
           <button
             onClick={onLogout}
             title="Logout"
-            className="p-1 text-discord-muted hover:text-discord-red hover:bg-[#35373c] rounded transition-colors"
+            className="p-1.5 rounded-lg text-zinc-400 hover:text-rose-400 hover:bg-[#18181b] transition-colors"
           >
-            <LogOut className="w-3.5 h-3.5" />
+            <LogOut className="w-4 h-4" />
           </button>
         </div>
       </div>

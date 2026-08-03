@@ -26,39 +26,39 @@ model AuditLog {
 }
 
 model TicketPanel {
-  id                String   @id @default(uuid())
-  guildId           String
-  name              String
-  description       String?
-  embedTitle        String?
-  embedDescription  String?
-  embedColor        String   @default("#5865F2")
-  thumbnail         String?
-  image             String?
-  footer            String?
-  welcomeTitle      String?  @default("👋 Welcome to your ticket!")
-  welcomeDescription String? @default("Support staff will be with you shortly. Use the controls below to manage this ticket.")
-  welcomeColor      String   @default("#5865F2")
-  welcomeThumbnail  String?
-  welcomeImage      String?
-  welcomeFooter     String?  @default("TheGodGen Ticket Engine")
-  reasons           String   @default("[]") // JSON array of ticket reasons [{ label, value, emoji, description, categoryId, questions }]
-  questions         String   @default("[]") // JSON array of global panel intake questions [{ id, label, placeholder, style, required }]
-  channelId         String?
-  categoryId        String?
-  buttonText        String   @default("Create Ticket")
-  buttonEmoji       String?  @default("📩")
-  buttonColor       String   @default("Primary") // Primary, Secondary, Success, Danger
-  allowedRoles      String   @default("[]") // JSON array of role IDs
-  supportRoles      String   @default("[]") // JSON array of role IDs
-  maxOpenTickets    Int      @default(1)
-  autoCloseHours    Int      @default(0)
-  transcriptEnabled Boolean  @default(true)
-  messageId         String?
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id                 String   @id @default(uuid())
+  guildId            String
+  name               String
+  description        String?
+  embedTitle         String?
+  embedDescription   String?
+  embedColor         String   @default("#5865F2")
+  thumbnail          String?
+  image              String?
+  footer             String?
+  welcomeTitle       String?  @default("👋 Welcome to your ticket!")
+  welcomeDescription String?  @default("Support staff will be with you shortly. Use the controls below to manage this ticket.")
+  welcomeColor       String   @default("#5865F2")
+  welcomeThumbnail   String?
+  welcomeImage       String?
+  welcomeFooter      String?  @default("TheGodGen Ticket Engine")
+  reasons            String   @default("[]") // JSON array of ticket reasons
+  questions          String   @default("[]") // JSON array of global panel intake questions
+  channelId          String?
+  categoryId         String?
+  buttonText         String   @default("Create Ticket")
+  buttonEmoji        String?  @default("📩")
+  buttonColor        String   @default("Primary")
+  allowedRoles       String   @default("[]")
+  supportRoles       String   @default("[]")
+  maxOpenTickets     Int      @default(1)
+  autoCloseHours     Int      @default(0)
+  transcriptEnabled  Boolean  @default(true)
+  messageId          String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  tickets           Ticket[]
+  tickets            Ticket[]
 }
 
 model TicketCategory {
@@ -72,28 +72,32 @@ model TicketCategory {
 }
 
 model Ticket {
-  id              String       @id @default(uuid())
-  ticketNumber    Int
-  guildId         String
-  panelId         String?
-  panel           TicketPanel? @relation(fields: [panelId], references: [id], onDelete: SetNull)
-  channelId       String       @unique
-  userId          String
-  userTag         String
-  userAvatar      String?
-  status          String       @default("OPEN") // OPEN, CLOSED, CLAIMED
-  claimedByUserId String?
-  claimedByTag    String?
-  claimedByAvatar String?
-  categoryId      String?
-  closedByUserId  String?
-  closedByTag     String?
-  closedAt        DateTime?
-  transcriptUrl   String?
-  createdAt       DateTime     @default(now())
-  updatedAt       DateTime     @updatedAt
+  id                 String       @id @default(uuid())
+  ticketNumber       Int
+  guildId            String
+  panelId            String?
+  panel              TicketPanel? @relation(fields: [panelId], references: [id], onDelete: SetNull)
+  channelId          String       @unique
+  userId             String
+  userTag            String
+  userAvatar         String?
+  status             String       @default("OPEN") // OPEN, CLOSED, CLAIMED
+  claimedByUserId    String?
+  claimedByTag       String?
+  claimedByAvatar    String?
+  categoryId         String?
+  closedByUserId     String?
+  closedByTag        String?
+  closeReason        String?
+  staffMessageCounts String?      @default("{}") // JSON object of staffUserId -> message count
+  openTimestamp      DateTime     @default(now())
+  closedTimestamp    DateTime?
+  closedAt           DateTime?
+  transcriptUrl      String?
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
 
-  logs            TicketLog[]
+  logs               TicketLog[]
 }
 
 model TicketLog {

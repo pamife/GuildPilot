@@ -294,14 +294,31 @@ export async function getTicketByChannelId(channelId: string) {
 export async function updateTicketStatus(
   ticketId: string,
   status: "OPEN" | "CLOSED" | "CLAIMED",
-  meta?: { closedByUserId?: string; closedByTag?: string; claimedByUserId?: string; claimedByTag?: string; claimedByAvatar?: string; transcriptUrl?: string }
+  meta?: {
+    closedByUserId?: string;
+    closedByTag?: string;
+    claimedByUserId?: string;
+    claimedByTag?: string;
+    claimedByAvatar?: string;
+    transcriptUrl?: string;
+    closeReason?: string;
+    staffMessageCounts?: string;
+    closedTimestamp?: Date;
+  }
 ) {
   const data: any = { status };
 
-  if (status === "CLOSED" && meta) {
-    data.closedByUserId = meta.closedByUserId;
-    data.closedByTag = meta.closedByTag;
-    data.closedAt = new Date();
+  if (meta) {
+    if (meta.closedByUserId !== undefined) data.closedByUserId = meta.closedByUserId;
+    if (meta.closedByTag !== undefined) data.closedByTag = meta.closedByTag;
+    if (meta.claimedByUserId !== undefined) data.claimedByUserId = meta.claimedByUserId;
+    if (meta.claimedByTag !== undefined) data.claimedByTag = meta.claimedByTag;
+    if (meta.claimedByAvatar !== undefined) data.claimedByAvatar = meta.claimedByAvatar;
+    if (meta.transcriptUrl !== undefined) data.transcriptUrl = meta.transcriptUrl;
+    if (meta.closeReason !== undefined) data.closeReason = meta.closeReason;
+    if (meta.staffMessageCounts !== undefined) data.staffMessageCounts = meta.staffMessageCounts;
+    if (meta.closedTimestamp !== undefined) data.closedTimestamp = meta.closedTimestamp;
+    if (status === "CLOSED" && !data.closedAt) data.closedAt = new Date();
   }
 
   if (status === "CLAIMED" && meta) {

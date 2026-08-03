@@ -3,37 +3,48 @@
 @tailwind utilities;
 
 :root {
-  --background: 220 13% 18%;
-  --foreground: 210 16% 87%;
+  --background: 0 0% 0%;
+  --foreground: 210 16% 95%;
 }
 
 body {
-  color: #dbdee1;
-  background-color: #313338;
-  font-family: 'gg sans', 'Noto Sans', sans-serif;
+  color: #f4f4f5;
+  background-color: #000000;
+  font-family: 'gg sans', 'Noto Sans', system-ui, -apple-system, sans-serif;
   overflow-x: hidden;
 }
 
-/* Custom Discord Scrollbars */
+/* OLED True Black Scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 
 ::-webkit-scrollbar-track {
-  background: #2b2d31;
+  background: #000000;
 }
 
 ::-webkit-scrollbar-thumb {
-  background: #1a1b1e;
+  background: #18181b;
   border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: #111214;
+  background: #27272a;
 }
 
 .discord-glass {
-  background: rgba(43, 45, 49, 0.85);
-  backdrop-filter: blur(12px);
+  background: rgba(10, 10, 15, 0.9);
+  backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.oled-card {
+  background-color: #0a0a0d;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+}
+
+.oled-card:hover {
+  border-color: rgba(88, 101, 242, 0.4);
+  box-shadow: 0 0 20px rgba(88, 101, 242, 0.15);
 }
