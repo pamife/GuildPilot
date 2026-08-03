@@ -19,6 +19,25 @@ mkdir -p "${PROJECT_DIR}/backups"
 LOG_FILE="${PROJECT_DIR}/logs/auto-update.log"
 TIMESTAMP=$(date +"%Y-%m-%d %H:%M:%S")
 
+# Ensure Node, npm, and PM2 paths are available (including systemd & NVM environments)
+export PATH="/usr/local/bin:/usr/bin:/bin:${PATH}"
+if [ -d "$HOME/.nvm/versions/node" ]; then
+  LATEST_NODE=$(ls "$HOME/.nvm/versions/node" 2>/dev/null | tail -n 1)
+  if [ -n "$LATEST_NODE" ]; then
+    export PATH="$HOME/.nvm/versions/node/$LATEST_NODE/bin:$PATH"
+  fi
+fi
+
+# Detect PM2 binary
+PM2_CMD="pm2"
+if ! command -v pm2 &> /dev/null; then
+  if [ -f "${PROJECT_DIR}/node_modules/.bin/pm2" ]; then
+    PM2_CMD="${PROJECT_DIR}/node_modules/.bin/pm2"
+  elif command -v npx &> /dev/null; then
+    PM2_CMD="npx pm2"
+  fi
+fi
+
 log() {
   echo "[${TIMESTAMP}] $1" | tee -a "${LOG_FILE}"
 }
@@ -114,7 +133,7 @@ rollback() {
   npm ci || npm install || true
   npx prisma generate || true
   npm run build || true
-  pm2 restart ecosystem.config.js || true
+  ${PM2_CMD} startOrRestart ecosystem.config.js || ${PM2_CMD} restart all || true
 
   # Record failure notification for Webpanel
   UPDATE_JSON="${PROJECT_DIR}/logs/latest-update.json"
@@ -172,10 +191,9 @@ if ! npm run build; then
 fi
 
 # Step 5: Restart PM2 services
-log "Restarting application services via PM2..."
-if ! pm2 restart ecosystem.config.js; then
-  log "PM2 restart failed, attempting start..."
-  pm2 start ecosystem.config.js || rollback "PM2 restart failed"
+log "Restarting application services via PM2 (${PM2_CMD})..."
+if ! (${PM2_CMD} startOrRestart ecosystem.config.js || ${PM2_CMD} restart all || ${PM2_CMD} start ecosystem.config.js); then
+  rollback "PM2 restart failed"
 fi
 
 # Step 6: Perform Health Checks
