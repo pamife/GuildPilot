@@ -24,7 +24,7 @@ export function initSocketIO(server: HTTPServer) {
     // Send immediate bot status to newly connected client
     socket.emit("botStatusChange", {
       ready: isBotReady(),
-      tag: discordClient.user?.tag || "GuildPilot Bot",
+      tag: discordClient.user?.tag || "TheGodGen Bot",
       id: discordClient.user?.id,
       ping: discordClient.ws?.ping || 0,
     });

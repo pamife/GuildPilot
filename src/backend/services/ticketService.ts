@@ -88,7 +88,7 @@ export async function createTicketPanel(guildId: string, data: any) {
       embedColor: data.embedColor || "#5865F2",
       thumbnail: data.thumbnail || null,
       image: data.image || null,
-      footer: data.footer || "GuildPilot Ticket Engine",
+      footer: data.footer || "TheGodGen Ticket Engine",
       channelId: data.channelId || null,
       categoryId: data.categoryId || null,
       buttonText: data.buttonText || "Create Ticket",

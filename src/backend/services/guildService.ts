@@ -69,7 +69,7 @@ export async function getGuildDetails(guildId: string) {
     },
     botStatus: {
       ready: isBotReady(),
-      tag: discordClient.user?.tag || "GuildPilot Bot",
+      tag: discordClient.user?.tag || "TheGodGen Bot",
       ping: discordClient.ws.ping,
       uptime: discordClient.uptime,
     },

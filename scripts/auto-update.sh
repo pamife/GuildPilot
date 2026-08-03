@@ -70,7 +70,7 @@ send_discord_notification() {
       "description": "${description}",
       "color": ${color},
       "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-      "footer": { "text": "GuildPilot Auto-Sync Engine" }
+      "footer": { "text": "TheGodGen Auto-Sync Engine" }
     }
   ]
 }

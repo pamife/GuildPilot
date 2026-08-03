@@ -20,7 +20,7 @@ export function isBotReady(): boolean {
 
 function registerClientEvents(client: Client) {
   client.once("ready", (c) => {
-    console.log(`[GuildPilot Bot] Logged in as ${c.user.tag}`);
+    console.log(`[TheGodGen Bot] Logged in as ${c.user.tag}`);
     setupTicketInteractions(c);
     broadcastEvent("botStatusChange", {
       ready: true,
@@ -31,7 +31,7 @@ function registerClientEvents(client: Client) {
   });
 
   client.on("invalidated", () => {
-    console.warn("[GuildPilot Bot] Session invalidated. Connection lost.");
+    console.warn("[TheGodGen Bot] Session invalidated. Connection lost.");
     broadcastEvent("botStatusChange", { ready: false, error: "Session invalidated" });
   });
 
@@ -108,20 +108,20 @@ registerClientEvents(discordClient);
 export async function initDiscordBot() {
   const token = process.env.DISCORD_TOKEN;
   if (!token || token === "your_bot_token_here" || token.trim() === "") {
-    console.warn("[GuildPilot Bot] DISCORD_TOKEN is missing or default in .env file.");
+    console.warn("[TheGodGen Bot] DISCORD_TOKEN is missing or default in .env file.");
     broadcastEvent("botStatusChange", { ready: false, error: "DISCORD_TOKEN missing in .env" });
     return;
   }
 
   try {
-    console.log("[GuildPilot Bot] Attempting connection to Discord Gateway...");
+    console.log("[TheGodGen Bot] Attempting connection to Discord Gateway...");
     await discordClient.login(token);
   } catch (error: any) {
-    console.error("[GuildPilot Bot] Login error:", error.message || error);
+    console.error("[TheGodGen Bot] Login error:", error.message || error);
 
     // Handle DisallowedGatewayIntents error by falling back to standard non-privileged intents
     if (error.code === "DisallowedGatewayIntents" || error.message?.includes("intents")) {
-      console.warn("[GuildPilot Bot] Privileged MessageContent intent disallowed by Discord portal. Retrying with standard intents...");
+      console.warn("[TheGodGen Bot] Privileged MessageContent intent disallowed by Discord portal. Retrying with standard intents...");
 
       try {
         discordClient = new Client({
@@ -138,7 +138,7 @@ export async function initDiscordBot() {
         registerClientEvents(discordClient);
         await discordClient.login(token);
       } catch (fallbackError: any) {
-        console.error("[GuildPilot Bot] Fallback login failed:", fallbackError.message || fallbackError);
+        console.error("[TheGodGen Bot] Fallback login failed:", fallbackError.message || fallbackError);
         broadcastEvent("botStatusChange", { ready: false, error: fallbackError.message });
       }
     } else {

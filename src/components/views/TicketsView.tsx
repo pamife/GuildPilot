@@ -83,7 +83,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
     embedColor: "#5865F2",
     thumbnail: "",
     image: "",
-    footer: "GuildPilot Ticket Engine",
+    footer: "TheGodGen Ticket Engine",
     channelId: "",
     categoryId: "",
     buttonText: "Create Ticket",
@@ -174,7 +174,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       embedColor: "#5865F2",
       thumbnail: "",
       image: "",
-      footer: "GuildPilot Ticket Engine",
+      footer: "TheGodGen Ticket Engine",
       channelId: channels[0]?.id || "",
       categoryId: "",
       buttonText: "Create Ticket",
@@ -1104,7 +1104,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                     </div>
                     <div>
                       <span className="text-xs font-bold text-white flex items-center gap-1">
-                        GuildPilot Bot <span className="bg-discord-brand text-white text-[9px] px-1 rounded font-semibold">BOT</span>
+                        TheGodGen Bot <span className="bg-discord-brand text-white text-[9px] px-1 rounded font-semibold">BOT</span>
                       </span>
                       <span className="text-[10px] text-discord-muted">Today at 12:00 PM</span>
                     </div>
