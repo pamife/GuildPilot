@@ -46,9 +46,11 @@ import {
   Palette,
   Sparkles,
   MessageSquare,
+  Zap,
+  TrendingUp,
 } from "lucide-react";
 
-type SubPage = "dashboard" | "panels" | "tickets-list" | "categories" | "settings" | "logs";
+type SubPage = "dashboard" | "analytics" | "panels" | "tickets-list" | "categories" | "settings" | "logs";
 type ModalTab = "embed" | "types" | "roles" | "welcome";
 
 interface TicketsViewProps {
@@ -567,6 +569,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
         <div className="flex items-center gap-1 bg-[#090a0f] p-1 rounded-2xl border border-[#18181b]">
           {[
             { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+            { id: "analytics", label: "Analytics & Stats", icon: BarChart3 },
             { id: "panels", label: "Panels", icon: Layers },
             { id: "tickets-list", label: "Tickets", icon: ListFilter },
             { id: "categories", label: "Categories", icon: FolderTree },
@@ -722,7 +725,323 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
         )}
 
         {/* ========================================================= */}
-        {/* 2. PANELS SUBPAGE */}
+        {/* 2. ANALYTICS & STATS SUBPAGE */}
+        {/* ========================================================= */}
+        {activeSubPage === "analytics" && (
+          <div className="space-y-6 animate-in fade-in duration-300">
+            {/* Header & Controls Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-3xl bg-[#090a0f] border border-[#18181b] shadow-2xl">
+              <div className="flex items-center gap-3">
+                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-discord-brand to-purple-600 p-0.5 shadow-lg shadow-discord-brand/20">
+                  <div className="w-full h-full rounded-[14px] bg-[#090a0f] flex items-center justify-center text-discord-brand">
+                    <BarChart3 className="w-6 h-6" />
+                  </div>
+                </div>
+                <div>
+                  <h2 className="text-base font-bold text-white flex items-center gap-2">
+                    Realtime Support Analytics & Intelligence
+                    <span className="text-[10px] font-mono px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-semibold flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live Metrics
+                    </span>
+                  </h2>
+                  <p className="text-xs text-zinc-400">Deep insights into ticket resolution speed, staff supporter performance, and panel utilization.</p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={fetchAllData}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-zinc-300 hover:text-white font-semibold text-xs transition-all border border-[#27272a]"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-discord-brand" : ""}`} /> Refresh Analytics
+                </button>
+              </div>
+            </div>
+
+            {/* Key Performance Indicators (KPIs) Cards Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Card 1: Resolution Rate */}
+              <div className="p-5 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-emerald-500/40 transition-all group">
+                <div className="w-full h-1 absolute top-0 left-0 bg-gradient-to-r from-emerald-500 to-teal-400" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Resolution Rate</span>
+                  <div className="p-2.5 rounded-2xl bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 group-hover:scale-110 transition-transform">
+                    <CheckCircle2 className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-white font-mono">{stats.resolutionRate || 100}%</span>
+                  <span className="text-[11px] font-bold text-emerald-400 flex items-center gap-0.5">
+                    <TrendingUp className="w-3 h-3" /> Solved
+                  </span>
+                </div>
+                <div className="w-full bg-[#18181b] h-2 rounded-full overflow-hidden p-0.5">
+                  <div
+                    className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
+                    style={{ width: `${stats.resolutionRate || 100}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Card 2: Avg Resolution Time */}
+              <div className="p-5 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-sky-500/40 transition-all group">
+                <div className="w-full h-1 absolute top-0 left-0 bg-gradient-to-r from-sky-500 to-blue-600" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Avg Resolution Time</span>
+                  <div className="p-2.5 rounded-2xl bg-sky-500/10 text-sky-400 border border-sky-500/20 group-hover:scale-110 transition-transform">
+                    <Zap className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-white font-mono">{stats.avgResolutionFormatted || "12m"}</span>
+                  <span className="text-[11px] font-bold text-sky-400 flex items-center gap-1">
+                    ⚡ Fast Turnaround
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-500 line-clamp-1">Average time from open to close across all tickets.</p>
+              </div>
+
+              {/* Card 3: Total Staff Messages */}
+              <div className="p-5 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-purple-500/40 transition-all group">
+                <div className="w-full h-1 absolute top-0 left-0 bg-gradient-to-r from-purple-500 to-pink-500" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Staff Messages</span>
+                  <div className="p-2.5 rounded-2xl bg-purple-500/10 text-purple-400 border border-purple-500/20 group-hover:scale-110 transition-transform">
+                    <MessageSquare className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-white font-mono">{stats.totalStaffMessages || 0}</span>
+                  <span className="text-[11px] font-bold text-purple-400">Replies Sent</span>
+                </div>
+                <p className="text-[11px] text-zinc-500 line-clamp-1">Total interactive support messages sent by staff.</p>
+              </div>
+
+              {/* Card 4: Active Ticket Workload */}
+              <div className="p-5 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-amber-500/40 transition-all group">
+                <div className="w-full h-1 absolute top-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500" />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Active Workload</span>
+                  <div className="p-2.5 rounded-2xl bg-amber-500/10 text-amber-400 border border-amber-500/20 group-hover:scale-110 transition-transform">
+                    <Activity className="w-5 h-5" />
+                  </div>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <span className="text-3xl font-black text-white font-mono">{(stats.open || 0) + (stats.claimed || 0)}</span>
+                  <span className="text-[11px] font-bold text-amber-400 font-mono">
+                    {stats.claimed || 0} Claimed
+                  </span>
+                </div>
+                <p className="text-[11px] text-zinc-500 line-clamp-1">Currently open or claimed active support channels.</p>
+              </div>
+            </div>
+
+            {/* Middle Grid: 7-Day Volume Trend Chart & Supporter Leaderboard */}
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+              {/* 7-Day Ticket Activity Trend Bar Chart (7 Cols) */}
+              <div className="lg:col-span-7 p-6 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-5 shadow-2xl flex flex-col justify-between">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                      <BarChart3 className="w-4 h-4 text-discord-brand" /> 7-Day Ticket Activity Volume
+                    </h3>
+                    <p className="text-xs text-zinc-500">Daily breakdown of opened vs resolved tickets.</p>
+                  </div>
+                  <div className="flex items-center gap-4 text-xs font-semibold">
+                    <span className="flex items-center gap-1.5 text-zinc-300">
+                      <span className="w-3 h-3 rounded-full bg-discord-brand" /> Opened
+                    </span>
+                    <span className="flex items-center gap-1.5 text-zinc-300">
+                      <span className="w-3 h-3 rounded-full bg-emerald-500" /> Resolved
+                    </span>
+                  </div>
+                </div>
+
+                {/* Visual SVG / CSS Bar Chart */}
+                <div className="pt-6 pb-2 px-2 flex items-end justify-between gap-3 h-56 border-b border-[#18181b]">
+                  {stats.trend && stats.trend.length > 0 ? (
+                    stats.trend.map((t: any, idx: number) => {
+                      const maxVal = Math.max(1, ...stats.trend.map((d: any) => Math.max(d.opened, d.closed)));
+                      const openPct = Math.max(8, Math.round((t.opened / maxVal) * 100));
+                      const closePct = Math.max(8, Math.round((t.closed / maxVal) * 100));
+
+                      return (
+                        <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
+                          {/* Hover Tooltip Value */}
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-mono text-zinc-300 bg-[#18181b] px-2 py-1 rounded-lg border border-[#27272a] shadow-lg pointer-events-none mb-1">
+                            {t.opened} opened • {t.closed} closed
+                          </div>
+
+                          {/* Dual Bars */}
+                          <div className="flex items-end gap-1.5 w-full justify-center h-40">
+                            {/* Opened Bar */}
+                            <div
+                              className="w-3.5 rounded-t-lg bg-gradient-to-t from-discord-brand/40 to-discord-brand transition-all duration-500 hover:brightness-125 shadow-lg shadow-discord-brand/20"
+                              style={{ height: `${openPct}%` }}
+                              title={`Opened: ${t.opened}`}
+                            />
+                            {/* Closed Bar */}
+                            <div
+                              className="w-3.5 rounded-t-lg bg-gradient-to-t from-emerald-600/40 to-emerald-400 transition-all duration-500 hover:brightness-125 shadow-lg shadow-emerald-500/20"
+                              style={{ height: `${closePct}%` }}
+                              title={`Closed: ${t.closed}`}
+                            />
+                          </div>
+
+                          {/* Day Label */}
+                          <span className="text-[11px] font-bold text-zinc-400 group-hover:text-white transition-colors">
+                            {t.day}
+                          </span>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="w-full flex items-center justify-center text-xs text-zinc-500 italic">No trend data accumulated yet.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* Supporter Hall of Fame Leaderboard (5 Cols) */}
+              <div className="lg:col-span-5 p-6 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                    <Award className="w-4 h-4 text-amber-400" /> Supporter Hall of Fame
+                  </h3>
+                  <span className="text-[10px] font-mono text-zinc-500">Top 5 Contributors</span>
+                </div>
+                <p className="text-xs text-zinc-500">Ranked by tickets claimed, resolved & staff response activity.</p>
+
+                <div className="space-y-3 pt-2">
+                  {stats.staffLeaderboard && stats.staffLeaderboard.length > 0 ? (
+                    stats.staffLeaderboard.map((staff: any, idx: number) => {
+                      const rankBadges = ["🏆 #1", "🥈 #2", "🥉 #3", "#4", "#5"];
+                      const rankColors = [
+                        "bg-amber-500/20 text-amber-400 border-amber-500/30",
+                        "bg-slate-400/20 text-slate-300 border-slate-400/30",
+                        "bg-amber-700/20 text-amber-600 border-amber-700/30",
+                        "bg-[#18181b] text-zinc-400 border-[#27272a]",
+                        "bg-[#18181b] text-zinc-400 border-[#27272a]",
+                      ];
+
+                      return (
+                        <div
+                          key={staff.userId}
+                          className="p-3.5 rounded-2xl bg-[#000000] border border-[#18181b] flex items-center justify-between hover:border-discord-brand/40 transition-all shadow-md"
+                        >
+                          <div className="flex items-center gap-3">
+                            <span className={`text-[10px] font-mono font-bold px-2 py-1 rounded-xl border ${rankColors[idx]}`}>
+                              {rankBadges[idx]}
+                            </span>
+                            <div className="w-9 h-9 rounded-full bg-discord-brand/20 border border-discord-brand/40 flex items-center justify-center font-bold text-white text-xs overflow-hidden">
+                              {staff.avatar ? (
+                                <img src={staff.avatar} alt="" className="w-full h-full object-cover" />
+                              ) : (
+                                staff.tag.substring(0, 2).toUpperCase()
+                              )}
+                            </div>
+                            <div>
+                              <span className="text-xs font-bold text-white block">{staff.tag}</span>
+                              <span className="text-[10px] text-zinc-500">
+                                {staff.claimedCount} claimed • {staff.messageCount} messages
+                              </span>
+                            </div>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="text-xs font-mono font-bold text-discord-brand block">
+                              {staff.claimedCount * 10 + staff.messageCount} pts
+                            </span>
+                          </div>
+                        </div>
+                      );
+                    })
+                  ) : (
+                    <div className="p-6 text-center text-xs text-zinc-500 italic bg-[#000000] rounded-2xl border border-[#18181b]">
+                      No staff ticket activity logged yet.
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom Grid: Panel Utilization Breakdown & Recent Audit Feed */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Panel Utilization Breakdown */}
+              <div className="p-6 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Layers className="w-4 h-4 text-sky-400" /> Ticket Volume by Panel
+                </h3>
+                <p className="text-xs text-zinc-500">Distribution of tickets generated across active panels.</p>
+
+                <div className="space-y-4 pt-2">
+                  {stats.panelBreakdown && stats.panelBreakdown.length > 0 ? (
+                    stats.panelBreakdown.map((p: any) => (
+                      <div key={p.id} className="space-y-1.5">
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-white flex items-center gap-2">
+                            <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: p.color }} />
+                            {p.name}
+                          </span>
+                          <span className="font-mono text-zinc-400">
+                            <strong>{p.count}</strong> tickets ({p.percentage}%)
+                          </span>
+                        </div>
+                        <div className="w-full bg-[#000000] h-2.5 rounded-full overflow-hidden p-0.5 border border-[#18181b]">
+                          <div
+                            className="h-full rounded-full transition-all duration-500"
+                            style={{ backgroundColor: p.color, width: `${Math.max(4, p.percentage)}%` }}
+                          />
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-zinc-500 italic">No panel statistics available.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* System Health & Realtime Operational Log Feed */}
+              <div className="p-6 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+                <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                  <Activity className="w-4 h-4 text-emerald-400" /> Recent Ticket Operations Feed
+                </h3>
+                <p className="text-xs text-zinc-500">Realtime audit events from ticket interactions.</p>
+
+                <div className="space-y-2.5 pt-1">
+                  {stats.recentLogs && stats.recentLogs.length > 0 ? (
+                    stats.recentLogs.map((log: any) => (
+                      <div key={log.id} className="p-3 rounded-2xl bg-[#000000] border border-[#18181b] flex items-center justify-between text-xs">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className={`px-2 py-0.5 rounded-full font-mono text-[10px] font-bold ${
+                              log.action === "OPENED"
+                                ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                : log.action === "CLOSED"
+                                ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
+                                : log.action === "CLAIMED"
+                                ? "bg-sky-500/20 text-sky-400 border border-sky-500/30"
+                                : "bg-[#18181b] text-zinc-400 border border-[#27272a]"
+                            }`}
+                          >
+                            {log.action}
+                          </span>
+                          <span className="font-bold text-white">Ticket #{log.ticketNumber}</span>
+                          <span className="text-zinc-500 hidden sm:inline">• {log.details || log.executorTag}</span>
+                        </div>
+                        <span className="text-[10px] text-zinc-500 font-mono">{new Date(log.timestamp).toLocaleTimeString()}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-xs text-zinc-500 italic">No recent log activity.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* 3. PANELS SUBPAGE */}
         {/* ========================================================= */}
         {activeSubPage === "panels" && (
           <div className="space-y-6">

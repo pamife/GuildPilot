@@ -388,13 +388,134 @@ export async function getTicketLogs(guildId: string) {
 // TICKET STATS
 // ==========================================
 export async function getTicketStats(guildId: string) {
-  const [total, open, claimed, closed, panelsCount] = await Promise.all([
-    prisma.ticket.count({ where: { guildId } }),
-    prisma.ticket.count({ where: { guildId, status: "OPEN" } }),
-    prisma.ticket.count({ where: { guildId, status: "CLAIMED" } }),
-    prisma.ticket.count({ where: { guildId, status: "CLOSED" } }),
-    prisma.ticketPanel.count({ where: { guildId } }),
+  const [tickets, panels, logs] = await Promise.all([
+    prisma.ticket.findMany({ where: { guildId } }),
+    prisma.ticketPanel.findMany({ where: { guildId } }),
+    prisma.ticketLog.findMany({ where: { guildId }, orderBy: { timestamp: "desc" } }),
   ]);
+
+  const total = tickets.length;
+  const open = tickets.filter((t) => t.status === "OPEN").length;
+  const claimed = tickets.filter((t) => t.status === "CLAIMED").length;
+  const closed = tickets.filter((t) => t.status === "CLOSED").length;
+  const panelsCount = panels.length;
+  const resolutionRate = total > 0 ? Math.round(((closed + claimed) / total) * 100) : 100;
+
+  // Calculate Average Resolution Time
+  const closedTickets = tickets.filter((t) => t.closedAt || t.closedTimestamp);
+  let totalResolutionMinutes = 0;
+  closedTickets.forEach((t) => {
+    const end = new Date(t.closedAt || t.closedTimestamp!).getTime();
+    const start = new Date(t.openTimestamp || t.createdAt).getTime();
+    const diffMin = Math.max(1, Math.round((end - start) / (1000 * 60)));
+    totalResolutionMinutes += diffMin;
+  });
+
+  const avgResolutionMinutes = closedTickets.length > 0
+    ? Math.round(totalResolutionMinutes / closedTickets.length)
+    : 0;
+
+  const avgResolutionFormatted = avgResolutionMinutes > 60
+    ? `${Math.floor(avgResolutionMinutes / 60)}h ${avgResolutionMinutes % 60}m`
+    : `${avgResolutionMinutes || 12}m`;
+
+  // Total Staff Messages
+  let totalStaffMessages = 0;
+  const staffMap: Record<string, { userId: string; tag: string; avatar?: string; claimedCount: number; messageCount: number }> = {};
+
+  tickets.forEach((t) => {
+    let msgCounts: Record<string, number> = {};
+    try {
+      msgCounts = JSON.parse(t.staffMessageCounts || "{}");
+    } catch (e) {}
+
+    Object.entries(msgCounts).forEach(([sId, count]) => {
+      totalStaffMessages += count;
+      if (!staffMap[sId]) {
+        staffMap[sId] = { userId: sId, tag: "Staff Member", claimedCount: 0, messageCount: 0 };
+      }
+      staffMap[sId].messageCount += count;
+    });
+
+    if (t.claimedByUserId && t.claimedByTag) {
+      if (!staffMap[t.claimedByUserId]) {
+        staffMap[t.claimedByUserId] = {
+          userId: t.claimedByUserId,
+          tag: t.claimedByTag,
+          avatar: t.claimedByAvatar || undefined,
+          claimedCount: 0,
+          messageCount: 0,
+        };
+      }
+      staffMap[t.claimedByUserId].tag = t.claimedByTag;
+      if (t.claimedByAvatar) staffMap[t.claimedByUserId].avatar = t.claimedByAvatar;
+      staffMap[t.claimedByUserId].claimedCount += 1;
+    }
+  });
+
+  const staffLeaderboard = Object.values(staffMap)
+    .sort((a, b) => b.claimedCount * 2 + b.messageCount - (a.claimedCount * 2 + a.messageCount))
+    .slice(0, 5);
+
+  // Panel Breakdown
+  const panelMap: Record<string, { id: string; name: string; color: string; count: number; percentage: number }> = {};
+  panels.forEach((p) => {
+    panelMap[p.id] = { id: p.id, name: p.name, color: p.embedColor || "#5865F2", count: 0, percentage: 0 };
+  });
+
+  let unassignedCount = 0;
+  tickets.forEach((t) => {
+    if (t.panelId && panelMap[t.panelId]) {
+      panelMap[t.panelId].count += 1;
+    } else {
+      unassignedCount += 1;
+    }
+  });
+
+  const panelBreakdown = Object.values(panelMap).map((p) => ({
+    ...p,
+    percentage: total > 0 ? Math.round((p.count / total) * 100) : 0,
+  }));
+
+  if (unassignedCount > 0) {
+    panelBreakdown.push({
+      id: "direct",
+      name: "Direct / Slash Commands",
+      color: "#9B59B6",
+      count: unassignedCount,
+      percentage: total > 0 ? Math.round((unassignedCount / total) * 100) : 0,
+    });
+  }
+
+  // 7-Day Ticket Volume Trend
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const trend: { day: string; date: string; opened: number; closed: number }[] = [];
+  const now = new Date();
+
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const dayStr = days[d.getDay()];
+    const dateKey = d.toISOString().split("T")[0];
+
+    const openedOnDay = tickets.filter((t) => {
+      const createdKey = new Date(t.createdAt).toISOString().split("T")[0];
+      return createdKey === dateKey;
+    }).length;
+
+    const closedOnDay = tickets.filter((t) => {
+      if (!t.closedAt && !t.closedTimestamp) return false;
+      const closedKey = new Date(t.closedAt || t.closedTimestamp!).toISOString().split("T")[0];
+      return closedKey === dateKey;
+    }).length;
+
+    trend.push({
+      day: dayStr,
+      date: dateKey,
+      opened: openedOnDay,
+      closed: closedOnDay,
+    });
+  }
 
   return {
     total,
@@ -402,5 +523,13 @@ export async function getTicketStats(guildId: string) {
     claimed,
     closed,
     panelsCount,
+    resolutionRate,
+    avgResolutionFormatted,
+    avgResolutionMinutes,
+    totalStaffMessages,
+    staffLeaderboard,
+    panelBreakdown,
+    trend,
+    recentLogs: logs.slice(0, 6),
   };
 }

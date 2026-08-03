@@ -14,6 +14,13 @@ import {
   ArrowDownLeft,
   ArrowUpRight,
   RefreshCw,
+  CheckCircle2,
+  Loader2,
+  AlertTriangle,
+  ChevronDown,
+  ChevronUp,
+  Terminal,
+  Circle,
 } from "lucide-react";
 
 export function HostServerView() {
@@ -23,6 +30,22 @@ export function HostServerView() {
   const [cpuHistory, setCpuHistory] = useState<number[]>(Array(30).fill(0));
   const [netRxHistory, setNetRxHistory] = useState<number[]>(Array(30).fill(0));
   const [netTxHistory, setNetTxHistory] = useState<number[]>(Array(30).fill(0));
+
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [showLogs, setShowLogs] = useState(false);
+  const [updateProgress, setUpdateProgress] = useState<{
+    isUpdating: boolean;
+    step: number;
+    totalSteps: number;
+    percent: number;
+    currentAction: string;
+    status: "idle" | "checking" | "running" | "success" | "error";
+    logs: string[];
+    localCommit?: string;
+    remoteCommit?: string;
+    timestamp?: string;
+    errorDetails?: string;
+  } | null>(null);
 
   useEffect(() => {
     const socket = getSocket();
@@ -45,8 +68,16 @@ export function HostServerView() {
       setUpdateInfo(data);
     };
 
+    const handleUpdateProgress = (data: any) => {
+      setUpdateProgress(data);
+      if (data?.isUpdating || data?.status === "running" || data?.status === "checking") {
+        setShowLogs(true);
+      }
+    };
+
     socket.on("hostMetricsUpdate", handleMetrics);
     socket.on("updateNotification", handleUpdateNotif);
+    socket.on("updateProgress", handleUpdateProgress);
 
     // Initial fetch via API if socket has not emitted yet
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
@@ -64,39 +95,23 @@ export function HostServerView() {
       })
       .catch(() => {});
 
+    fetch(`${apiUrl}/api/host-server/update-progress`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data) setUpdateProgress(data);
+      })
+      .catch(() => {});
+
     return () => {
       socket.off("hostMetricsUpdate", handleMetrics);
       socket.off("updateNotification", handleUpdateNotif);
+      socket.off("updateProgress", handleUpdateProgress);
     };
   }, []);
 
-  const formatBytes = (bytes: number) => {
-    if (!bytes || bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
-  };
-
-  const formatUptime = (seconds: number) => {
-    if (!seconds) return "--";
-    const d = Math.floor(seconds / (3600 * 24));
-    const h = Math.floor((seconds % (3600 * 24)) / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = Math.floor(seconds % 60);
-    return `${d > 0 ? d + "d " : ""}${h > 0 ? h + "h " : ""}${m}m ${s}s`;
-  };
-
-  const filteredProcesses = (metrics?.processes?.top || []).filter((p: any) =>
-    p.name.toLowerCase().includes(searchProc.toLowerCase()) ||
-    p.pid.toString().includes(searchProc) ||
-    (p.user && p.user.toLowerCase().includes(searchProc.toLowerCase()))
-  );
-
-  const [checkingUpdate, setCheckingUpdate] = useState(false);
-
   const handleCheckUpdate = async () => {
     setCheckingUpdate(true);
+    setShowLogs(true);
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
       const res = await fetch(`${apiUrl}/api/host-server/check-update`, { method: "POST" });
@@ -123,6 +138,37 @@ export function HostServerView() {
       setCheckingUpdate(false);
     }
   };
+  const formatBytes = (bytes: number) => {
+    if (!bytes || bytes === 0) return "0 B";
+    const k = 1024;
+    const sizes = ["B", "KB", "MB", "GB", "TB"];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + " " + sizes[i];
+  };
+
+  const formatUptime = (seconds: number) => {
+    if (!seconds) return "--";
+    const d = Math.floor(seconds / (3600 * 24));
+    const h = Math.floor((seconds % (3600 * 24)) / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    return `${d > 0 ? d + "d " : ""}${h > 0 ? h + "h " : ""}${m}m ${s}s`;
+  };
+
+  const filteredProcesses = (metrics?.processes?.top || []).filter((p: any) =>
+    p.name.toLowerCase().includes(searchProc.toLowerCase()) ||
+    p.pid.toString().includes(searchProc) ||
+    (p.user && p.user.toLowerCase().includes(searchProc.toLowerCase()))
+  );
+
+  const updateSteps = [
+    { id: 1, title: "Repository Prüfung", desc: "Suche nach neuen Commits auf origin/main (git fetch)" },
+    { id: 2, title: "Pre-Update Backup", desc: "Sicherung der SQLite-Datenbank & Status-Snapshot" },
+    { id: 3, title: "Code Synchronisation", desc: "Herunterladen der Änderungen (git pull origin main)" },
+    { id: 4, title: "Schema & Prisma Sync", desc: "Prisma Client Generierung & DB-Push" },
+    { id: 5, title: "Production Build", desc: "Kompilieren von Frontend & Backend binaries" },
+    { id: 6, title: "Service Neustart", desc: "PM2 Dienst-Neustart & System-Verifikation" },
+  ];
 
   return (
     <div className="space-y-6 text-discord-header">
@@ -303,43 +349,175 @@ export function HostServerView() {
         </div>
       </div>
 
-      {/* GitHub Auto-Sync & Update Status Banner */}
-      <div className="p-4 rounded-xl bg-gradient-to-r from-[#1e1f22] via-[#2b2d31] to-[#1e1f22] border border-[#35373c] shadow-lg flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <div className={`p-2.5 rounded-xl border ${updateInfo?.status === "error" ? "bg-discord-red/20 border-discord-red/40 text-discord-red" : "bg-discord-green/20 border-discord-green/40 text-discord-green"}`}>
-            <ShieldCheck className="w-5 h-5" />
-          </div>
-          <div>
-            <h3 className="text-sm font-bold text-white flex items-center gap-2">
-              GitHub Auto-Update Engine
-              {updateInfo?.commitShort && (
-                <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${updateInfo.status === "error" ? "bg-discord-red/20 text-discord-red" : "bg-discord-green/20 text-discord-green font-bold"}`}>
-                  Commit {updateInfo.commitShort}
-                </span>
+      {/* GitHub Auto-Sync & Update Status Card with Live Steps & Progress */}
+      <div className="p-5 rounded-xl bg-gradient-to-r from-[#1e1f22] via-[#2b2d31] to-[#1e1f22] border border-[#35373c] shadow-xl space-y-4">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-3 rounded-xl border ${
+              updateProgress?.status === "error" || updateInfo?.status === "error"
+                ? "bg-discord-red/20 border-discord-red/40 text-discord-red"
+                : updateProgress?.isUpdating || checkingUpdate
+                ? "bg-sky-500/20 border-sky-500/40 text-sky-400 animate-pulse"
+                : "bg-discord-green/20 border-discord-green/40 text-discord-green"
+            }`}>
+              {checkingUpdate || updateProgress?.isUpdating ? (
+                <RefreshCw className="w-5 h-5 animate-spin" />
+              ) : updateProgress?.status === "error" || updateInfo?.status === "error" ? (
+                <AlertTriangle className="w-5 h-5" />
+              ) : (
+                <ShieldCheck className="w-5 h-5" />
               )}
-            </h3>
-            <p className="text-xs text-discord-muted mt-0.5">
-              {updateInfo?.message || "Automatischer Abgleich mit GitHub main Branch."}
-            </p>
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                GitHub Auto-Update Engine
+                {(updateProgress?.remoteCommit || updateInfo?.commitShort) && (
+                  <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${
+                    updateProgress?.status === "error" || updateInfo?.status === "error"
+                      ? "bg-discord-red/20 text-discord-red"
+                      : "bg-discord-green/20 text-discord-green font-bold"
+                  }`}>
+                    Commit {updateProgress?.remoteCommit || updateInfo?.commitShort}
+                  </span>
+                )}
+              </h3>
+              <p className="text-xs text-discord-muted mt-0.5">
+                {updateProgress?.currentAction || updateInfo?.message || "Automatischer Abgleich mit GitHub main Branch."}
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            {updateProgress?.logs && updateProgress.logs.length > 0 && (
+              <button
+                onClick={() => setShowLogs(!showLogs)}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18191c] hover:bg-[#202225] border border-[#35373c] text-xs text-sky-400 font-medium transition-all"
+              >
+                <Terminal className="w-3.5 h-3.5" />
+                <span>Logs ({updateProgress.logs.length})</span>
+                {showLogs ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            )}
+
+            <button
+              onClick={handleCheckUpdate}
+              disabled={checkingUpdate || updateProgress?.isUpdating}
+              className="flex items-center gap-2 px-4 py-2 rounded-lg bg-discord-brand hover:bg-discord-brandHover active:scale-95 text-white font-semibold text-xs transition-all shadow-md disabled:opacity-50"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdate || updateProgress?.isUpdating ? "animate-spin" : ""}`} />
+              {checkingUpdate || updateProgress?.isUpdating ? "Aktualisiere..." : "Nach Updates suchen"}
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          {updateInfo?.timestamp && (
-            <div className="text-right text-xs text-discord-muted font-mono hidden sm:block">
-              <span>Stand: </span>
-              <strong className="text-white">{new Date(updateInfo.timestamp).toLocaleString()}</strong>
+        {/* Real-Time Progress Bar & Steps (Shown during update or when checked) */}
+        {(updateProgress?.isUpdating || checkingUpdate || (updateProgress?.percent !== undefined && updateProgress.percent > 0)) && (
+          <div className="space-y-3 pt-2 border-t border-[#35373c]/60">
+            <div className="flex items-center justify-between text-xs">
+              <span className="font-semibold text-white flex items-center gap-2">
+                {updateProgress?.isUpdating ? (
+                  <span className="flex items-center gap-1.5 text-sky-400">
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                    Fortschritt: Schritt {updateProgress.step || 1} von {updateProgress.totalSteps || 6}
+                  </span>
+                ) : updateProgress?.status === "error" ? (
+                  <span className="text-discord-red font-bold flex items-center gap-1.5">
+                    <AlertTriangle className="w-3.5 h-3.5" /> Update abgebrochen / Fehler
+                  </span>
+                ) : (
+                  <span className="text-discord-green font-bold flex items-center gap-1.5">
+                    <CheckCircle2 className="w-3.5 h-3.5" /> Status: {updateProgress?.currentAction || "System ist auf dem neuesten Stand"}
+                  </span>
+                )}
+              </span>
+              <span className="font-mono font-bold text-sky-400">
+                {updateProgress?.percent || (checkingUpdate ? 10 : 100)}%
+              </span>
             </div>
-          )}
-          <button
-            onClick={handleCheckUpdate}
-            disabled={checkingUpdate}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-discord-brand hover:bg-discord-brandHover active:scale-95 text-white font-semibold text-xs transition-all shadow-md disabled:opacity-50"
-          >
-            <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdate ? "animate-spin" : ""}`} />
-            {checkingUpdate ? "Suche Updates..." : "Nach Updates suchen"}
-          </button>
-        </div>
+
+            {/* Progress Bar Container */}
+            <div className="w-full bg-[#18191c] h-2.5 rounded-full overflow-hidden p-0.5 border border-[#35373c]">
+              <div
+                className={`h-full rounded-full transition-all duration-500 ease-out ${
+                  updateProgress?.status === "error"
+                    ? "bg-discord-red"
+                    : updateProgress?.isUpdating || checkingUpdate
+                    ? "bg-gradient-to-r from-sky-500 via-indigo-500 to-discord-brand animate-pulse"
+                    : "bg-discord-green"
+                }`}
+                style={{ width: `${updateProgress?.percent || (checkingUpdate ? 10 : 100)}%` }}
+              />
+            </div>
+
+            {/* 6 Step Cards Checklist Grid */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
+              {updateSteps.map((s) => {
+                const currentStep = updateProgress?.step || (checkingUpdate ? 1 : 6);
+                const isDone = s.id < currentStep || updateProgress?.status === "success" || (!updateProgress?.isUpdating && updateProgress?.percent === 100);
+                const isCurrent = s.id === currentStep && (updateProgress?.isUpdating || checkingUpdate);
+                const isError = s.id === currentStep && updateProgress?.status === "error";
+
+                return (
+                  <div
+                    key={s.id}
+                    className={`p-2.5 rounded-lg border text-xs transition-all ${
+                      isDone
+                        ? "bg-discord-green/10 border-discord-green/30 text-discord-green"
+                        : isCurrent
+                        ? "bg-sky-500/10 border-sky-500/50 text-white shadow-[0_0_12px_rgba(14,165,233,0.2)]"
+                        : isError
+                        ? "bg-discord-red/10 border-discord-red/40 text-discord-red"
+                        : "bg-[#18191c]/60 border-[#35373c] text-discord-muted opacity-60"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2 font-semibold">
+                      {isDone ? (
+                        <CheckCircle2 className="w-4 h-4 text-discord-green shrink-0" />
+                      ) : isCurrent ? (
+                        <Loader2 className="w-4 h-4 text-sky-400 animate-spin shrink-0" />
+                      ) : isError ? (
+                        <AlertTriangle className="w-4 h-4 text-discord-red shrink-0" />
+                      ) : (
+                        <Circle className="w-4 h-4 text-discord-muted shrink-0" />
+                      )}
+                      <span className="truncate">{s.title}</span>
+                    </div>
+                    <p className="text-[11px] text-discord-muted mt-1 leading-tight line-clamp-1">
+                      {s.desc}
+                    </p>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
+
+        {/* Live Terminal Logs Drawer */}
+        {showLogs && updateProgress?.logs && updateProgress.logs.length > 0 && (
+          <div className="pt-2 border-t border-[#35373c]">
+            <div className="flex items-center justify-between pb-1.5 text-xs text-discord-muted">
+              <span className="font-mono flex items-center gap-1.5 text-sky-400 font-semibold">
+                <Terminal className="w-3.5 h-3.5" /> Live Update Output Log
+              </span>
+              <button
+                onClick={() => setShowLogs(false)}
+                className="hover:text-white text-[11px] underline"
+              >
+                Ausblenden
+              </button>
+            </div>
+            <div className="bg-[#0f1012] border border-[#2b2d31] rounded-lg p-3 font-mono text-[11px] text-emerald-400 max-h-48 overflow-y-auto space-y-1 shadow-inner">
+              {updateProgress.logs.map((logLine, idx) => (
+                <div key={idx} className="leading-relaxed break-words flex gap-2">
+                  <span className="text-discord-muted select-none">&gt;</span>
+                  <span className={logLine.includes("❌") ? "text-discord-red font-bold" : logLine.includes("✅") ? "text-discord-green font-bold" : logLine.includes("🚀") ? "text-sky-300 font-bold" : "text-emerald-300"}>
+                    {logLine}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Live Charts */}
