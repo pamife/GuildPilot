@@ -15,7 +15,7 @@ export async function getGuildChannels(guildId: string) {
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
-  let channels = guild.channels.cache;
+  let channels: any = guild.channels.cache;
   if (channels.size === 0) {
     channels = await guild.channels.fetch().catch(() => guild.channels.cache);
   }
