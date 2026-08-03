@@ -16,6 +16,7 @@ import emojiStickerRoutes from "./routes/emojisStickers";
 import inviteRoutes from "./routes/invites";
 import templateRoutes from "./routes/templates";
 import utilityRoutes from "./routes/utilities";
+import hostServerRoutes from "./routes/hostServer";
 
 const app = express();
 const server = http.createServer(app);
@@ -55,6 +56,7 @@ app.use("/api/guilds", emojiStickerRoutes);
 app.use("/api/guilds", inviteRoutes);
 app.use("/api/templates", templateRoutes);
 app.use("/api/utilities", utilityRoutes);
+app.use("/api/host-server", hostServerRoutes);
 
 // Root route: Redirect to Next.js Frontend Dashboard
 app.get("/", (req, res) => {

@@ -1,8 +1,10 @@
 import { Server as SocketIOServer } from "socket.io";
 import { Server as HTTPServer } from "http";
 import { isBotReady, discordClient } from "../bot/client";
+import { collectHostMetrics } from "../services/hostMonitorService";
 
 let io: SocketIOServer | null = null;
+let telemetryTimer: NodeJS.Timeout | null = null;
 
 export function initSocketIO(server: HTTPServer) {
   io = new SocketIOServer(server, {
@@ -15,7 +17,7 @@ export function initSocketIO(server: HTTPServer) {
     transports: ["websocket", "polling"],
   });
 
-  io.on("connection", (socket) => {
+  io.on("connection", async (socket) => {
     console.log(`[GuildPilot Socket] Client connected: ${socket.id}`);
 
     // Send immediate bot status to newly connected client
@@ -26,10 +28,28 @@ export function initSocketIO(server: HTTPServer) {
       ping: discordClient.ws?.ping || 0,
     });
 
+    // Send immediate initial host metrics
+    try {
+      const initialMetrics = await collectHostMetrics();
+      socket.emit("hostMetricsUpdate", initialMetrics);
+    } catch (e) {
+      // Ignore initial metric error
+    }
+
     socket.on("disconnect", () => {
       console.log(`[GuildPilot Socket] Client disconnected: ${socket.id}`);
     });
   });
+
+  // Start periodic telemetry broadcast every 1000ms
+  if (!telemetryTimer) {
+    telemetryTimer = setInterval(async () => {
+      if (io && io.sockets.sockets.size > 0) {
+        const metrics = await collectHostMetrics();
+        io.emit("hostMetricsUpdate", metrics);
+      }
+    }, 1000);
+  }
 
   return io;
 }

@@ -17,6 +17,7 @@ import {
   Server,
   LogOut,
   Radio,
+  Activity,
 } from "lucide-react";
 
 export type ViewType =
@@ -29,7 +30,8 @@ export type ViewType =
   | "stickers"
   | "invites"
   | "templates"
-  | "utilities";
+  | "utilities"
+  | "host-server";
 
 interface GuildOption {
   id: string;
@@ -127,6 +129,22 @@ export function Sidebar({
       {/* Navigation Items */}
       <nav className="flex-1 overflow-y-auto p-2 space-y-1">
         <div className="px-2 py-1 text-[10px] font-bold uppercase tracking-wider text-discord-muted">
+          System & Host
+        </div>
+
+        <button
+          onClick={() => onSelectView("host-server")}
+          className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-all duration-150 ${
+            currentView === "host-server"
+              ? "bg-discord-brand text-white shadow-md font-semibold"
+              : "text-discord-muted hover:bg-[#35373c]/60 hover:text-discord-header"
+          }`}
+        >
+          <Activity className={`w-4 h-4 ${currentView === "host-server" ? "text-white" : "text-sky-400"}`} />
+          <span className="truncate">Host Server Monitor</span>
+        </button>
+
+        <div className="px-2 pt-3 py-1 text-[10px] font-bold uppercase tracking-wider text-discord-muted">
           Server Management
         </div>
 

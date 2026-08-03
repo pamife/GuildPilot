@@ -12,6 +12,7 @@ import { EmojiStickerManagerView } from "@/components/views/EmojiStickerManagerV
 import { InviteManagerView } from "@/components/views/InviteManagerView";
 import { TemplatesView } from "@/components/views/TemplatesView";
 import { UtilitiesView } from "@/components/views/UtilitiesView";
+import { HostServerView } from "@/components/views/HostServerView";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { ShieldAlert, LogIn, Radio, RefreshCw } from "lucide-react";
@@ -338,6 +339,7 @@ function DashboardContent() {
 
       {/* Main View Shell */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#313338] overflow-hidden">
+        {currentView === "host-server" && <HostServerView />}
         {currentView === "overview" && (
           <OverviewView
             guildDetails={guildDetails}
