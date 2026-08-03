@@ -115,37 +115,38 @@ export async function createTicketPanel(guildId: string, data: any) {
 }
 
 export async function updateTicketPanel(panelId: string, data: any) {
+  const updateData: any = {};
+  if (data.name !== undefined) updateData.name = data.name;
+  if (data.description !== undefined) updateData.description = data.description || null;
+  if (data.embedTitle !== undefined) updateData.embedTitle = data.embedTitle;
+  if (data.embedDescription !== undefined) updateData.embedDescription = data.embedDescription;
+  if (data.embedColor !== undefined) updateData.embedColor = data.embedColor;
+  if (data.thumbnail !== undefined) updateData.thumbnail = data.thumbnail || null;
+  if (data.image !== undefined) updateData.image = data.image || null;
+  if (data.footer !== undefined) updateData.footer = data.footer || null;
+  if (data.welcomeTitle !== undefined) updateData.welcomeTitle = data.welcomeTitle;
+  if (data.welcomeDescription !== undefined) updateData.welcomeDescription = data.welcomeDescription;
+  if (data.welcomeColor !== undefined) updateData.welcomeColor = data.welcomeColor;
+  if (data.welcomeThumbnail !== undefined) updateData.welcomeThumbnail = data.welcomeThumbnail || null;
+  if (data.welcomeImage !== undefined) updateData.welcomeImage = data.welcomeImage || null;
+  if (data.welcomeFooter !== undefined) updateData.welcomeFooter = data.welcomeFooter || null;
+  if (data.reasons !== undefined) updateData.reasons = typeof data.reasons === "string" ? data.reasons : JSON.stringify(data.reasons || []);
+  if (data.questions !== undefined) updateData.questions = typeof data.questions === "string" ? data.questions : JSON.stringify(data.questions || []);
+  if (data.channelId !== undefined) updateData.channelId = data.channelId || null;
+  if (data.categoryId !== undefined) updateData.categoryId = data.categoryId || null;
+  if (data.buttonText !== undefined) updateData.buttonText = data.buttonText;
+  if (data.buttonEmoji !== undefined) updateData.buttonEmoji = data.buttonEmoji || null;
+  if (data.buttonColor !== undefined) updateData.buttonColor = data.buttonColor;
+  if (data.allowedRoles !== undefined) updateData.allowedRoles = typeof data.allowedRoles === "string" ? data.allowedRoles : JSON.stringify(data.allowedRoles || []);
+  if (data.supportRoles !== undefined) updateData.supportRoles = typeof data.supportRoles === "string" ? data.supportRoles : JSON.stringify(data.supportRoles || []);
+  if (data.maxOpenTickets !== undefined) updateData.maxOpenTickets = Number(data.maxOpenTickets || 1);
+  if (data.autoCloseHours !== undefined) updateData.autoCloseHours = Number(data.autoCloseHours || 0);
+  if (data.transcriptEnabled !== undefined) updateData.transcriptEnabled = Boolean(data.transcriptEnabled);
+  if (data.messageId !== undefined) updateData.messageId = data.messageId;
+
   const panel = await prisma.ticketPanel.update({
     where: { id: panelId },
-    data: {
-      name: data.name,
-      description: data.description || null,
-      embedTitle: data.embedTitle,
-      embedDescription: data.embedDescription,
-      embedColor: data.embedColor,
-      thumbnail: data.thumbnail || null,
-      image: data.image || null,
-      footer: data.footer || null,
-      welcomeTitle: data.welcomeTitle,
-      welcomeDescription: data.welcomeDescription,
-      welcomeColor: data.welcomeColor,
-      welcomeThumbnail: data.welcomeThumbnail || null,
-      welcomeImage: data.welcomeImage || null,
-      welcomeFooter: data.welcomeFooter || null,
-      reasons: JSON.stringify(data.reasons || []),
-      questions: JSON.stringify(data.questions || []),
-      channelId: data.channelId || null,
-      categoryId: data.categoryId || null,
-      buttonText: data.buttonText,
-      buttonEmoji: data.buttonEmoji || null,
-      buttonColor: data.buttonColor,
-      allowedRoles: JSON.stringify(data.allowedRoles || []),
-      supportRoles: JSON.stringify(data.supportRoles || []),
-      maxOpenTickets: Number(data.maxOpenTickets || 1),
-      autoCloseHours: Number(data.autoCloseHours || 0),
-      transcriptEnabled: Boolean(data.transcriptEnabled),
-      messageId: data.messageId !== undefined ? data.messageId : undefined,
-    },
+    data: updateData,
   });
 
   broadcastEvent("ticketPanelUpdate", { guildId: panel.guildId, panelId: panel.id });

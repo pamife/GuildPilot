@@ -274,12 +274,40 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
 
   const handleOpenEditPanel = (panel: any) => {
     setEditingPanel(panel);
+    let parsedAllowed: any[] = [];
+    try {
+      parsedAllowed = typeof panel.allowedRoles === "string" ? JSON.parse(panel.allowedRoles || "[]") : panel.allowedRoles || [];
+    } catch (e) {
+      parsedAllowed = [];
+    }
+
+    let parsedSupport: any[] = [];
+    try {
+      parsedSupport = typeof panel.supportRoles === "string" ? JSON.parse(panel.supportRoles || "[]") : panel.supportRoles || [];
+    } catch (e) {
+      parsedSupport = [];
+    }
+
+    let parsedReasons: any[] = [];
+    try {
+      parsedReasons = typeof panel.reasons === "string" ? JSON.parse(panel.reasons || "[]") : panel.reasons || [];
+    } catch (e) {
+      parsedReasons = [];
+    }
+
+    let parsedQuestions: any[] = [];
+    try {
+      parsedQuestions = typeof panel.questions === "string" ? JSON.parse(panel.questions || "[]") : panel.questions || [];
+    } catch (e) {
+      parsedQuestions = [];
+    }
+
     setPanelForm({
       ...panel,
-      allowedRoles: JSON.parse(panel.allowedRoles || "[]"),
-      supportRoles: JSON.parse(panel.supportRoles || "[]"),
-      reasons: JSON.parse(panel.reasons || "[]"),
-      questions: JSON.parse(panel.questions || "[]"),
+      allowedRoles: parsedAllowed,
+      supportRoles: parsedSupport,
+      reasons: parsedReasons,
+      questions: parsedQuestions,
     });
     setSelectedPreviewReasonIdx(0);
     setPreviewTab("panel");
