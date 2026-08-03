@@ -42,6 +42,7 @@ import {
   BarChart3,
   Terminal,
   Activity,
+  Check,
 } from "lucide-react";
 
 type SubPage = "dashboard" | "panels" | "tickets-list" | "categories" | "settings" | "logs";
