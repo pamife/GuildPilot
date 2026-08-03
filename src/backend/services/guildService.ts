@@ -60,10 +60,10 @@ export async function getGuildDetails(guildId: string) {
   const emojis = guild.emojis.cache;
   const stickers = guild.stickers.cache;
 
-  const textCount = channels.filter((c) => c?.type === ChannelType.GuildText).size;
-  const voiceCount = channels.filter((c) => c?.type === ChannelType.GuildVoice).size;
-  const categoryCount = channels.filter((c) => c?.type === ChannelType.GuildCategory).size;
-  const forumCount = channels.filter((c) => c?.type === ChannelType.GuildForum).size;
+  const textCount = channels.filter((c: any) => c?.type === ChannelType.GuildText).size;
+  const voiceCount = channels.filter((c: any) => c?.type === ChannelType.GuildVoice).size;
+  const categoryCount = channels.filter((c: any) => c?.type === ChannelType.GuildCategory).size;
+  const forumCount = channels.filter((c: any) => c?.type === ChannelType.GuildForum).size;
 
   const result = {
     id: guild.id,

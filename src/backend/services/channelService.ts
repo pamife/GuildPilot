@@ -21,7 +21,7 @@ export async function getGuildChannels(guildId: string) {
   }
 
   const result: any[] = [];
-  channels.forEach((c) => {
+  channels.forEach((c: any) => {
     if (!c || c.isThread()) return;
 
     const isText = c.type === ChannelType.GuildText;
@@ -39,7 +39,7 @@ export async function getGuildChannels(guildId: string) {
       slowmode: isText || isForum ? (c as TextChannel | ForumChannel).rateLimitPerUser : 0,
       bitrate: isVoice ? (c as VoiceChannel).bitrate : null,
       userLimit: isVoice ? (c as VoiceChannel).userLimit : null,
-      permissionOverwrites: c.permissionOverwrites.cache.map((po) => ({
+      permissionOverwrites: c.permissionOverwrites.cache.map((po: any) => ({
         id: po.id,
         type: po.type,
         allow: po.allow.bitfield.toString(),
