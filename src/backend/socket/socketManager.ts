@@ -6,10 +6,13 @@ let io: SocketIOServer | null = null;
 
 export function initSocketIO(server: HTTPServer) {
   io = new SocketIOServer(server, {
+    pingInterval: 10000,
+    pingTimeout: 5000,
     cors: {
       origin: "*",
       methods: ["GET", "POST"],
     },
+    transports: ["websocket", "polling"],
   });
 
   io.on("connection", (socket) => {

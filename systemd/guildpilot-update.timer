@@ -1,0 +1,11 @@
+[Unit]
+Description=GuildPilot Automatic GitHub Update Timer
+After=network.target
+
+[Timer]
+OnBootSec=2min
+OnUnitActiveSec=5min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

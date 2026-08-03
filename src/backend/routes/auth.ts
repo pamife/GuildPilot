@@ -5,14 +5,27 @@ import { AuthenticatedRequest, requireOwnerAuth } from "../middleware/authMiddle
 
 const router = Router();
 
+const getFrontendUrl = (req: any): string => {
+  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL;
+  const host = req.headers.host ? req.headers.host.split(":")[0] : "localhost";
+  const protocol = req.headers["x-forwarded-proto"] || "http";
+  return `${protocol}://${host}:3000`;
+};
+
+const getRedirectUri = (req: any): string => {
+  if (process.env.DISCORD_REDIRECT_URI) return process.env.DISCORD_REDIRECT_URI;
+  const host = req.headers.host || "localhost:3001";
+  const protocol = req.headers["x-forwarded-proto"] || "http";
+  return `${protocol}://${host}/api/auth/callback`;
+};
+
 router.get("/login", (req, res) => {
   const clientId = process.env.DISCORD_CLIENT_ID;
-  const redirectUri = encodeURIComponent(process.env.DISCORD_REDIRECT_URI || "http://localhost:3001/api/auth/callback");
+  const redirectUri = encodeURIComponent(getRedirectUri(req));
   const scope = encodeURIComponent("identify guilds");
 
   if (!clientId || clientId === "your_client_id_here") {
-    // Dev fallback response if client credentials aren't configured yet
-    return res.redirect("http://localhost:3000?auth_warning=missing_discord_credentials");
+    return res.redirect(`${getFrontendUrl(req)}?auth_warning=missing_discord_credentials`);
   }
 
   const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
@@ -21,14 +34,16 @@ router.get("/login", (req, res) => {
 
 router.get("/callback", async (req, res) => {
   const { code } = req.query;
+  const frontendUrl = getFrontendUrl(req);
+
   if (!code || typeof code !== "string") {
-    return res.redirect("http://localhost:3000?error=no_code");
+    return res.redirect(`${frontendUrl}?error=no_code`);
   }
 
   try {
     const clientId = process.env.DISCORD_CLIENT_ID;
     const clientSecret = process.env.DISCORD_CLIENT_SECRET;
-    const redirectUri = process.env.DISCORD_REDIRECT_URI || "http://localhost:3001/api/auth/callback";
+    const redirectUri = getRedirectUri(req);
     const allowedUserId = process.env.ALLOWED_USER_ID;
     const jwtSecret = process.env.JWT_SECRET || "guildpilot_super_secret_local_key_change_me";
 
@@ -56,7 +71,7 @@ router.get("/callback", async (req, res) => {
 
     // 3. Verify single user owner ID constraint
     if (allowedUserId && allowedUserId !== "your_discord_user_id_here" && user.id !== allowedUserId) {
-      return res.redirect("http://localhost:3000?error=unauthorized_user");
+      return res.redirect(`${frontendUrl}?error=unauthorized_user`);
     }
 
     // 4. Issue JWT Cookie
@@ -75,10 +90,10 @@ router.get("/callback", async (req, res) => {
       maxAge: 7 * 24 * 60 * 60 * 1000,
     });
 
-    res.redirect("http://localhost:3000");
+    res.redirect(frontendUrl);
   } catch (error) {
     console.error("OAuth error:", error);
-    res.redirect("http://localhost:3000?error=oauth_failed");
+    res.redirect(`${frontendUrl}?error=oauth_failed`);
   }
 });
 

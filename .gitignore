@@ -10,11 +10,17 @@
 /dist
 /build
 
-# Environment files
+# Environment & Secrets files
 .env
 .env.local
 .env.production
 .env.development
+secrets.env
+*.env
+
+# Runtime logs & backups
+/logs/
+/backups/
 
 # SQLite database
 /prisma/*.db

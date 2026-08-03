@@ -312,7 +312,7 @@ function DashboardContent() {
           </div>
 
           <a
-            href="http://localhost:3001/api/auth/login"
+            href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/auth/login`}
             className="flex items-center justify-center gap-2.5 w-full py-3 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02]"
           >
             <LogIn className="w-5 h-5" /> Login with Discord OAuth2

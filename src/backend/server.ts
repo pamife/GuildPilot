@@ -22,10 +22,22 @@ const server = http.createServer(app);
 
 const PORT = process.env.PORT || 3001;
 
-// CORS setup for local web dashboard
+// CORS setup for web dashboard & Cloudflare Tunnel
+const allowedOrigins = [
+  "http://localhost:3000",
+  "http://127.0.0.1:3000",
+  process.env.NEXT_PUBLIC_API_URL,
+  process.env.FRONTEND_URL,
+].filter(Boolean) as string[];
+
 app.use(
   cors({
-    origin: ["http://localhost:3000", "http://127.0.0.1:3000"],
+    origin: (origin, callback) => {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      // Allow origin for tunneled requests
+      return callback(null, true);
+    },
     credentials: true,
   })
 );
@@ -46,7 +58,8 @@ app.use("/api/utilities", utilityRoutes);
 
 // Root route: Redirect to Next.js Frontend Dashboard
 app.get("/", (req, res) => {
-  res.redirect("http://localhost:3000");
+  const host = req.headers.host ? req.headers.host.split(":")[0] : "localhost";
+  res.redirect(`http://${host}:3000`);
 });
 
 // Base Health Check
@@ -58,7 +71,7 @@ app.get("/api/health", (req, res) => {
 initSocketIO(server);
 
 // Start Server and Discord Client
-server.listen(PORT, async () => {
-  console.log(`[GuildPilot Backend] Running on http://localhost:${PORT}`);
+server.listen(Number(PORT), "0.0.0.0", async () => {
+  console.log(`[GuildPilot Backend] Running on http://0.0.0.0:${PORT}`);
   await initDiscordBot();
 });

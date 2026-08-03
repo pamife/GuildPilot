@@ -1,0 +1,14 @@
+[Unit]
+Description=GuildPilot Automatic GitHub Update Service
+After=network.target
+
+[Service]
+Type=oneshot
+User=paul
+WorkingDirectory=/home/paul/.gemini/antigravity/scratch/GuildPilot
+ExecStart=/bin/bash /home/paul/.gemini/antigravity/scratch/GuildPilot/scripts/auto-update.sh
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
