@@ -42,6 +42,29 @@ log() {
   echo "[${TIMESTAMP}] $1" | tee -a "${LOG_FILE}"
 }
 
+report_progress() {
+  local step="$1"
+  local total_steps="$2"
+  local percent="$3"
+  local action="$4"
+  local log_msg="$5"
+  local status="${6:-running}"
+  
+  local payload=$(cat <<EOF
+{
+  "isUpdating": true,
+  "step": ${step},
+  "totalSteps": ${total_steps},
+  "percent": ${percent},
+  "currentAction": "${action}",
+  "status": "${status}",
+  "logs": ["$(date +"[%H:%M:%S]") ${log_msg}"]
+}
+EOF
+  )
+  curl -H "Content-Type: application/json" -X POST -d "${payload}" http://localhost:3001/api/host-server/update-progress > /dev/null 2>&1 || true
+}
+
 # Load secrets and env vars if present
 if [ -f "/etc/guildpilot/secrets.env" ]; then
   set -a
@@ -82,6 +105,7 @@ EOF
 
 # Step 1: Check remote for changes
 log "Checking for GitHub updates on branch main..."
+report_progress 1 6 15 "Prüfe GitHub-Repository..." "Checking for updates on branch main..."
 git fetch origin main > /dev/null 2>&1
 
 LOCAL_HASH=$(git rev-parse HEAD)
@@ -89,6 +113,7 @@ REMOTE_HASH=$(git rev-parse origin/main)
 
 if [ "${LOCAL_HASH}" == "${REMOTE_HASH}" ]; then
   log "System is up to date (Commit: ${LOCAL_HASH:0:7}). No update required."
+  report_progress 6 6 100 "System ist aktuell" "Keine neuen Commits vorhanden." "idle"
   exit 0
 fi
 
@@ -103,6 +128,8 @@ DB_BACKUP="${PROJECT_DIR}/backups/db_${LOCAL_HASH:0:7}_${BACKUP_TIMESTAMP}.db"
 STATE_BACKUP="${PROJECT_DIR}/backups/state_${LOCAL_HASH:0:7}_${BACKUP_TIMESTAMP}.json"
 
 log "Creating pre-update backup snapshot..."
+report_progress 2 6 30 "Erstelle Datenbank-Sicherung..." "Pre-update Backup der Datenbank wird angelegt..."
+
 
 if [ -f "${DB_FILE}" ]; then
   cp "${DB_FILE}" "${DB_BACKUP}"

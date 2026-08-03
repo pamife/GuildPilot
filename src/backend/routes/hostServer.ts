@@ -1,6 +1,13 @@
 import { Router } from "express";
 import { collectHostMetrics } from "../services/hostMonitorService";
-import { getLatestUpdate, notifyUpdate, markUpdateAsRead, checkOrTriggerUpdate } from "../services/updateService";
+import {
+  getLatestUpdate,
+  notifyUpdate,
+  markUpdateAsRead,
+  checkOrTriggerUpdate,
+  getUpdateProgress,
+  updateProgressState,
+} from "../services/updateService";
 
 const router = Router();
 
@@ -17,6 +24,18 @@ router.get("/metrics", async (req, res) => {
 router.get("/updates", (req, res) => {
   const update = getLatestUpdate();
   res.json(update || { unread: false, message: "No update recorded." });
+});
+
+// GET active update progress
+router.get("/update-progress", (req, res) => {
+  const progress = getUpdateProgress();
+  res.json(progress);
+});
+
+// POST endpoint for scripts to report active update progress & logs
+router.post("/update-progress", (req, res) => {
+  const updated = updateProgressState(req.body);
+  res.json({ success: true, progress: updated });
 });
 
 // POST endpoint to trigger immediate update check & install
@@ -42,4 +61,5 @@ router.post("/updates/read", (req, res) => {
 });
 
 export default router;
+
 
