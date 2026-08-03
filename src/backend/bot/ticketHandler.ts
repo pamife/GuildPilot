@@ -178,23 +178,23 @@ export async function deployTicketPanelEmbed(client: Client, panelId: string): P
     });
 
     components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
+  } else {
+    let style = ButtonStyle.Primary;
+    if (panel.buttonColor === "Secondary") style = ButtonStyle.Secondary;
+    if (panel.buttonColor === "Success") style = ButtonStyle.Success;
+    if (panel.buttonColor === "Danger") style = ButtonStyle.Danger;
+
+    const button = new ButtonBuilder()
+      .setCustomId(`ticket_open:${panel.id}`)
+      .setLabel(panel.buttonText || "Create Ticket")
+      .setStyle(style);
+
+    if (panel.buttonEmoji) {
+      button.setEmoji(panel.buttonEmoji);
+    }
+
+    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button));
   }
-
-  let style = ButtonStyle.Primary;
-  if (panel.buttonColor === "Secondary") style = ButtonStyle.Secondary;
-  if (panel.buttonColor === "Success") style = ButtonStyle.Success;
-  if (panel.buttonColor === "Danger") style = ButtonStyle.Danger;
-
-  const button = new ButtonBuilder()
-    .setCustomId(`ticket_open:${panel.id}`)
-    .setLabel(panel.buttonText || "Create Ticket")
-    .setStyle(style);
-
-  if (panel.buttonEmoji) {
-    button.setEmoji(panel.buttonEmoji);
-  }
-
-  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button));
 
   let message: any = null;
   if (panel.messageId) {

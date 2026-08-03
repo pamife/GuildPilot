@@ -1999,28 +1999,28 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         )}
                       </div>
 
-                      {panelForm.reasons && panelForm.reasons.length > 0 && (
+                      {panelForm.reasons && panelForm.reasons.length > 0 ? (
                         <div className="p-2.5 rounded-xl bg-[#000000] border border-[#18181b] flex items-center justify-between text-xs text-zinc-400">
                           <span>Select a ticket reason...</span>
                           <ChevronDown className="w-4 h-4" />
                         </div>
+                      ) : (
+                        <button
+                          disabled
+                          className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs text-white opacity-90 ${
+                            panelForm.buttonColor === "Success"
+                              ? "bg-emerald-600"
+                              : panelForm.buttonColor === "Danger"
+                              ? "bg-rose-600"
+                              : panelForm.buttonColor === "Secondary"
+                              ? "bg-[#27272a]"
+                              : "bg-discord-brand"
+                          }`}
+                        >
+                          <span>{panelForm.buttonEmoji}</span>
+                          <span>{panelForm.buttonText || "Create Ticket"}</span>
+                        </button>
                       )}
-
-                      <button
-                        disabled
-                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs text-white opacity-90 ${
-                          panelForm.buttonColor === "Success"
-                            ? "bg-emerald-600"
-                            : panelForm.buttonColor === "Danger"
-                            ? "bg-rose-600"
-                            : panelForm.buttonColor === "Secondary"
-                            ? "bg-[#27272a]"
-                            : "bg-discord-brand"
-                        }`}
-                      >
-                        <span>{panelForm.buttonEmoji}</span>
-                        <span>{panelForm.buttonText || "Create Ticket"}</span>
-                      </button>
                     </div>
                   )}
 
