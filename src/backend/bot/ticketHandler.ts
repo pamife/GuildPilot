@@ -196,10 +196,27 @@ export async function deployTicketPanelEmbed(client: Client, panelId: string): P
 
   components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button));
 
-  const message = await channel.send({
-    embeds: [embed],
-    components,
-  });
+  let message: any = null;
+  if (panel.messageId) {
+    try {
+      const existingMsg = await channel.messages.fetch(panel.messageId);
+      if (existingMsg) {
+        message = await existingMsg.edit({
+          embeds: [embed],
+          components,
+        });
+      }
+    } catch (e) {
+      // Deployed message was deleted or unreachable, fallback to creating a new message
+    }
+  }
+
+  if (!message) {
+    message = await channel.send({
+      embeds: [embed],
+      components,
+    });
+  }
 
   return message.id;
 }

@@ -57,7 +57,16 @@ router.post("/:guildId/tickets/panels", async (req, res) => {
 router.patch("/:guildId/tickets/panels/:panelId", async (req, res) => {
   try {
     const panel = await updateTicketPanel(req.params.panelId, req.body);
-    res.json(panel);
+    let syncedLive = false;
+    if (panel.messageId && panel.channelId) {
+      try {
+        await deployTicketPanelEmbed(discordClient, panel.id);
+        syncedLive = true;
+      } catch (syncErr) {
+        console.warn(`[Ticket System] Live panel sync warning for panel ${panel.id}:`, syncErr);
+      }
+    }
+    res.json({ ...panel, syncedLive });
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to update panel" });
   }

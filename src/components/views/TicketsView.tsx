@@ -149,6 +149,10 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const [newReasonDesc, setNewReasonDesc] = useState("");
   const [newReasonCat, setNewReasonCat] = useState("");
 
+  // Inline Reason Editing state
+  const [editingReasonIdx, setEditingReasonIdx] = useState<number | null>(null);
+  const [editReasonForm, setEditReasonForm] = useState<TicketReason | null>(null);
+
   // Per-Reason Question Form state
   const [reasonQTitle, setReasonQTitle] = useState("");
   const [reasonQPlaceholder, setReasonQPlaceholder] = useState("");
@@ -393,11 +397,42 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
     setPanelForm({ ...panelForm, supportRoles: updated });
   };
 
+  const handleToggleAllowedRole = (roleId: string) => {
+    const current = panelForm.allowedRoles || [];
+    const updated = current.includes(roleId)
+      ? current.filter((id: string) => id !== roleId)
+      : [...current, roleId];
+    setPanelForm({ ...panelForm, allowedRoles: updated });
+  };
+
+  const handleStartEditReason = (idx: number) => {
+    setEditingReasonIdx(idx);
+    setEditReasonForm({ ...panelForm.reasons[idx] });
+  };
+
+  const handleSaveEditReason = (idx: number) => {
+    if (!editReasonForm || !editReasonForm.label) return;
+    const updated = [...panelForm.reasons];
+    updated[idx] = { ...editReasonForm };
+    setPanelForm({ ...panelForm, reasons: updated });
+    setEditingReasonIdx(null);
+    setEditReasonForm(null);
+  };
+
+  const handleCancelEditReason = () => {
+    setEditingReasonIdx(null);
+    setEditReasonForm(null);
+  };
+
   const handleSavePanel = async () => {
     try {
       if (editingPanel) {
-        await api.patch(`/guilds/${selectedGuildId}/tickets/panels/${editingPanel.id}`, panelForm);
-        showToast("Ticket panel updated successfully!", "success");
+        const res = await api.patch(`/guilds/${selectedGuildId}/tickets/panels/${editingPanel.id}`, panelForm);
+        if (res.data?.syncedLive) {
+          showToast("🚀 Ticket panel saved and synced live to Discord!", "success");
+        } else {
+          showToast("Ticket panel updated successfully!", "success");
+        }
       } else {
         await api.post(`/guilds/${selectedGuildId}/tickets/panels`, panelForm);
         showToast("New ticket panel created!", "success");
@@ -718,8 +753,13 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         <p className="text-xs text-zinc-400 line-clamp-1">{panel.description || "No description."}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
+                        {panel.messageId && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" /> Live on Discord
+                          </span>
+                        )}
                         {reasonsList.length > 0 ? (
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400/80 border border-emerald-500/20">
                             📋 {reasonsList.length} Ticket Types
                           </span>
                         ) : (
@@ -750,7 +790,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         onClick={() => handleDeployPanel(panel.id)}
                         className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow-lg shadow-discord-brand/20 transition-all"
                       >
-                        <Send className="w-3.5 h-3.5" /> Deploy Panel
+                        <Send className="w-3.5 h-3.5" /> {panel.messageId ? "Sync / Re-deploy" : "Deploy Panel"}
                       </button>
                       <button
                         onClick={() => handleOpenEditPanel(panel)}
@@ -1379,7 +1419,80 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         {panelForm.reasons && panelForm.reasons.length > 0 ? (
                           panelForm.reasons.map((r: TicketReason, idx: number) => {
                             const isExpanded = expandedReasonIdx === idx;
+                            const isEditingThisReason = editingReasonIdx === idx;
                             const reasonQuestions = r.questions || [];
+
+                            if (isEditingThisReason) {
+                              return (
+                                <div key={idx} className="rounded-2xl bg-[#090a0f] border border-discord-brand/40 p-4 space-y-3 shadow-lg">
+                                  <div className="flex items-center justify-between">
+                                    <span className="font-bold text-white text-xs uppercase text-discord-brand">Edit Ticket Type Option</span>
+                                    <span className="text-[10px] text-zinc-500 font-mono">Option #{idx + 1}</span>
+                                  </div>
+                                  <div className="grid grid-cols-3 gap-2">
+                                    <div>
+                                      <label className="text-[10px] font-semibold text-zinc-400 block mb-1">Label</label>
+                                      <input
+                                        type="text"
+                                        value={editReasonForm?.label || ""}
+                                        onChange={(e) => editReasonForm && setEditReasonForm({ ...editReasonForm, label: e.target.value })}
+                                        className="w-full p-2 rounded-xl bg-[#000000] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[10px] font-semibold text-zinc-400 block mb-1">Emoji</label>
+                                      <input
+                                        type="text"
+                                        value={editReasonForm?.emoji || ""}
+                                        onChange={(e) => editReasonForm && setEditReasonForm({ ...editReasonForm, emoji: e.target.value })}
+                                        className="w-full p-2 rounded-xl bg-[#000000] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-[10px] font-semibold text-zinc-400 block mb-1">Category</label>
+                                      <select
+                                        value={editReasonForm?.categoryId || ""}
+                                        onChange={(e) => editReasonForm && setEditReasonForm({ ...editReasonForm, categoryId: e.target.value })}
+                                        className="w-full p-2 rounded-xl bg-[#000000] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                                      >
+                                        <option value="">Default Category</option>
+                                        {categories.map((c) => (
+                                          <option key={c.id} value={c.id}>
+                                            {c.name}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                  </div>
+                                  <div>
+                                    <label className="text-[10px] font-semibold text-zinc-400 block mb-1">Description</label>
+                                    <input
+                                      type="text"
+                                      value={editReasonForm?.description || ""}
+                                      onChange={(e) => editReasonForm && setEditReasonForm({ ...editReasonForm, description: e.target.value })}
+                                      className="w-full p-2 rounded-xl bg-[#000000] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                                    />
+                                  </div>
+                                  <div className="flex items-center justify-end gap-2 pt-1">
+                                    <button
+                                      type="button"
+                                      onClick={handleCancelEditReason}
+                                      className="px-3 py-1.5 rounded-xl bg-[#18181b] text-zinc-400 hover:text-white text-xs font-semibold"
+                                    >
+                                      Cancel
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleSaveEditReason(idx)}
+                                      className="px-3 py-1.5 rounded-xl bg-discord-brand text-white text-xs font-bold"
+                                    >
+                                      Save Option
+                                    </button>
+                                  </div>
+                                </div>
+                              );
+                            }
+
                             return (
                               <div key={idx} className="rounded-2xl bg-[#090a0f] border border-[#18181b] overflow-hidden shadow-lg">
                                 <div className="p-3.5 flex items-center justify-between bg-[#050507]">
@@ -1392,6 +1505,14 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                                   </div>
 
                                   <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleStartEditReason(idx)}
+                                      className="p-1.5 text-zinc-500 hover:text-white transition-colors"
+                                      title="Edit Ticket Type"
+                                    >
+                                      <Edit className="w-4 h-4" />
+                                    </button>
                                     <button
                                       type="button"
                                       onClick={() => {
@@ -1543,14 +1664,26 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                             onChange={(e) => setNewReasonEmoji(e.target.value)}
                             className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
                           />
-                          <input
-                            type="text"
-                            placeholder="Short description..."
-                            value={newReasonDesc}
-                            onChange={(e) => setNewReasonDesc(e.target.value)}
+                          <select
+                            value={newReasonCat}
+                            onChange={(e) => setNewReasonCat(e.target.value)}
                             className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
-                          />
+                          >
+                            <option value="">Default Category</option>
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
                         </div>
+                        <input
+                          type="text"
+                          placeholder="Short description..."
+                          value={newReasonDesc}
+                          onChange={(e) => setNewReasonDesc(e.target.value)}
+                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                        />
                         <button
                           type="button"
                           onClick={handleAddReason}
@@ -1564,10 +1697,11 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                 )}
 
                 {/* =================================================== */}
-                {/* TAB 3: SUPPORTER ROLES & PERMISSIONS */}
+                {/* TAB 3: SUPPORTER ROLES, PERMISSIONS & LIMITS */}
                 {/* =================================================== */}
                 {activeModalTab === "roles" && (
                   <div className="space-y-4">
+                    {/* Supporter Roles */}
                     <div className="p-4 bg-[#000000] rounded-2xl border border-[#18181b] space-y-3">
                       <h4 className="font-bold text-white text-xs uppercase tracking-wider text-sky-400 flex items-center gap-2">
                         <Shield className="w-4 h-4" /> Supporter Roles Selection
@@ -1598,11 +1732,107 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         })}
                       </div>
                     </div>
+
+                    {/* Allowed User Roles */}
+                    <div className="p-4 bg-[#000000] rounded-2xl border border-[#18181b] space-y-3">
+                      <h4 className="font-bold text-white text-xs uppercase tracking-wider text-emerald-400 flex items-center gap-2">
+                        <Users className="w-4 h-4" /> Allowed Member Roles (Restriction)
+                      </h4>
+                      <p className="text-[11px] text-zinc-500">
+                        Restrict who can open tickets from this panel. Leave empty to allow all members to open tickets.
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {roles.map((r) => {
+                          const isSelected = panelForm.allowedRoles?.includes(r.id);
+                          return (
+                            <button
+                              key={r.id}
+                              type="button"
+                              onClick={() => handleToggleAllowedRole(r.id)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                                isSelected
+                                  ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                                  : "bg-[#090a0f] text-zinc-500 border border-[#18181b] hover:text-white"
+                              }`}
+                            >
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color || "#10b981" }} />
+                              <span>{r.name}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Advanced Panel Limits */}
+                    <div className="p-4 bg-[#000000] rounded-2xl border border-[#18181b] space-y-3">
+                      <h4 className="font-bold text-white text-xs uppercase tracking-wider text-amber-400 flex items-center gap-2">
+                        <Settings className="w-4 h-4" /> Advanced Panel Limits & Controls
+                      </h4>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Default Category</label>
+                          <select
+                            value={panelForm.categoryId || ""}
+                            onChange={(e) => setPanelForm({ ...panelForm, categoryId: e.target.value })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                          >
+                            <option value="">-- No Category (Server Root) --</option>
+                            {categories.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Max Open Tickets Per User</label>
+                          <input
+                            type="number"
+                            min={1}
+                            max={10}
+                            value={panelForm.maxOpenTickets || 1}
+                            onChange={(e) => setPanelForm({ ...panelForm, maxOpenTickets: Number(e.target.value) })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Inactivity Auto-Close (Hours)</label>
+                          <input
+                            type="number"
+                            min={0}
+                            max={720}
+                            placeholder="0 = Disabled"
+                            value={panelForm.autoCloseHours || 0}
+                            onChange={(e) => setPanelForm({ ...panelForm, autoCloseHours: Number(e.target.value) })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                          />
+                        </div>
+
+                        <div className="flex items-center pt-6">
+                          <label className="flex items-center gap-2 text-zinc-300 font-semibold cursor-pointer">
+                            <input
+                              type="checkbox"
+                              checked={panelForm.transcriptEnabled !== false}
+                              onChange={(e) => setPanelForm({ ...panelForm, transcriptEnabled: e.target.checked })}
+                              className="w-4 h-4 accent-discord-brand rounded"
+                            />
+                            Generate HTML Transcript on Close
+                          </label>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
 
                 {/* =================================================== */}
-                {/* TAB 4: WELCOME EMBED */}
+                {/* TAB 4: WELCOME EMBED & DESIGN */}
                 {/* =================================================== */}
                 {activeModalTab === "welcome" && (
                   <div className="space-y-4">
@@ -1627,6 +1857,70 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                           value={panelForm.welcomeDescription || ""}
                           onChange={(e) => setPanelForm({ ...panelForm, welcomeDescription: e.target.value })}
                           className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand h-24"
+                        />
+                      </div>
+
+                      {/* Welcome Embed Accent Color */}
+                      <div>
+                        <label className="block text-zinc-400 mb-1 font-semibold">Welcome Embed Accent Color</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={panelForm.welcomeColor || "#5865F2"}
+                            onChange={(e) => setPanelForm({ ...panelForm, welcomeColor: e.target.value })}
+                            className="w-10 h-10 rounded-xl border-none cursor-pointer bg-transparent"
+                          />
+                          <input
+                            type="text"
+                            value={panelForm.welcomeColor || "#5865F2"}
+                            onChange={(e) => setPanelForm({ ...panelForm, welcomeColor: e.target.value })}
+                            className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white font-mono outline-none w-32"
+                          />
+                          <div className="flex items-center gap-1.5 pl-2">
+                            {colorPresets.map((hex) => (
+                              <button
+                                key={hex}
+                                type="button"
+                                onClick={() => setPanelForm({ ...panelForm, welcomeColor: hex })}
+                                className="w-6 h-6 rounded-full border border-white/20 transition-transform hover:scale-110"
+                                style={{ backgroundColor: hex }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Assets */}
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Welcome Thumbnail URL</label>
+                          <input
+                            type="text"
+                            placeholder="https://..."
+                            value={panelForm.welcomeThumbnail || ""}
+                            onChange={(e) => setPanelForm({ ...panelForm, welcomeThumbnail: e.target.value })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Welcome Image Banner URL</label>
+                          <input
+                            type="text"
+                            placeholder="https://..."
+                            value={panelForm.welcomeImage || ""}
+                            onChange={(e) => setPanelForm({ ...panelForm, welcomeImage: e.target.value })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-zinc-400 mb-1 font-semibold">Welcome Footer Text</label>
+                        <input
+                          type="text"
+                          value={panelForm.welcomeFooter || ""}
+                          onChange={(e) => setPanelForm({ ...panelForm, welcomeFooter: e.target.value })}
+                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
                         />
                       </div>
                     </div>
