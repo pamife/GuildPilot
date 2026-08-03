@@ -33,8 +33,10 @@ import {
   Image as ImageIcon,
   HelpCircle,
   ChevronDown,
+  ChevronUp,
   MessageSquarePlus,
   AlignLeft,
+  ListOrdered,
 } from "lucide-react";
 
 type SubPage = "dashboard" | "panels" | "tickets-list" | "categories" | "settings" | "logs";
@@ -96,6 +98,8 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const [editingPanel, setEditingPanel] = useState<any>(null);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
   const [previewTab, setPreviewTab] = useState<"panel" | "welcome" | "questions">("panel");
+  const [selectedPreviewReasonIdx, setSelectedPreviewReasonIdx] = useState<number>(0);
+  const [expandedReasonIdx, setExpandedReasonIdx] = useState<number | null>(null);
 
   // Panel Form State with Full Live Preview defaults
   const [panelForm, setPanelForm] = useState<any>({
@@ -133,11 +137,17 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const [newReasonDesc, setNewReasonDesc] = useState("");
   const [newReasonCat, setNewReasonCat] = useState("");
 
-  // Question Form state inside Panel Modal
+  // Global Question Form state inside Panel Modal
   const [newQTitle, setNewQTitle] = useState("");
   const [newQPlaceholder, setNewQPlaceholder] = useState("");
   const [newQStyle, setNewQStyle] = useState<"short" | "paragraph">("short");
   const [newQRequired, setNewQRequired] = useState(true);
+
+  // Per-Reason Question Form state
+  const [reasonQTitle, setReasonQTitle] = useState("");
+  const [reasonQPlaceholder, setReasonQPlaceholder] = useState("");
+  const [reasonQStyle, setReasonQStyle] = useState<"short" | "paragraph">("short");
+  const [reasonQRequired, setReasonQRequired] = useState(true);
 
   // Category Form State
   const [newCatName, setNewCatName] = useState("");
@@ -171,7 +181,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       setLogs(logsRes.data);
     } catch (err) {
       console.error("Failed to load ticket data:", err);
-    } finally {
+    } fontally {
       setLoading(false);
     }
   }, [selectedGuildId]);
@@ -224,7 +234,27 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       welcomeThumbnail: "",
       welcomeImage: "",
       welcomeFooter: "TheGodGen Ticket Engine",
-      reasons: [],
+      reasons: [
+        {
+          label: "🐛 Bug Report",
+          value: "bug_report",
+          emoji: "🐛",
+          description: "Report a bug or system issue",
+          questions: [
+            { id: "q1", label: "Describe the bug in detail", placeholder: "What went wrong?", style: "paragraph", required: true },
+            { id: "q2", label: "Steps to reproduce", placeholder: "1. Click X... 2. Press Y...", style: "paragraph", required: false },
+          ],
+        },
+        {
+          label: "💳 Billing & Purchases",
+          value: "billing",
+          emoji: "💳",
+          description: "Payment and package questions",
+          questions: [
+            { id: "q3", label: "Transaction ID / Receipt", placeholder: "e.g. TX-987654", style: "short", required: true },
+          ],
+        },
+      ],
       questions: [],
       channelId: channels[0]?.id || "",
       categoryId: "",
@@ -237,6 +267,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       autoCloseHours: 0,
       transcriptEnabled: true,
     });
+    setSelectedPreviewReasonIdx(0);
     setPreviewTab("panel");
     setIsPanelModalOpen(true);
   };
@@ -250,6 +281,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       reasons: JSON.parse(panel.reasons || "[]"),
       questions: JSON.parse(panel.questions || "[]"),
     });
+    setSelectedPreviewReasonIdx(0);
     setPreviewTab("panel");
     setIsPanelModalOpen(true);
   };
@@ -265,6 +297,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
         emoji: newReasonEmoji || "❓",
         description: newReasonDesc || "Open ticket for this reason",
         categoryId: newReasonCat || undefined,
+        questions: [],
       },
     ];
     setPanelForm({ ...panelForm, reasons: updated });
@@ -279,29 +312,36 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
     setPanelForm({ ...panelForm, reasons: updated });
   };
 
-  const handleAddQuestion = () => {
-    if (!newQTitle) return;
+  // Add question specifically to a reason
+  const handleAddReasonQuestion = (reasonIndex: number) => {
+    if (!reasonQTitle) return;
     const qId = `q_${Date.now()}`;
-    const updated = [
-      ...(panelForm.questions || []),
+    const updatedReasons = [...panelForm.reasons];
+    const targetReason = { ...updatedReasons[reasonIndex] };
+    targetReason.questions = [
+      ...(targetReason.questions || []),
       {
         id: qId,
-        label: newQTitle,
-        placeholder: newQPlaceholder || "Enter your answer...",
-        style: newQStyle,
-        required: newQRequired,
+        label: reasonQTitle,
+        placeholder: reasonQPlaceholder || "Enter your answer...",
+        style: reasonQStyle,
+        required: reasonQRequired,
       },
     ];
-    setPanelForm({ ...panelForm, questions: updated });
-    setNewQTitle("");
-    setNewQPlaceholder("");
-    setNewQStyle("short");
-    setNewQRequired(true);
+    updatedReasons[reasonIndex] = targetReason;
+    setPanelForm({ ...panelForm, reasons: updatedReasons });
+    setReasonQTitle("");
+    setReasonQPlaceholder("");
+    setReasonQStyle("short");
+    setReasonQRequired(true);
   };
 
-  const handleRemoveQuestion = (index: number) => {
-    const updated = panelForm.questions.filter((_: any, i: number) => i !== index);
-    setPanelForm({ ...panelForm, questions: updated });
+  const handleRemoveReasonQuestion = (reasonIndex: number, qIndex: number) => {
+    const updatedReasons = [...panelForm.reasons];
+    const targetReason = { ...updatedReasons[reasonIndex] };
+    targetReason.questions = targetReason.questions?.filter((_, i) => i !== qIndex) || [];
+    updatedReasons[reasonIndex] = targetReason;
+    setPanelForm({ ...panelForm, reasons: updatedReasons });
   };
 
   const handleSavePanel = async () => {
@@ -411,6 +451,13 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const textChannels = channels.filter((c) => c.type === 0);
   const categoryChannels = channels.filter((c) => c.type === 4);
 
+  // Determine active questions to display in preview modal tab
+  const activePreviewReason = panelForm.reasons && panelForm.reasons[selectedPreviewReasonIdx];
+  const activePreviewQuestions =
+    activePreviewReason?.questions && activePreviewReason.questions.length > 0
+      ? activePreviewReason.questions
+      : panelForm.questions || [];
+
   return (
     <div className="flex flex-col h-full bg-[#313338] text-discord-header overflow-hidden">
       {/* Top Header & Subpage Navigation */}
@@ -427,7 +474,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
               </span>
             </h1>
             <p className="text-xs text-discord-muted">
-              Custom Discord Ticket Engine with Modal Intake Forms, Multi-Reasons & Transcripts
+              Custom Discord Ticket Engine with Ticket-Type Modal Intake Forms & Live Embed Previews
             </p>
           </div>
         </div>
@@ -598,7 +645,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-white">Ticket Panels</h2>
-                <p className="text-xs text-discord-muted">Configure and deploy interactive ticket creation embeds with intake forms & questions.</p>
+                <p className="text-xs text-discord-muted">Configure and deploy interactive ticket creation embeds with intake forms per ticket type.</p>
               </div>
               <button
                 onClick={handleOpenCreatePanel}
@@ -612,7 +659,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {panels.map((panel) => {
                 const reasonsList: TicketReason[] = JSON.parse(panel.reasons || "[]");
-                const questionsList: IntakeQuestion[] = JSON.parse(panel.questions || "[]");
+                const totalReasonQuestions = reasonsList.reduce((acc, r) => acc + (r.questions?.length || 0), 0);
                 return (
                   <div key={panel.id} className="p-5 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-4 relative overflow-hidden">
                     <div className="w-full h-1.5 absolute top-0 left-0" style={{ backgroundColor: panel.embedColor || "#5865F2" }} />
@@ -622,14 +669,15 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         <p className="text-xs text-discord-muted line-clamp-1">{panel.description || "No description."}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
-                        {questionsList.length > 0 && (
+                        {reasonsList.length > 0 ? (
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                            📋 {questionsList.length} Questions
+                            📋 {reasonsList.length} Ticket Types
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1e1f22] text-discord-brand border border-[#35373c]">
+                            {panel.buttonColor} Button
                           </span>
                         )}
-                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1e1f22] text-discord-brand border border-[#35373c]">
-                          {reasonsList.length > 0 ? `${reasonsList.length} Reasons` : panel.buttonColor}
-                        </span>
                       </div>
                     </div>
 
@@ -641,9 +689,9 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         </strong>
                       </div>
                       <div className="flex justify-between">
-                        <span>Creation Mode:</span>
+                        <span>Pre-Ticket Questions:</span>
                         <strong className="text-white">
-                          {reasonsList.length > 0 ? `Dropdown (${reasonsList.length} Options)` : `${panel.buttonEmoji} Button`}
+                          {totalReasonQuestions > 0 ? `${totalReasonQuestions} Questions configured` : "Standard Ticket"}
                         </strong>
                       </div>
                     </div>
@@ -1031,7 +1079,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       </div>
 
       {/* ========================================================= */}
-      {/* PANEL EDITOR MODAL WITH LIVE DISCORD EMBED & MODAL PREVIEW */}
+      {/* PANEL EDITOR MODAL WITH PER-TICKET-REASON QUESTION BUILDER */}
       {/* ========================================================= */}
       {isPanelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -1040,7 +1088,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
             <div className="p-4 bg-[#1e1f22] border-b border-[#35373c] flex items-center justify-between">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Layers className="w-5 h-5 text-discord-brand" />
-                {editingPanel ? "Edit Ticket Panel & Intake Questions" : "Create New Ticket Panel"}
+                {editingPanel ? "Edit Ticket Panel & Ticket-Type Form Questions" : "Create New Ticket Panel"}
               </h3>
               <button
                 onClick={() => setIsPanelModalOpen(false)}
@@ -1054,7 +1102,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
             <div className="flex-1 p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs">
               {/* Form Inputs (7 Cols) */}
               <div className="lg:col-span-7 space-y-5">
-                {/* General Info */}
+                {/* 1. Basic Panel Settings */}
                 <div className="space-y-3 bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
                   <h4 className="font-bold text-white text-xs uppercase tracking-wider text-discord-brand">1. Basic Panel Settings</h4>
                   <div className="grid grid-cols-2 gap-3">
@@ -1085,149 +1133,171 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                   </div>
                 </div>
 
-                {/* Pre-Ticket Modal Intake Questions Section */}
-                <div className="space-y-3 bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
-                  <div className="flex items-center justify-between">
-                    <h4 className="font-bold text-white text-xs uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
-                      📋 Pre-Ticket Intake Questions (Modal Popup)
-                    </h4>
-                    <span className="text-[10px] text-discord-muted font-mono">{panelForm.questions?.length || 0} / 5 Questions</span>
-                  </div>
-                  <p className="text-[11px] text-discord-muted">
-                    Questions asked in a Discord popup window when the user clicks the ticket button before creating the channel.
-                  </p>
-
-                  {/* Questions List */}
-                  <div className="space-y-2">
-                    {panelForm.questions && panelForm.questions.length > 0 ? (
-                      panelForm.questions.map((q: IntakeQuestion, idx: number) => (
-                        <div key={q.id} className="flex items-center justify-between p-3 rounded-lg bg-[#2b2d31] border border-[#35373c]">
-                          <div className="flex items-center gap-2.5">
-                            <span className="w-5 h-5 rounded bg-discord-brand/20 text-discord-brand font-bold text-[10px] flex items-center justify-center">
-                              Q{idx + 1}
-                            </span>
-                            <div>
-                              <span className="font-bold text-white block">{q.label}</span>
-                              <span className="text-[10px] text-discord-muted">
-                                Style: {q.style} • {q.required ? "Required" : "Optional"}
-                              </span>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => handleRemoveQuestion(idx)}
-                            className="p-1.5 text-discord-muted hover:text-discord-red transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))
-                    ) : (
-                      <p className="text-[11px] text-discord-muted italic">No intake questions added yet. Tickets will be created directly without questions.</p>
-                    )}
-                  </div>
-
-                  {/* Add Question Form */}
-                  {(!panelForm.questions || panelForm.questions.length < 5) && (
-                    <div className="pt-2 border-t border-[#35373c] space-y-2">
-                      <span className="font-semibold text-white text-[11px] block">Add Question</span>
-                      <div className="grid grid-cols-2 gap-2">
-                        <input
-                          type="text"
-                          placeholder="Question Title (e.g. In-Game Name)"
-                          value={newQTitle}
-                          onChange={(e) => setNewQTitle(e.target.value)}
-                          className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
-                        />
-                        <input
-                          type="text"
-                          placeholder="Placeholder (e.g. Player123)"
-                          value={newQPlaceholder}
-                          onChange={(e) => setNewQPlaceholder(e.target.value)}
-                          className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
-                        />
-                      </div>
-                      <div className="flex items-center gap-4 text-[11px]">
-                        <label className="flex items-center gap-1.5 text-discord-muted font-semibold cursor-pointer">
-                          <input
-                            type="radio"
-                            name="qstyle"
-                            checked={newQStyle === "short"}
-                            onChange={() => setNewQStyle("short")}
-                            className="accent-discord-brand"
-                          />
-                          Single Line (Short)
-                        </label>
-                        <label className="flex items-center gap-1.5 text-discord-muted font-semibold cursor-pointer">
-                          <input
-                            type="radio"
-                            name="qstyle"
-                            checked={newQStyle === "paragraph"}
-                            onChange={() => setNewQStyle("paragraph")}
-                            className="accent-discord-brand"
-                          />
-                          Multi Line (Paragraph)
-                        </label>
-                        <label className="flex items-center gap-1.5 text-discord-muted font-semibold cursor-pointer ml-auto">
-                          <input
-                            type="checkbox"
-                            checked={newQRequired}
-                            onChange={(e) => setNewQRequired(e.target.checked)}
-                            className="accent-discord-brand"
-                          />
-                          Required
-                        </label>
-                      </div>
-                      <button
-                        onClick={handleAddQuestion}
-                        className="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1"
-                      >
-                        <Plus className="w-3.5 h-3.5" /> Add Question
-                      </button>
-                    </div>
-                  )}
-                </div>
-
-                {/* Multi-Ticket Reasons / Categories Section */}
+                {/* 2. Multiple Ticket Reasons & Per-Type Form Questions */}
                 <div className="space-y-3 bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
                   <div className="flex items-center justify-between">
                     <h4 className="font-bold text-white text-xs uppercase tracking-wider text-discord-brand flex items-center gap-1.5">
-                      2. Multiple Ticket Reasons (Select Menu Dropdown)
+                      2. Ticket Types & Custom Intake Questions
                     </h4>
-                    <span className="text-[10px] text-discord-muted font-mono">{panelForm.reasons?.length || 0} reasons</span>
+                    <span className="text-[10px] text-discord-muted font-mono">{panelForm.reasons?.length || 0} Ticket Types</span>
                   </div>
+                  <p className="text-[11px] text-discord-muted">
+                    Each ticket type can have its own specific modal questions asked before creating the channel (e.g. Bug Report asks for reproduction steps, Billing asks for transaction ID).
+                  </p>
 
                   {/* Reasons List */}
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     {panelForm.reasons && panelForm.reasons.length > 0 ? (
-                      panelForm.reasons.map((r: TicketReason, idx: number) => (
-                        <div key={idx} className="flex items-center justify-between p-2.5 rounded-lg bg-[#2b2d31] border border-[#35373c]">
-                          <div className="flex items-center gap-2">
-                            <span className="text-base">{r.emoji}</span>
-                            <div>
-                              <span className="font-bold text-white block">{r.label}</span>
-                              <span className="text-[10px] text-discord-muted">{r.description}</span>
+                      panelForm.reasons.map((r: TicketReason, idx: number) => {
+                        const isExpanded = expandedReasonIdx === idx;
+                        const reasonQuestions = r.questions || [];
+                        return (
+                          <div key={idx} className="rounded-lg bg-[#2b2d31] border border-[#35373c] overflow-hidden">
+                            <div className="p-3 flex items-center justify-between bg-[#232428]">
+                              <div className="flex items-center gap-2">
+                                <span className="text-base">{r.emoji}</span>
+                                <div>
+                                  <span className="font-bold text-white block">{r.label}</span>
+                                  <span className="text-[10px] text-discord-muted">{r.description}</span>
+                                </div>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <button
+                                  onClick={() => {
+                                    setExpandedReasonIdx(isExpanded ? null : idx);
+                                    setSelectedPreviewReasonIdx(idx);
+                                  }}
+                                  className={`px-2.5 py-1 rounded text-[10px] font-bold transition-all flex items-center gap-1 ${
+                                    reasonQuestions.length > 0
+                                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                                      : "bg-[#1e1f22] text-discord-muted border border-[#35373c] hover:text-white"
+                                  }`}
+                                >
+                                  <span>📋 {reasonQuestions.length} Questions</span>
+                                  {isExpanded ? <ChevronUp className="w-3 h-3" /> : <ChevronDown className="w-3 h-3" />}
+                                </button>
+                                <button
+                                  onClick={() => handleRemoveReason(idx)}
+                                  className="p-1 text-discord-muted hover:text-discord-red transition-colors"
+                                >
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
                             </div>
+
+                            {/* Accordion Body: Questions Builder for THIS Ticket Reason */}
+                            {isExpanded && (
+                              <div className="p-4 bg-[#1e1f22] border-t border-[#35373c] space-y-3">
+                                <span className="font-semibold text-emerald-400 text-[11px] block uppercase tracking-wider">
+                                  Questions for: {r.label}
+                                </span>
+
+                                {/* Existing Questions for this reason */}
+                                <div className="space-y-2">
+                                  {reasonQuestions.length > 0 ? (
+                                    reasonQuestions.map((rq: IntakeQuestion, qIdx: number) => (
+                                      <div key={rq.id} className="flex items-center justify-between p-2.5 rounded bg-[#2b2d31] border border-[#35373c]">
+                                        <div className="flex items-center gap-2">
+                                          <span className="w-4 h-4 rounded bg-emerald-500/20 text-emerald-400 font-bold text-[9px] flex items-center justify-center">
+                                            Q{qIdx + 1}
+                                          </span>
+                                          <div>
+                                            <span className="font-bold text-white block">{rq.label}</span>
+                                            <span className="text-[10px] text-discord-muted">
+                                              {rq.style} • {rq.required ? "Required" : "Optional"}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <button
+                                          onClick={() => handleRemoveReasonQuestion(idx, qIdx)}
+                                          className="p-1 text-discord-muted hover:text-discord-red"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
+                                    ))
+                                  ) : (
+                                    <p className="text-[11px] text-discord-muted italic">No specific questions for this ticket type yet.</p>
+                                  )}
+                                </div>
+
+                                {/* Add Question Form for this specific reason */}
+                                {reasonQuestions.length < 5 && (
+                                  <div className="pt-2 border-t border-[#35373c] space-y-2">
+                                    <span className="font-semibold text-white text-[11px] block">Add Question to {r.label}</span>
+                                    <div className="grid grid-cols-2 gap-2">
+                                      <input
+                                        type="text"
+                                        placeholder="Question (e.g. Transaction ID)"
+                                        value={reasonQTitle}
+                                        onChange={(e) => setReasonQTitle(e.target.value)}
+                                        className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
+                                      />
+                                      <input
+                                        type="text"
+                                        placeholder="Placeholder (e.g. TX-123)"
+                                        value={reasonQPlaceholder}
+                                        onChange={(e) => setReasonQPlaceholder(e.target.value)}
+                                        className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
+                                      />
+                                    </div>
+                                    <div className="flex items-center gap-4 text-[11px]">
+                                      <label className="flex items-center gap-1 text-discord-muted font-semibold cursor-pointer">
+                                        <input
+                                          type="radio"
+                                          name={`rqstyle_${idx}`}
+                                          checked={reasonQStyle === "short"}
+                                          onChange={() => setReasonQStyle("short")}
+                                          className="accent-discord-brand"
+                                        />
+                                        Single Line
+                                      </label>
+                                      <label className="flex items-center gap-1 text-discord-muted font-semibold cursor-pointer">
+                                        <input
+                                          type="radio"
+                                          name={`rqstyle_${idx}`}
+                                          checked={reasonQStyle === "paragraph"}
+                                          onChange={() => setReasonQStyle("paragraph")}
+                                          className="accent-discord-brand"
+                                        />
+                                        Multi Line
+                                      </label>
+                                      <label className="flex items-center gap-1 text-discord-muted font-semibold cursor-pointer ml-auto">
+                                        <input
+                                          type="checkbox"
+                                          checked={reasonQRequired}
+                                          onChange={(e) => setReasonQRequired(e.target.checked)}
+                                          className="accent-discord-brand"
+                                        />
+                                        Required
+                                      </label>
+                                    </div>
+                                    <button
+                                      onClick={() => handleAddReasonQuestion(idx)}
+                                      className="px-3 py-1 rounded bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1"
+                                    >
+                                      <Plus className="w-3.5 h-3.5" /> Add Question to {r.label}
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                           </div>
-                          <button
-                            onClick={() => handleRemoveReason(idx)}
-                            className="p-1.5 text-discord-muted hover:text-discord-red transition-colors"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))
+                        );
+                      })
                     ) : (
-                      <p className="text-[11px] text-discord-muted italic">No ticket reasons added. The panel will display a single button.</p>
+                      <p className="text-[11px] text-discord-muted italic">No ticket types added. The panel will display a single button.</p>
                     )}
                   </div>
 
                   {/* Add Reason Form */}
                   <div className="pt-2 border-t border-[#35373c] space-y-2">
-                    <span className="font-semibold text-white text-[11px] block">Add New Reason / Dropdown Option</span>
+                    <span className="font-semibold text-white text-[11px] block">Add New Ticket Type</span>
                     <div className="grid grid-cols-3 gap-2">
                       <input
                         type="text"
-                        placeholder="Reason Label (e.g. Bug Report)"
+                        placeholder="Label (e.g. Bug Report)"
                         value={newReasonLabel}
                         onChange={(e) => setNewReasonLabel(e.target.value)}
                         className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
@@ -1251,12 +1321,12 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                       onClick={handleAddReason}
                       className="px-3 py-1.5 rounded-lg bg-discord-brand/20 border border-discord-brand/40 text-discord-brand font-bold text-xs hover:bg-discord-brand hover:text-white transition-all flex items-center gap-1"
                     >
-                      <Plus className="w-3.5 h-3.5" /> Add Reason Option
+                      <Plus className="w-3.5 h-3.5" /> Add Ticket Type
                     </button>
                   </div>
                 </div>
 
-                {/* Panel Embed Customization */}
+                {/* 3. Panel Embed Customization */}
                 <div className="space-y-3 bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
                   <h4 className="font-bold text-white text-xs uppercase tracking-wider text-discord-brand">3. Panel Embed & Banner Images</h4>
 
@@ -1334,7 +1404,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                   </div>
                 </div>
 
-                {/* Welcome Embed Customization inside Ticket */}
+                {/* 4. Welcome Embed Customization inside Ticket */}
                 <div className="space-y-3 bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
                   <h4 className="font-bold text-white text-xs uppercase tracking-wider text-emerald-400">4. Ticket Welcome Message & Images</h4>
 
@@ -1474,13 +1544,33 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                   {/* Form Questions Modal Preview Tab */}
                   {previewTab === "questions" && (
                     <div className="bg-[#2b2d31] p-4 rounded-xl border border-[#35373c] space-y-3">
-                      <div className="flex items-center justify-between border-b border-[#35373c] pb-2">
-                        <span className="font-bold text-white text-xs">{panelForm.embedTitle || "Ticket Intake Form"}</span>
+                      {/* Ticket Reason Selector for Preview */}
+                      {panelForm.reasons && panelForm.reasons.length > 0 && (
+                        <div className="pb-2 border-b border-[#35373c]">
+                          <label className="text-[10px] font-bold text-discord-muted block mb-1">Preview Ticket Type:</label>
+                          <select
+                            value={selectedPreviewReasonIdx}
+                            onChange={(e) => setSelectedPreviewReasonIdx(Number(e.target.value))}
+                            className="w-full p-1.5 rounded bg-[#1e1f22] border border-[#35373c] text-white text-xs font-bold"
+                          >
+                            {panelForm.reasons.map((r: TicketReason, idx: number) => (
+                              <option key={idx} value={idx}>
+                                {r.emoji} {r.label} ({r.questions?.length || 0} questions)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white text-xs">
+                          {activePreviewReason ? `${activePreviewReason.emoji} ${activePreviewReason.label}` : panelForm.embedTitle || "Ticket Form"}
+                        </span>
                         <span className="text-discord-muted text-xs">✕</span>
                       </div>
 
-                      {panelForm.questions && panelForm.questions.length > 0 ? (
-                        panelForm.questions.map((q: IntakeQuestion, idx: number) => (
+                      {activePreviewQuestions.length > 0 ? (
+                        activePreviewQuestions.map((q: IntakeQuestion, idx: number) => (
                           <div key={idx} className="space-y-1">
                             <label className="text-[11px] font-semibold text-discord-muted block">
                               {q.label} {q.required && <span className="text-discord-red">*</span>}
@@ -1497,7 +1587,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                           </div>
                         ))
                       ) : (
-                        <p className="text-xs text-discord-muted py-4 text-center">No questions configured for this panel.</p>
+                        <p className="text-xs text-discord-muted py-4 text-center">No questions configured for this ticket type.</p>
                       )}
 
                       <button disabled className="w-full py-2 bg-discord-brand text-white font-bold text-xs rounded opacity-90">
@@ -1520,10 +1610,10 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                           {panelForm.welcomeDescription || "Support staff will be with you shortly."}
                         </p>
 
-                        {panelForm.questions && panelForm.questions.length > 0 && (
+                        {activePreviewQuestions.length > 0 && (
                           <div className="p-2.5 rounded bg-[#1e1f22] border border-[#35373c] text-[11px] space-y-1.5">
-                            <span className="font-bold text-discord-brand block">📋 Submitted Intake Form</span>
-                            {panelForm.questions.map((q: IntakeQuestion, idx: number) => (
+                            <span className="font-bold text-discord-brand block">📋 Submitted Intake Form ({activePreviewReason?.label || "General"})</span>
+                            {activePreviewQuestions.map((q: IntakeQuestion, idx: number) => (
                               <div key={idx}>
                                 <strong className="text-white">{q.label}:</strong>
                                 <span className="text-discord-muted block pl-2">{q.placeholder}</span>

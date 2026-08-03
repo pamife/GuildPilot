@@ -174,13 +174,14 @@ async function triggerTicketProcess(
     return interaction.reply({ content: "❌ Ticket panel configuration not found.", ephemeral: true });
   }
 
-  // Parse questions
   const globalQuestions: any[] = JSON.parse(panel.questions || "[]");
   const reasons: any[] = JSON.parse(panel.reasons || "[]");
   const selectedReason = reasons.find((r) => r.value === selectedValue || r.label === selectedValue);
   const reasonQuestions: any[] = selectedReason?.questions || [];
 
-  const allQuestions = [...globalQuestions, ...reasonQuestions].slice(0, 5); // Max 5 modal questions per Discord limit
+  // Priority: Use questions defined for this specific ticket type/reason, fallback to global panel questions
+  const targetQuestions = reasonQuestions.length > 0 ? reasonQuestions : globalQuestions;
+  const allQuestions = targetQuestions.slice(0, 5); // Max 5 modal questions per Discord limit
 
   if (allQuestions.length > 0) {
     // Show Modal Form to ask user pre-ticket questions
@@ -631,7 +632,8 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
     const selectedReason = reasons.find((r) => r.value === selectedValue || r.label === selectedValue);
     const reasonQuestions: any[] = selectedReason?.questions || [];
 
-    const allQuestions = [...globalQuestions, ...reasonQuestions].slice(0, 5);
+    const targetQuestions = reasonQuestions.length > 0 ? reasonQuestions : globalQuestions;
+    const allQuestions = targetQuestions.slice(0, 5);
 
     const formAnswers = allQuestions.map((q: any, idx: number) => ({
       label: q.label,
