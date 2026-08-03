@@ -114,8 +114,14 @@ export async function checkOrTriggerUpdate(installIfAvailable = true): Promise<{
 
       // Update is available!
       if (installIfAvailable) {
-        const isWin = process.platform === "win32";
-        const cmd = isWin ? `bash "${scriptPath}"` : `"${scriptPath}"`;
+        const jsScript = path.join(projectDir, "scripts", "auto-update.js");
+        const shScript = path.join(projectDir, "scripts", "auto-update.sh");
+
+        const cmd = fs.existsSync(jsScript)
+          ? `node "${jsScript}"`
+          : process.platform === "win32"
+          ? `bash "${shScript}"`
+          : `"${shScript}"`;
 
         exec(cmd, { cwd: projectDir }, (updateErr, updateStdout, updateStderr) => {
           if (updateErr) {
