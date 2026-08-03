@@ -181,7 +181,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       setLogs(logsRes.data);
     } catch (err) {
       console.error("Failed to load ticket data:", err);
-    } fontally {
+    } finally {
       setLoading(false);
     }
   }, [selectedGuildId]);
