@@ -33,6 +33,8 @@ import {
   Image as ImageIcon,
   HelpCircle,
   ChevronDown,
+  MessageSquarePlus,
+  AlignLeft,
 } from "lucide-react";
 
 type SubPage = "dashboard" | "panels" | "tickets-list" | "categories" | "settings" | "logs";
@@ -43,12 +45,21 @@ interface TicketsViewProps {
   roles: any[];
 }
 
+interface IntakeQuestion {
+  id: string;
+  label: string;
+  placeholder: string;
+  style: "short" | "paragraph";
+  required: boolean;
+}
+
 interface TicketReason {
   label: string;
   value: string;
   emoji: string;
   description: string;
   categoryId?: string;
+  questions?: IntakeQuestion[];
 }
 
 export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewProps) {
@@ -84,7 +95,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const [isPanelModalOpen, setIsPanelModalOpen] = useState(false);
   const [editingPanel, setEditingPanel] = useState<any>(null);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
-  const [previewTab, setPreviewTab] = useState<"panel" | "welcome">("panel");
+  const [previewTab, setPreviewTab] = useState<"panel" | "welcome" | "questions">("panel");
 
   // Panel Form State with Full Live Preview defaults
   const [panelForm, setPanelForm] = useState<any>({
@@ -103,6 +114,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
     welcomeImage: "",
     welcomeFooter: "TheGodGen Ticket Engine",
     reasons: [] as TicketReason[],
+    questions: [] as IntakeQuestion[],
     channelId: "",
     categoryId: "",
     buttonText: "Create Ticket",
@@ -120,6 +132,12 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const [newReasonEmoji, setNewReasonEmoji] = useState("❓");
   const [newReasonDesc, setNewReasonDesc] = useState("");
   const [newReasonCat, setNewReasonCat] = useState("");
+
+  // Question Form state inside Panel Modal
+  const [newQTitle, setNewQTitle] = useState("");
+  const [newQPlaceholder, setNewQPlaceholder] = useState("");
+  const [newQStyle, setNewQStyle] = useState<"short" | "paragraph">("short");
+  const [newQRequired, setNewQRequired] = useState(true);
 
   // Category Form State
   const [newCatName, setNewCatName] = useState("");
@@ -207,6 +225,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       welcomeImage: "",
       welcomeFooter: "TheGodGen Ticket Engine",
       reasons: [],
+      questions: [],
       channelId: channels[0]?.id || "",
       categoryId: "",
       buttonText: "Create Ticket",
@@ -229,6 +248,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       allowedRoles: JSON.parse(panel.allowedRoles || "[]"),
       supportRoles: JSON.parse(panel.supportRoles || "[]"),
       reasons: JSON.parse(panel.reasons || "[]"),
+      questions: JSON.parse(panel.questions || "[]"),
     });
     setPreviewTab("panel");
     setIsPanelModalOpen(true);
@@ -257,6 +277,31 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const handleRemoveReason = (index: number) => {
     const updated = panelForm.reasons.filter((_: any, i: number) => i !== index);
     setPanelForm({ ...panelForm, reasons: updated });
+  };
+
+  const handleAddQuestion = () => {
+    if (!newQTitle) return;
+    const qId = `q_${Date.now()}`;
+    const updated = [
+      ...(panelForm.questions || []),
+      {
+        id: qId,
+        label: newQTitle,
+        placeholder: newQPlaceholder || "Enter your answer...",
+        style: newQStyle,
+        required: newQRequired,
+      },
+    ];
+    setPanelForm({ ...panelForm, questions: updated });
+    setNewQTitle("");
+    setNewQPlaceholder("");
+    setNewQStyle("short");
+    setNewQRequired(true);
+  };
+
+  const handleRemoveQuestion = (index: number) => {
+    const updated = panelForm.questions.filter((_: any, i: number) => i !== index);
+    setPanelForm({ ...panelForm, questions: updated });
   };
 
   const handleSavePanel = async () => {
@@ -382,7 +427,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
               </span>
             </h1>
             <p className="text-xs text-discord-muted">
-              Custom Discord Ticket Management Engine with Multi-Reasons & HTML Transcripts
+              Custom Discord Ticket Engine with Modal Intake Forms, Multi-Reasons & Transcripts
             </p>
           </div>
         </div>
@@ -553,7 +598,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-white">Ticket Panels</h2>
-                <p className="text-xs text-discord-muted">Configure and deploy interactive ticket creation embeds to Discord channels.</p>
+                <p className="text-xs text-discord-muted">Configure and deploy interactive ticket creation embeds with intake forms & questions.</p>
               </div>
               <button
                 onClick={handleOpenCreatePanel}
@@ -567,6 +612,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {panels.map((panel) => {
                 const reasonsList: TicketReason[] = JSON.parse(panel.reasons || "[]");
+                const questionsList: IntakeQuestion[] = JSON.parse(panel.questions || "[]");
                 return (
                   <div key={panel.id} className="p-5 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-4 relative overflow-hidden">
                     <div className="w-full h-1.5 absolute top-0 left-0" style={{ backgroundColor: panel.embedColor || "#5865F2" }} />
@@ -575,9 +621,16 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         <h3 className="text-base font-bold text-white">{panel.name}</h3>
                         <p className="text-xs text-discord-muted line-clamp-1">{panel.description || "No description."}</p>
                       </div>
-                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1e1f22] text-discord-brand border border-[#35373c]">
-                        {reasonsList.length > 0 ? `${reasonsList.length} Reasons` : panel.buttonColor}
-                      </span>
+                      <div className="flex flex-col items-end gap-1">
+                        {questionsList.length > 0 && (
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                            📋 {questionsList.length} Questions
+                          </span>
+                        )}
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-[#1e1f22] text-discord-brand border border-[#35373c]">
+                          {reasonsList.length > 0 ? `${reasonsList.length} Reasons` : panel.buttonColor}
+                        </span>
+                      </div>
                     </div>
 
                     <div className="space-y-1.5 text-xs text-discord-muted bg-[#1e1f22] p-3 rounded-lg border border-[#35373c]">
@@ -978,7 +1031,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       </div>
 
       {/* ========================================================= */}
-      {/* PANEL EDITOR MODAL WITH LIVE DISCORD EMBED PREVIEW */}
+      {/* PANEL EDITOR MODAL WITH LIVE DISCORD EMBED & MODAL PREVIEW */}
       {/* ========================================================= */}
       {isPanelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/70 backdrop-blur-sm">
@@ -987,7 +1040,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
             <div className="p-4 bg-[#1e1f22] border-b border-[#35373c] flex items-center justify-between">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Layers className="w-5 h-5 text-discord-brand" />
-                {editingPanel ? "Edit Ticket Panel & Embed Assets" : "Create New Ticket Panel"}
+                {editingPanel ? "Edit Ticket Panel & Intake Questions" : "Create New Ticket Panel"}
               </h3>
               <button
                 onClick={() => setIsPanelModalOpen(false)}
@@ -1030,6 +1083,108 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                       </select>
                     </div>
                   </div>
+                </div>
+
+                {/* Pre-Ticket Modal Intake Questions Section */}
+                <div className="space-y-3 bg-[#1e1f22] p-4 rounded-xl border border-[#35373c]">
+                  <div className="flex items-center justify-between">
+                    <h4 className="font-bold text-white text-xs uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                      📋 Pre-Ticket Intake Questions (Modal Popup)
+                    </h4>
+                    <span className="text-[10px] text-discord-muted font-mono">{panelForm.questions?.length || 0} / 5 Questions</span>
+                  </div>
+                  <p className="text-[11px] text-discord-muted">
+                    Questions asked in a Discord popup window when the user clicks the ticket button before creating the channel.
+                  </p>
+
+                  {/* Questions List */}
+                  <div className="space-y-2">
+                    {panelForm.questions && panelForm.questions.length > 0 ? (
+                      panelForm.questions.map((q: IntakeQuestion, idx: number) => (
+                        <div key={q.id} className="flex items-center justify-between p-3 rounded-lg bg-[#2b2d31] border border-[#35373c]">
+                          <div className="flex items-center gap-2.5">
+                            <span className="w-5 h-5 rounded bg-discord-brand/20 text-discord-brand font-bold text-[10px] flex items-center justify-center">
+                              Q{idx + 1}
+                            </span>
+                            <div>
+                              <span className="font-bold text-white block">{q.label}</span>
+                              <span className="text-[10px] text-discord-muted">
+                                Style: {q.style} • {q.required ? "Required" : "Optional"}
+                              </span>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => handleRemoveQuestion(idx)}
+                            className="p-1.5 text-discord-muted hover:text-discord-red transition-colors"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-[11px] text-discord-muted italic">No intake questions added yet. Tickets will be created directly without questions.</p>
+                    )}
+                  </div>
+
+                  {/* Add Question Form */}
+                  {(!panelForm.questions || panelForm.questions.length < 5) && (
+                    <div className="pt-2 border-t border-[#35373c] space-y-2">
+                      <span className="font-semibold text-white text-[11px] block">Add Question</span>
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          type="text"
+                          placeholder="Question Title (e.g. In-Game Name)"
+                          value={newQTitle}
+                          onChange={(e) => setNewQTitle(e.target.value)}
+                          className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
+                        />
+                        <input
+                          type="text"
+                          placeholder="Placeholder (e.g. Player123)"
+                          value={newQPlaceholder}
+                          onChange={(e) => setNewQPlaceholder(e.target.value)}
+                          className="p-2 rounded bg-[#2b2d31] border border-[#35373c] text-white text-xs outline-none focus:border-discord-brand"
+                        />
+                      </div>
+                      <div className="flex items-center gap-4 text-[11px]">
+                        <label className="flex items-center gap-1.5 text-discord-muted font-semibold cursor-pointer">
+                          <input
+                            type="radio"
+                            name="qstyle"
+                            checked={newQStyle === "short"}
+                            onChange={() => setNewQStyle("short")}
+                            className="accent-discord-brand"
+                          />
+                          Single Line (Short)
+                        </label>
+                        <label className="flex items-center gap-1.5 text-discord-muted font-semibold cursor-pointer">
+                          <input
+                            type="radio"
+                            name="qstyle"
+                            checked={newQStyle === "paragraph"}
+                            onChange={() => setNewQStyle("paragraph")}
+                            className="accent-discord-brand"
+                          />
+                          Multi Line (Paragraph)
+                        </label>
+                        <label className="flex items-center gap-1.5 text-discord-muted font-semibold cursor-pointer ml-auto">
+                          <input
+                            type="checkbox"
+                            checked={newQRequired}
+                            onChange={(e) => setNewQRequired(e.target.checked)}
+                            className="accent-discord-brand"
+                          />
+                          Required
+                        </label>
+                      </div>
+                      <button
+                        onClick={handleAddQuestion}
+                        className="px-3 py-1.5 rounded-lg bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add Question
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* Multi-Ticket Reasons / Categories Section */}
@@ -1201,30 +1356,6 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                       className="w-full p-2.5 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white outline-none focus:border-discord-brand h-16"
                     />
                   </div>
-
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-discord-muted mb-1 font-semibold">Welcome Thumbnail URL</label>
-                      <input
-                        type="text"
-                        placeholder="https://..."
-                        value={panelForm.welcomeThumbnail || ""}
-                        onChange={(e) => setPanelForm({ ...panelForm, welcomeThumbnail: e.target.value })}
-                        className="w-full p-2 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white font-mono outline-none"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-discord-muted mb-1 font-semibold">Welcome Banner Image URL</label>
-                      <input
-                        type="text"
-                        placeholder="https://..."
-                        value={panelForm.welcomeImage || ""}
-                        onChange={(e) => setPanelForm({ ...panelForm, welcomeImage: e.target.value })}
-                        className="w-full p-2 rounded-lg bg-[#2b2d31] border border-[#35373c] text-white font-mono outline-none"
-                      />
-                    </div>
-                  </div>
                 </div>
               </div>
 
@@ -1238,19 +1369,27 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                   <div className="flex items-center gap-1 bg-[#2b2d31] p-1 rounded-lg border border-[#35373c]">
                     <button
                       onClick={() => setPreviewTab("panel")}
-                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
                         previewTab === "panel" ? "bg-discord-brand text-white" : "text-discord-muted hover:text-white"
                       }`}
                     >
-                      Panel Embed
+                      Panel
+                    </button>
+                    <button
+                      onClick={() => setPreviewTab("questions")}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                        previewTab === "questions" ? "bg-purple-600 text-white" : "text-discord-muted hover:text-white"
+                      }`}
+                    >
+                      Form Modal
                     </button>
                     <button
                       onClick={() => setPreviewTab("welcome")}
-                      className={`px-2.5 py-1 rounded text-[11px] font-bold transition-all ${
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
                         previewTab === "welcome" ? "bg-emerald-600 text-white" : "text-discord-muted hover:text-white"
                       }`}
                     >
-                      Welcome Embed
+                      Welcome
                     </button>
                   </div>
                 </div>
@@ -1332,6 +1471,41 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                     </div>
                   )}
 
+                  {/* Form Questions Modal Preview Tab */}
+                  {previewTab === "questions" && (
+                    <div className="bg-[#2b2d31] p-4 rounded-xl border border-[#35373c] space-y-3">
+                      <div className="flex items-center justify-between border-b border-[#35373c] pb-2">
+                        <span className="font-bold text-white text-xs">{panelForm.embedTitle || "Ticket Intake Form"}</span>
+                        <span className="text-discord-muted text-xs">✕</span>
+                      </div>
+
+                      {panelForm.questions && panelForm.questions.length > 0 ? (
+                        panelForm.questions.map((q: IntakeQuestion, idx: number) => (
+                          <div key={idx} className="space-y-1">
+                            <label className="text-[11px] font-semibold text-discord-muted block">
+                              {q.label} {q.required && <span className="text-discord-red">*</span>}
+                            </label>
+                            {q.style === "paragraph" ? (
+                              <div className="p-2 rounded bg-[#1e1f22] border border-[#35373c] text-discord-muted text-[10px] h-14">
+                                {q.placeholder}
+                              </div>
+                            ) : (
+                              <div className="p-2 rounded bg-[#1e1f22] border border-[#35373c] text-discord-muted text-[10px]">
+                                {q.placeholder}
+                              </div>
+                            )}
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-discord-muted py-4 text-center">No questions configured for this panel.</p>
+                      )}
+
+                      <button disabled className="w-full py-2 bg-discord-brand text-white font-bold text-xs rounded opacity-90">
+                        Submit Ticket Information
+                      </button>
+                    </div>
+                  )}
+
                   {/* Welcome Embed Preview Tab */}
                   {previewTab === "welcome" && (
                     <div className="space-y-3">
@@ -1339,10 +1513,6 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                         className="p-3.5 rounded-lg bg-[#2b2d31] space-y-2 border-l-4 relative overflow-hidden"
                         style={{ borderColor: panelForm.welcomeColor || "#5865F2" }}
                       >
-                        {panelForm.welcomeThumbnail && (
-                          <img src={panelForm.welcomeThumbnail} alt="" className="w-14 h-14 rounded-md object-cover absolute top-3 right-3 border border-[#35373c]" />
-                        )}
-
                         <h4 className="text-sm font-bold text-white pr-14">
                           {panelForm.welcomeTitle || "👋 Welcome to your ticket!"}
                         </h4>
@@ -1350,9 +1520,15 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                           {panelForm.welcomeDescription || "Support staff will be with you shortly."}
                         </p>
 
-                        {panelForm.welcomeImage && (
-                          <div className="pt-2">
-                            <img src={panelForm.welcomeImage} alt="Banner" className="w-full max-h-40 object-cover rounded-md border border-[#35373c]" />
+                        {panelForm.questions && panelForm.questions.length > 0 && (
+                          <div className="p-2.5 rounded bg-[#1e1f22] border border-[#35373c] text-[11px] space-y-1.5">
+                            <span className="font-bold text-discord-brand block">📋 Submitted Intake Form</span>
+                            {panelForm.questions.map((q: IntakeQuestion, idx: number) => (
+                              <div key={idx}>
+                                <strong className="text-white">{q.label}:</strong>
+                                <span className="text-discord-muted block pl-2">{q.placeholder}</span>
+                              </div>
+                            ))}
                           </div>
                         )}
 
@@ -1386,7 +1562,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                 onClick={handleSavePanel}
                 className="px-5 py-2 rounded-lg bg-discord-brand hover:bg-discord-brandHover text-white text-xs font-bold shadow"
               >
-                Save Panel & Assets
+                Save Panel & Form Questions
               </button>
             </div>
           </div>

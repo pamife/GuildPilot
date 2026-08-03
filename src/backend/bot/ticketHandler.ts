@@ -126,7 +126,7 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
 
   if (customId.startsWith("ticket_open:")) {
     const panelId = customId.split(":")[1];
-    await handleTicketOpen(interaction, panelId);
+    await triggerTicketProcess(interaction, panelId);
   } else if (customId.startsWith("ticket_close:")) {
     const ticketId = customId.split(":")[1];
     await handleTicketClosePrompt(interaction, ticketId);
@@ -159,22 +159,61 @@ async function handleSelectMenuInteraction(interaction: StringSelectMenuInteract
   if (customId.startsWith("ticket_select_reason:")) {
     const panelId = customId.split(":")[1];
     const selectedValue = interaction.values[0];
-    await handleTicketOpen(interaction, panelId, selectedValue);
+    await triggerTicketProcess(interaction, panelId, selectedValue);
   }
 }
 
-async function handleTicketOpen(
+// Determines whether to prompt intake modal questions or create ticket directly
+async function triggerTicketProcess(
   interaction: ButtonInteraction | StringSelectMenuInteraction,
   panelId: string,
   selectedValue?: string
 ) {
-  if (!interaction.guild) return;
-  await interaction.deferReply({ ephemeral: true });
-
   const panel = await getTicketPanelById(panelId);
   if (!panel) {
-    return interaction.editReply({ content: "❌ Ticket panel configuration not found." });
+    return interaction.reply({ content: "❌ Ticket panel configuration not found.", ephemeral: true });
   }
+
+  // Parse questions
+  const globalQuestions: any[] = JSON.parse(panel.questions || "[]");
+  const reasons: any[] = JSON.parse(panel.reasons || "[]");
+  const selectedReason = reasons.find((r) => r.value === selectedValue || r.label === selectedValue);
+  const reasonQuestions: any[] = selectedReason?.questions || [];
+
+  const allQuestions = [...globalQuestions, ...reasonQuestions].slice(0, 5); // Max 5 modal questions per Discord limit
+
+  if (allQuestions.length > 0) {
+    // Show Modal Form to ask user pre-ticket questions
+    const modal = new ModalBuilder()
+      .setCustomId(`ticket_intake_modal:${panel.id}:${selectedValue || "default"}`)
+      .setTitle(panel.embedTitle?.substring(0, 45) || "Ticket Information");
+
+    allQuestions.forEach((q: any, idx: number) => {
+      const textInput = new TextInputBuilder()
+        .setCustomId(`q_${idx}`)
+        .setLabel(q.label.substring(0, 45))
+        .setStyle(q.style === "paragraph" ? TextInputStyle.Paragraph : TextInputStyle.Short)
+        .setPlaceholder(q.placeholder ? q.placeholder.substring(0, 100) : "Enter your answer...")
+        .setRequired(q.required !== undefined ? Boolean(q.required) : true);
+
+      modal.addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(textInput));
+    });
+
+    return interaction.showModal(modal);
+  }
+
+  // If no questions, proceed directly to create ticket
+  await interaction.deferReply({ ephemeral: true });
+  await handleTicketOpen(interaction, panel, selectedReason);
+}
+
+async function handleTicketOpen(
+  interaction: ButtonInteraction | StringSelectMenuInteraction | ModalSubmitInteraction,
+  panel: any,
+  selectedReason?: any,
+  formAnswers?: Array<{ label: string; answer: string }>
+) {
+  if (!interaction.guild) return;
 
   const settings = await getTicketSettings(interaction.guild.id);
 
@@ -184,13 +223,10 @@ async function handleTicketOpen(
     const hasRole = interaction.member && "roles" in interaction.member &&
       (interaction.member.roles as any).cache.some((r: Role) => allowedRoles.includes(r.id));
     if (!hasRole) {
-      return interaction.editReply({ content: "❌ You do not have permission to open tickets from this panel." });
+      const msg = "❌ You do not have permission to open tickets from this panel.";
+      return interaction.deferred ? interaction.editReply({ content: msg }) : interaction.reply({ content: msg, ephemeral: true });
     }
   }
-
-  // Parse multi-reasons if selected
-  const reasons: any[] = JSON.parse(panel.reasons || "[]");
-  const selectedReason = reasons.find((r) => r.value === selectedValue || r.label === selectedValue);
 
   // Parse support roles
   const supportRoles: string[] = JSON.parse(panel.supportRoles || "[]");
@@ -202,7 +238,7 @@ async function handleTicketOpen(
   let channelName = settings.namingFormat || "ticket-{username}";
   channelName = channelName.replace("{username}", interaction.user.username.toLowerCase().replace(/[^a-z0-9]/g, ""));
   if (channelName.includes("{number}")) {
-    const count = await getTicketByChannelId(interaction.channelId)?.then((t) => t?.ticketNumber || 1) || 1;
+    const count = (await getTicketByChannelId(interaction.channelId || "").then((t) => t?.ticketNumber || 1)) || 1;
     channelName = channelName.replace("{number}", String(count).padStart(4, "0"));
   }
 
@@ -258,7 +294,7 @@ async function handleTicketOpen(
     categoryId: categoryId,
   });
 
-  // Build custom welcome embed with images & assets
+  // Build custom welcome embed with assets & form answers
   const welcomeTitle = panel.welcomeTitle || `Support Ticket #${ticketRecord.ticketNumber}`;
   let welcomeDesc = panel.welcomeDescription || `Welcome ${interaction.user}! A member of our support team will be with you shortly.`;
 
@@ -277,6 +313,19 @@ async function handleTicketOpen(
     welcomeEmbed.addFields({
       name: "Reason",
       value: `${selectedReason.emoji || "📌"} ${selectedReason.label}`,
+      inline: false,
+    });
+  }
+
+  // Include Form Answers if intake questions were answered
+  if (formAnswers && formAnswers.length > 0) {
+    const formattedAnswers = formAnswers
+      .map((fa) => `**${fa.label}**:\n${fa.answer}`)
+      .join("\n\n");
+
+    welcomeEmbed.addFields({
+      name: "📋 Submitted Intake Form",
+      value: formattedAnswers.substring(0, 1024),
       inline: false,
     });
   }
@@ -302,9 +351,12 @@ async function handleTicketOpen(
     components: [row1],
   });
 
-  await interaction.editReply({
-    content: `✅ Ticket created! Head over to ${ticketChannel}.`,
-  });
+  const successContent = `✅ Ticket created! Head over to ${ticketChannel}.`;
+  if (interaction.deferred) {
+    await interaction.editReply({ content: successContent });
+  } else {
+    await interaction.reply({ content: successContent, ephemeral: true });
+  }
 }
 
 async function handleTicketClosePrompt(interaction: ButtonInteraction, ticketId: string) {
@@ -562,7 +614,32 @@ async function handleTicketTranscript(interaction: ButtonInteraction, ticketId: 
 async function handleModalInteraction(interaction: ModalSubmitInteraction) {
   const customId = interaction.customId;
 
-  if (customId.startsWith("ticket_adduser_modal:")) {
+  if (customId.startsWith("ticket_intake_modal:")) {
+    await interaction.deferReply({ ephemeral: true });
+
+    const parts = customId.split(":");
+    const panelId = parts[1];
+    const selectedValue = parts[2] === "default" ? undefined : parts[2];
+
+    const panel = await getTicketPanelById(panelId);
+    if (!panel) {
+      return interaction.editReply({ content: "❌ Ticket panel not found." });
+    }
+
+    const globalQuestions: any[] = JSON.parse(panel.questions || "[]");
+    const reasons: any[] = JSON.parse(panel.reasons || "[]");
+    const selectedReason = reasons.find((r) => r.value === selectedValue || r.label === selectedValue);
+    const reasonQuestions: any[] = selectedReason?.questions || [];
+
+    const allQuestions = [...globalQuestions, ...reasonQuestions].slice(0, 5);
+
+    const formAnswers = allQuestions.map((q: any, idx: number) => ({
+      label: q.label,
+      answer: interaction.fields.getTextInputValue(`q_${idx}`) || "N/A",
+    }));
+
+    await handleTicketOpen(interaction, panel, selectedReason, formAnswers);
+  } else if (customId.startsWith("ticket_adduser_modal:")) {
     const ticketId = customId.split(":")[1];
     const userIdInput = interaction.fields.getTextInputValue("user_id").trim();
     const channel = interaction.channel as TextChannel;

@@ -42,7 +42,8 @@ model TicketPanel {
   welcomeThumbnail  String?
   welcomeImage      String?
   welcomeFooter     String?  @default("TheGodGen Ticket Engine")
-  reasons           String   @default("[]") // JSON array of ticket reasons [{ label, value, emoji, description, categoryId }]
+  reasons           String   @default("[]") // JSON array of ticket reasons [{ label, value, emoji, description, categoryId, questions }]
+  questions         String   @default("[]") // JSON array of global panel intake questions [{ id, label, placeholder, style, required }]
   channelId         String?
   categoryId        String?
   buttonText        String   @default("Create Ticket")
