@@ -26,31 +26,38 @@ model AuditLog {
 }
 
 model TicketPanel {
-  id               String   @id @default(uuid())
-  guildId          String
-  name             String
-  description      String?
-  embedTitle       String?
-  embedDescription String?
-  embedColor       String   @default("#5865F2")
-  thumbnail        String?
-  image            String?
-  footer           String?
-  channelId        String?
-  categoryId       String?
-  buttonText       String   @default("Create Ticket")
-  buttonEmoji      String?  @default("📩")
-  buttonColor      String   @default("Primary") // Primary, Secondary, Success, Danger
-  allowedRoles     String   @default("[]") // JSON array of role IDs
-  supportRoles     String   @default("[]") // JSON array of role IDs
-  maxOpenTickets   Int      @default(1)
-  autoCloseHours   Int      @default(0)
-  transcriptEnabled Boolean @default(true)
-  messageId        String?
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id                String   @id @default(uuid())
+  guildId           String
+  name              String
+  description       String?
+  embedTitle        String?
+  embedDescription  String?
+  embedColor        String   @default("#5865F2")
+  thumbnail         String?
+  image             String?
+  footer            String?
+  welcomeTitle      String?  @default("👋 Welcome to your ticket!")
+  welcomeDescription String? @default("Support staff will be with you shortly. Use the controls below to manage this ticket.")
+  welcomeColor      String   @default("#5865F2")
+  welcomeThumbnail  String?
+  welcomeImage      String?
+  welcomeFooter     String?  @default("TheGodGen Ticket Engine")
+  reasons           String   @default("[]") // JSON array of ticket reasons [{ label, value, emoji, description, categoryId }]
+  channelId         String?
+  categoryId        String?
+  buttonText        String   @default("Create Ticket")
+  buttonEmoji       String?  @default("📩")
+  buttonColor       String   @default("Primary") // Primary, Secondary, Success, Danger
+  allowedRoles      String   @default("[]") // JSON array of role IDs
+  supportRoles      String   @default("[]") // JSON array of role IDs
+  maxOpenTickets    Int      @default(1)
+  autoCloseHours    Int      @default(0)
+  transcriptEnabled Boolean  @default(true)
+  messageId         String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 
-  tickets          Ticket[]
+  tickets           Ticket[]
 }
 
 model TicketCategory {

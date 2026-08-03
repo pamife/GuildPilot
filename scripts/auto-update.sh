@@ -174,15 +174,10 @@ if git diff --name-only "${LOCAL_HASH}" "${REMOTE_HASH}" | grep -E "package(-loc
   fi
 fi
 
-# Check if Prisma schema changed
-if git diff --name-only "${LOCAL_HASH}" "${REMOTE_HASH}" | grep "prisma/schema.prisma" > /dev/null; then
-  log "Prisma schema changed. Generating client & running migrations..."
-  npx prisma generate || rollback "prisma generate failed"
-  if ! npx prisma migrate deploy; then
-    log "Prisma migrate deploy failed. Falling back to npx prisma db push..."
-    npx prisma db push || rollback "Prisma schema update failed"
-  fi
-fi
+# Synchronize Prisma Client & Database Schema
+log "Synchronizing Prisma Client & Database Schema..."
+npx prisma generate || rollback "prisma generate failed"
+npx prisma db push --accept-data-loss || rollback "Prisma db push failed"
 
 # Step 4: Rebuild Frontend & Backend
 log "Building production binaries (npm run build)..."

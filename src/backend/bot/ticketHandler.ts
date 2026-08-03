@@ -2,6 +2,7 @@ import {
   Client,
   Interaction,
   ButtonInteraction,
+  StringSelectMenuInteraction,
   ModalSubmitInteraction,
   ChannelType,
   PermissionFlagsBits,
@@ -9,6 +10,8 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -33,6 +36,8 @@ export function setupTicketInteractions(client: Client) {
     try {
       if (interaction.isButton()) {
         await handleButtonInteraction(interaction);
+      } else if (interaction.isStringSelectMenu()) {
+        await handleSelectMenuInteraction(interaction);
       } else if (interaction.isModalSubmit()) {
         await handleModalInteraction(interaction);
       }
@@ -62,14 +67,36 @@ export async function deployTicketPanelEmbed(client: Client, panelId: string): P
 
   const embed = new EmbedBuilder()
     .setTitle(panel.embedTitle || panel.name)
-    .setDescription(panel.embedDescription || "Click the button below to open a ticket.")
+    .setDescription(panel.embedDescription || "Click the button below or choose a reason to open a ticket.")
     .setColor((panel.embedColor as `#${string}`) || "#5865F2");
 
   if (panel.thumbnail) embed.setThumbnail(panel.thumbnail);
   if (panel.image) embed.setImage(panel.image);
   if (panel.footer) embed.setFooter({ text: panel.footer });
 
-  // Map button style
+  const components: any[] = [];
+
+  // Parse multi-reasons
+  const reasons: any[] = JSON.parse(panel.reasons || "[]");
+
+  if (reasons.length > 0) {
+    const selectMenu = new StringSelectMenuBuilder()
+      .setCustomId(`ticket_select_reason:${panel.id}`)
+      .setPlaceholder("Select a ticket reason...");
+
+    reasons.forEach((r: any) => {
+      const option = new StringSelectMenuOptionBuilder()
+        .setLabel(r.label || "Support Reason")
+        .setValue(r.value || r.label.toLowerCase().replace(/[^a-z0-9]/g, "_"))
+        .setDescription(r.description || "Open ticket for this reason");
+      if (r.emoji) option.setEmoji(r.emoji);
+      selectMenu.addOptions(option);
+    });
+
+    components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
+  }
+
+  // Button option
   let style = ButtonStyle.Primary;
   if (panel.buttonColor === "Secondary") style = ButtonStyle.Secondary;
   if (panel.buttonColor === "Success") style = ButtonStyle.Success;
@@ -84,11 +111,11 @@ export async function deployTicketPanelEmbed(client: Client, panelId: string): P
     button.setEmoji(panel.buttonEmoji);
   }
 
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
+  components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button));
 
   const message = await channel.send({
     embeds: [embed],
-    components: [row],
+    components,
   });
 
   return message.id;
@@ -127,7 +154,20 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
   }
 }
 
-async function handleTicketOpen(interaction: ButtonInteraction, panelId: string) {
+async function handleSelectMenuInteraction(interaction: StringSelectMenuInteraction) {
+  const customId = interaction.customId;
+  if (customId.startsWith("ticket_select_reason:")) {
+    const panelId = customId.split(":")[1];
+    const selectedValue = interaction.values[0];
+    await handleTicketOpen(interaction, panelId, selectedValue);
+  }
+}
+
+async function handleTicketOpen(
+  interaction: ButtonInteraction | StringSelectMenuInteraction,
+  panelId: string,
+  selectedValue?: string
+) {
   if (!interaction.guild) return;
   await interaction.deferReply({ ephemeral: true });
 
@@ -148,10 +188,15 @@ async function handleTicketOpen(interaction: ButtonInteraction, panelId: string)
     }
   }
 
+  // Parse multi-reasons if selected
+  const reasons: any[] = JSON.parse(panel.reasons || "[]");
+  const selectedReason = reasons.find((r) => r.value === selectedValue || r.label === selectedValue);
+
   // Parse support roles
   const supportRoles: string[] = JSON.parse(panel.supportRoles || "[]");
   const defaultSupportRoles: string[] = JSON.parse(settings.defaultSupportRoles || "[]");
-  const allSupportRoles = Array.from(new Set([...supportRoles, ...defaultSupportRoles]));
+  const reasonSupportRoles: string[] = selectedReason?.supportRoles || [];
+  const allSupportRoles = Array.from(new Set([...supportRoles, ...defaultSupportRoles, ...reasonSupportRoles]));
 
   // Naming format
   let channelName = settings.namingFormat || "ticket-{username}";
@@ -162,7 +207,7 @@ async function handleTicketOpen(interaction: ButtonInteraction, panelId: string)
   }
 
   // Target category
-  const categoryId = panel.categoryId || settings.defaultCategoryId || undefined;
+  const categoryId = selectedReason?.categoryId || panel.categoryId || settings.defaultCategoryId || undefined;
 
   // Build permission overwrites
   const permissionOverwrites: any[] = [
@@ -213,19 +258,32 @@ async function handleTicketOpen(interaction: ButtonInteraction, panelId: string)
     categoryId: categoryId,
   });
 
-  // Build welcome embed
+  // Build custom welcome embed with images & assets
+  const welcomeTitle = panel.welcomeTitle || `Support Ticket #${ticketRecord.ticketNumber}`;
+  let welcomeDesc = panel.welcomeDescription || `Welcome ${interaction.user}! A member of our support team will be with you shortly.`;
+
   const welcomeEmbed = new EmbedBuilder()
-    .setTitle(`Support Ticket #${ticketRecord.ticketNumber}`)
-    .setDescription(
-      `Welcome ${interaction.user}! A member of our support team will be with you shortly.\n\nPlease describe your issue in detail.`
-    )
-    .setColor("#5865F2")
+    .setTitle(welcomeTitle)
+    .setDescription(welcomeDesc)
+    .setColor((panel.welcomeColor as `#${string}`) || "#5865F2")
     .addFields(
       { name: "Creator", value: `${interaction.user.tag}`, inline: true },
       { name: "Panel", value: `${panel.name}`, inline: true },
       { name: "Status", value: "🟢 Open", inline: true }
     )
     .setTimestamp();
+
+  if (selectedReason) {
+    welcomeEmbed.addFields({
+      name: "Reason",
+      value: `${selectedReason.emoji || "📌"} ${selectedReason.label}`,
+      inline: false,
+    });
+  }
+
+  if (panel.welcomeThumbnail) welcomeEmbed.setThumbnail(panel.welcomeThumbnail);
+  if (panel.welcomeImage) welcomeEmbed.setImage(panel.welcomeImage);
+  if (panel.welcomeFooter) welcomeEmbed.setFooter({ text: panel.welcomeFooter });
 
   // Control buttons row
   const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
@@ -278,7 +336,6 @@ async function handleTicketCloseExecute(interaction: ButtonInteraction, ticketId
 
   const channel = interaction.channel as TextChannel;
   if (channel) {
-    // Revoke write access for creator
     await channel.permissionOverwrites.edit(ticket.userId, {
       SendMessages: false,
     }).catch(() => {});
@@ -333,7 +390,6 @@ async function handleTicketClaim(interaction: ButtonInteraction, ticketId: strin
 
   const channel = interaction.channel as TextChannel;
   if (channel) {
-    // Grant explicit manage overwrites to claimer
     await channel.permissionOverwrites.edit(interaction.user.id, {
       SendMessages: true,
       ViewChannel: true,
@@ -404,14 +460,12 @@ async function handleTicketDelete(interaction: ButtonInteraction, ticketId: stri
   const ticket = await getTicketById(ticketId);
 
   if (ticket && channel) {
-    // Generate transcript automatically
     try {
       const filePath = await generateHtmlTranscript(channel, {
         number: ticket.ticketNumber,
         creatorTag: ticket.userTag,
       });
 
-      // Post transcript to log channel if configured
       if (settings.logChannelId && interaction.guild) {
         const logChannel = (await interaction.guild.channels.fetch(settings.logChannelId).catch(() => null)) as TextChannel;
         if (logChannel && logChannel.isTextBased()) {
