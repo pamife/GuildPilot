@@ -85,67 +85,73 @@ export async function checkOrTriggerUpdate(installIfAvailable = true): Promise<{
   message: string;
 }> {
   const { exec } = await import("child_process");
+  const util = await import("util");
+  const execPromise = util.promisify(exec);
   const projectDir = process.cwd();
-  const scriptPath = path.join(projectDir, "scripts", "auto-update.sh");
 
-  return new Promise((resolve) => {
-    exec("git fetch origin main && git rev-parse HEAD && git rev-parse origin/main", { cwd: projectDir }, (err, stdout) => {
-      if (err) {
-        return resolve({
-          hasUpdate: false,
-          localCommit: "unknown",
-          remoteCommit: "unknown",
-          message: "Failed to connect to remote GitHub repository.",
-        });
-      }
+  try {
+    // Step 1: Fetch remote changes
+    await execPromise("git fetch origin main", { cwd: projectDir }).catch(() => {});
 
-      const lines = stdout.trim().split("\n").map((l) => l.trim()).filter(Boolean);
-      const localCommit = lines[0] ? lines[0].substring(0, 7) : "unknown";
-      const remoteCommit = lines[1] ? lines[1].substring(0, 7) : "unknown";
+    // Step 2: Get exact local HEAD commit hash
+    const { stdout: localOut } = await execPromise("git rev-parse HEAD", { cwd: projectDir });
+    const localCommitFull = localOut.trim();
+    const localCommit = localCommitFull.substring(0, 7);
 
-      if (localCommit === remoteCommit) {
-        return resolve({
-          hasUpdate: false,
-          localCommit,
-          remoteCommit,
-          message: `System is up to date (Commit: ${localCommit}).`,
-        });
-      }
+    // Step 3: Get exact remote origin/main commit hash
+    const { stdout: remoteOut } = await execPromise("git rev-parse origin/main", { cwd: projectDir });
+    const remoteCommitFull = remoteOut.trim();
+    const remoteCommit = remoteCommitFull.substring(0, 7);
 
-      // Update is available!
-      if (installIfAvailable) {
-        const jsScript = path.join(projectDir, "scripts", "auto-update.js");
-        const shScript = path.join(projectDir, "scripts", "auto-update.sh");
+    if (localCommitFull === remoteCommitFull) {
+      return {
+        hasUpdate: false,
+        localCommit,
+        remoteCommit,
+        message: `System is fully up to date at commit ${localCommit}.`,
+      };
+    }
 
-        const cmd = fs.existsSync(jsScript)
-          ? `node "${jsScript}"`
-          : process.platform === "win32"
-          ? `bash "${shScript}"`
-          : `"${shScript}"`;
+    // Update is available!
+    if (installIfAvailable) {
+      const jsScript = path.join(projectDir, "scripts", "auto-update.js");
+      const shScript = path.join(projectDir, "scripts", "auto-update.sh");
 
-        exec(cmd, { cwd: projectDir }, (updateErr, updateStdout, updateStderr) => {
-          if (updateErr) {
-            console.error("[UpdateService] Update script execution error:", updateStderr || updateErr.message);
-          } else {
-            console.log("[UpdateService] Update script executed successfully:", updateStdout);
-          }
-        });
+      const cmd = fs.existsSync(jsScript)
+        ? `node "${jsScript}"`
+        : process.platform === "win32"
+        ? `bash "${shScript}"`
+        : `"${shScript}"`;
 
-        return resolve({
-          hasUpdate: true,
-          localCommit,
-          remoteCommit,
-          message: `New update found (${remoteCommit})! Installing update in background...`,
-        });
-      } else {
-        return resolve({
-          hasUpdate: true,
-          localCommit,
-          remoteCommit,
-          message: `New update available on GitHub (${remoteCommit}).`,
-        });
-      }
-    });
-  });
+      exec(cmd, { cwd: projectDir }, (updateErr, updateStdout, updateStderr) => {
+        if (updateErr) {
+          console.error("[UpdateService] Update script execution error:", updateStderr || updateErr.message);
+        } else {
+          console.log("[UpdateService] Update script executed successfully:", updateStdout);
+        }
+      });
+
+      return {
+        hasUpdate: true,
+        localCommit,
+        remoteCommit,
+        message: `New update found (${remoteCommit})! Installing update in background...`,
+      };
+    } else {
+      return {
+        hasUpdate: true,
+        localCommit,
+        remoteCommit,
+        message: `New update available on GitHub (${remoteCommit}).`,
+      };
+    }
+  } catch (err: any) {
+    console.error("[UpdateService] Git check error:", err);
+    return {
+      hasUpdate: false,
+      localCommit: "unknown",
+      remoteCommit: "unknown",
+      message: `Failed to check update: ${err.message || err}`,
+    };
+  }
 }
-

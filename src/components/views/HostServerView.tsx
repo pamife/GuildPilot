@@ -102,18 +102,23 @@ export function HostServerView() {
       const res = await fetch(`${apiUrl}/api/host-server/check-update`, { method: "POST" });
       const data = await res.json();
       if (data && data.message) {
-        if (data.hasUpdate) {
-          setUpdateInfo((prev: any) => ({
-            ...prev,
-            status: "success",
-            message: data.message,
-            commitShort: data.remoteCommit,
-            timestamp: new Date().toISOString(),
-          }));
-        }
+        setUpdateInfo({
+          id: `update_${Date.now()}`,
+          status: "success",
+          message: data.message,
+          commitShort: data.remoteCommit || data.localCommit || "latest",
+          timestamp: new Date().toISOString(),
+        });
       }
-    } catch (err) {
+    } catch (err: any) {
       console.error("Update check failed:", err);
+      setUpdateInfo({
+        id: `update_err_${Date.now()}`,
+        status: "error",
+        message: `Update check failed: ${err.message}`,
+        commitShort: "error",
+        timestamp: new Date().toISOString(),
+      });
     } finally {
       setCheckingUpdate(false);
     }
