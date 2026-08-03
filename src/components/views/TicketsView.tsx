@@ -41,6 +41,7 @@ import {
   Award,
   BarChart3,
   Terminal,
+  Activity,
 } from "lucide-react";
 
 type SubPage = "dashboard" | "panels" | "tickets-list" | "categories" | "settings" | "logs";
