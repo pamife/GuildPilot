@@ -43,9 +43,13 @@ import {
   Terminal,
   Activity,
   Check,
+  Palette,
+  Sparkles,
+  MessageSquare,
 } from "lucide-react";
 
 type SubPage = "dashboard" | "panels" | "tickets-list" | "categories" | "settings" | "logs";
+type ModalTab = "embed" | "types" | "roles" | "welcome";
 
 interface TicketsViewProps {
   selectedGuildId: string | null;
@@ -100,15 +104,16 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
 
-  // Modals
+  // Panel Modal Editor states
   const [isPanelModalOpen, setIsPanelModalOpen] = useState(false);
   const [editingPanel, setEditingPanel] = useState<any>(null);
   const [selectedTicket, setSelectedTicket] = useState<any>(null);
+  const [activeModalTab, setActiveModalTab] = useState<ModalTab>("embed");
   const [previewTab, setPreviewTab] = useState<"panel" | "welcome" | "questions">("panel");
   const [selectedPreviewReasonIdx, setSelectedPreviewReasonIdx] = useState<number>(0);
   const [expandedReasonIdx, setExpandedReasonIdx] = useState<number | null>(null);
 
-  // Panel Form State with OLED defaults
+  // Panel Form State
   const [panelForm, setPanelForm] = useState<any>({
     name: "General Support",
     description: "Main support panel for member inquiries.",
@@ -154,6 +159,9 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const [newCatName, setNewCatName] = useState("");
   const [newCatDesc, setNewCatDesc] = useState("");
   const [newCatEmoji, setNewCatEmoji] = useState("🎫");
+
+  // Color Presets
+  const colorPresets = ["#5865F2", "#57F287", "#FEE75C", "#ED4245", "#EB459E", "#9B59B6", "#1ABC9C", "#3498DB"];
 
   // Fetch all ticket data for selected guild
   const fetchAllData = useCallback(async () => {
@@ -270,6 +278,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       autoCloseHours: 0,
       transcriptEnabled: true,
     });
+    setActiveModalTab("embed");
     setSelectedPreviewReasonIdx(0);
     setPreviewTab("panel");
     setIsPanelModalOpen(true);
@@ -313,6 +322,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       reasons: parsedReasons,
       questions: parsedQuestions,
     });
+    setActiveModalTab("embed");
     setSelectedPreviewReasonIdx(0);
     setPreviewTab("panel");
     setIsPanelModalOpen(true);
@@ -344,7 +354,6 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
     setPanelForm({ ...panelForm, reasons: updated });
   };
 
-  // Add question specifically to a reason
   const handleAddReasonQuestion = (reasonIndex: number) => {
     if (!reasonQTitle) return;
     const qId = `q_${Date.now()}`;
@@ -491,7 +500,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const textChannels = channels.filter((c) => c.type === 0);
   const categoryChannels = channels.filter((c) => c.type === 4);
 
-  // Determine active questions to display in preview modal tab
+  // Active preview reason & questions
   const activePreviewReason = panelForm.reasons && panelForm.reasons[selectedPreviewReasonIdx];
   const activePreviewQuestions =
     activePreviewReason?.questions && activePreviewReason.questions.length > 0
@@ -963,7 +972,7 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
         )}
 
         {/* ========================================================= */}
-        {/* 5. SETTINGS SUBPAGE (SUPPORTER ROLES) */}
+        {/* 5. SETTINGS SUBPAGE */}
         {/* ========================================================= */}
         {activeSubPage === "settings" && (
           <div className="max-w-3xl space-y-6">
@@ -1008,7 +1017,6 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs pt-2">
-                {/* Naming Format */}
                 <div>
                   <label className="block text-zinc-400 mb-1.5 font-semibold">Ticket Channel Naming Format</label>
                   <select
@@ -1022,7 +1030,6 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                   </select>
                 </div>
 
-                {/* Default Category */}
                 <div>
                   <label className="block text-zinc-400 mb-1.5 font-semibold">Default Channel Category</label>
                   <select
@@ -1039,7 +1046,6 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                   </select>
                 </div>
 
-                {/* Transcript Log Channel */}
                 <div>
                   <label className="block text-zinc-400 mb-1.5 font-semibold">Log Channel (Ticket Close Log Embed)</label>
                   <select
@@ -1056,7 +1062,6 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                   </select>
                 </div>
 
-                {/* Delete Delay */}
                 <div>
                   <label className="block text-zinc-400 mb-1.5 font-semibold">
                     Delete Countdown Delay ({settings.deleteDelaySeconds}s)
@@ -1127,98 +1132,548 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
       </div>
 
       {/* ========================================================= */}
-      {/* PANEL EDITOR MODAL WITH SUPPORTER ROLE PICKER */}
+      {/* WORLD-CLASS 4-TAB TICKET PANEL VISUAL EDITOR MODAL */}
       {/* ========================================================= */}
       {isPanelModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
           <div className="bg-[#090a0f] border border-[#18181b] rounded-3xl max-w-6xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+            {/* Modal Top Bar */}
             <div className="p-4 bg-[#000000] border-b border-[#18181b] flex items-center justify-between">
-              <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Layers className="w-5 h-5 text-discord-brand" />
-                {editingPanel ? "Edit Ticket Panel & Supporter Roles" : "Create New Ticket Panel"}
-              </h3>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-xl bg-discord-brand/20 border border-discord-brand/40 flex items-center justify-center text-discord-brand">
+                  <Layers className="w-4 h-4" />
+                </div>
+                <h3 className="text-base font-bold text-white">
+                  {editingPanel ? `Edit Panel: "${panelForm.name}"` : "Create Ticket Panel"}
+                </h3>
+              </div>
+
+              {/* Editor Tabs Navigation */}
+              <div className="flex items-center gap-1 bg-[#090a0f] p-1 rounded-xl border border-[#18181b]">
+                <button
+                  onClick={() => setActiveModalTab("embed")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeModalTab === "embed"
+                      ? "bg-discord-brand text-white shadow-md"
+                      : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+                  }`}
+                >
+                  <Palette className="w-3.5 h-3.5" /> 1. Panel Embed & Assets
+                </button>
+                <button
+                  onClick={() => setActiveModalTab("types")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeModalTab === "types"
+                      ? "bg-emerald-600 text-white shadow-md"
+                      : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" /> 2. Ticket Types & Questions ({panelForm.reasons?.length || 0})
+                </button>
+                <button
+                  onClick={() => setActiveModalTab("roles")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeModalTab === "roles"
+                      ? "bg-sky-600 text-white shadow-md"
+                      : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+                  }`}
+                >
+                  <Shield className="w-3.5 h-3.5" /> 3. Supporter Roles
+                </button>
+                <button
+                  onClick={() => setActiveModalTab("welcome")}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
+                    activeModalTab === "welcome"
+                      ? "bg-purple-600 text-white shadow-md"
+                      : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+                  }`}
+                >
+                  <MessageSquare className="w-3.5 h-3.5" /> 4. Welcome Message
+                </button>
+              </div>
+
               <button
                 onClick={() => setIsPanelModalOpen(false)}
-                className="text-zinc-500 hover:text-white text-lg font-bold"
+                className="text-zinc-500 hover:text-white text-lg font-bold px-2"
               >
                 ✕
               </button>
             </div>
 
+            {/* Modal Body: Split Screen (Left Controls, Right Live Discord Mockup) */}
             <div className="flex-1 p-6 overflow-y-auto grid grid-cols-1 lg:grid-cols-12 gap-6 text-xs">
+              {/* Left Column: Active Editor Tab Controls (7 Cols) */}
               <div className="lg:col-span-7 space-y-5">
-                {/* Basic Settings */}
-                <div className="space-y-3 bg-[#000000] p-4 rounded-2xl border border-[#18181b]">
-                  <h4 className="font-bold text-white text-xs uppercase tracking-wider text-discord-brand">1. Basic Panel Settings</h4>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-zinc-400 mb-1 font-semibold">Panel Name</label>
-                      <input
-                        type="text"
-                        value={panelForm.name}
-                        onChange={(e) => setPanelForm({ ...panelForm, name: e.target.value })}
-                        className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
-                      />
+                {/* =================================================== */}
+                {/* TAB 1: PANEL EMBED & DESIGN */}
+                {/* =================================================== */}
+                {activeModalTab === "embed" && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-[#000000] rounded-2xl border border-[#18181b] space-y-3">
+                      <h4 className="font-bold text-white text-xs uppercase tracking-wider text-discord-brand">
+                        General Panel Configuration
+                      </h4>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Panel Internal Name</label>
+                          <input
+                            type="text"
+                            value={panelForm.name}
+                            onChange={(e) => setPanelForm({ ...panelForm, name: e.target.value })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Target Discord Channel</label>
+                          <select
+                            value={panelForm.channelId}
+                            onChange={(e) => setPanelForm({ ...panelForm, channelId: e.target.value })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                          >
+                            <option value="">-- Select Channel --</option>
+                            {textChannels.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                #{c.name}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="block text-zinc-400 mb-1 font-semibold">Target Channel</label>
-                      <select
-                        value={panelForm.channelId}
-                        onChange={(e) => setPanelForm({ ...panelForm, channelId: e.target.value })}
-                        className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
-                      >
-                        <option value="">-- Select Channel --</option>
-                        {textChannels.map((c) => (
-                          <option key={c.id} value={c.id}>
-                            #{c.name}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                </div>
 
-                {/* Supporter Roles Picker for Panel */}
-                <div className="space-y-3 bg-[#000000] p-4 rounded-2xl border border-[#18181b]">
-                  <h4 className="font-bold text-white text-xs uppercase tracking-wider text-sky-400 flex items-center gap-1.5">
-                    <Shield className="w-4 h-4" /> Supporter Roles for this Panel
-                  </h4>
-                  <p className="text-[11px] text-zinc-500">
-                    Roles granted channel access and pinged when a user opens a ticket from this panel.
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {roles.map((r) => {
-                      const isSelected = panelForm.supportRoles?.includes(r.id);
-                      return (
-                        <button
-                          key={r.id}
-                          type="button"
-                          onClick={() => handleToggleSupportRole(r.id)}
-                          className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
-                            isSelected
-                              ? "bg-sky-500/20 text-sky-400 border border-sky-500/40"
-                              : "bg-[#090a0f] text-zinc-500 border border-[#18181b] hover:text-white"
-                          }`}
-                        >
-                          <span className="w-2 h-2 rounded-full" style={{ backgroundColor: r.color || "#38bdf8" }} />
-                          <span>{r.name}</span>
-                          {isSelected && <Check className="w-3.5 h-3.5" />}
-                        </button>
-                      );
-                    })}
+                    <div className="p-4 bg-[#000000] rounded-2xl border border-[#18181b] space-y-3">
+                      <h4 className="font-bold text-white text-xs uppercase tracking-wider text-discord-brand">
+                        Discord Channel Embed Design
+                      </h4>
+
+                      <div>
+                        <label className="block text-zinc-400 mb-1 font-semibold">Embed Header Title</label>
+                        <input
+                          type="text"
+                          value={panelForm.embedTitle}
+                          onChange={(e) => setPanelForm({ ...panelForm, embedTitle: e.target.value })}
+                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-zinc-400 mb-1 font-semibold">Embed Main Description</label>
+                        <textarea
+                          value={panelForm.embedDescription}
+                          onChange={(e) => setPanelForm({ ...panelForm, embedDescription: e.target.value })}
+                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand h-20"
+                        />
+                      </div>
+
+                      {/* Color Picker & Presets */}
+                      <div>
+                        <label className="block text-zinc-400 mb-1 font-semibold">Embed Accent Color</label>
+                        <div className="flex items-center gap-3">
+                          <input
+                            type="color"
+                            value={panelForm.embedColor || "#5865F2"}
+                            onChange={(e) => setPanelForm({ ...panelForm, embedColor: e.target.value })}
+                            className="w-10 h-10 rounded-xl border-none cursor-pointer bg-transparent"
+                          />
+                          <input
+                            type="text"
+                            value={panelForm.embedColor || "#5865F2"}
+                            onChange={(e) => setPanelForm({ ...panelForm, embedColor: e.target.value })}
+                            className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white font-mono outline-none w-32"
+                          />
+                          <div className="flex items-center gap-1.5 pl-2">
+                            {colorPresets.map((hex) => (
+                              <button
+                                key={hex}
+                                type="button"
+                                onClick={() => setPanelForm({ ...panelForm, embedColor: hex })}
+                                className="w-6 h-6 rounded-full border border-white/20 transition-transform hover:scale-110"
+                                style={{ backgroundColor: hex }}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Image & Thumbnail Asset URLs */}
+                      <div className="grid grid-cols-2 gap-3 pt-2">
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Thumbnail URL (Icon Top Right)</label>
+                          <input
+                            type="text"
+                            placeholder="https://..."
+                            value={panelForm.thumbnail || ""}
+                            onChange={(e) => setPanelForm({ ...panelForm, thumbnail: e.target.value })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white font-mono outline-none"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Large Banner Image URL</label>
+                          <input
+                            type="text"
+                            placeholder="https://..."
+                            value={panelForm.image || ""}
+                            onChange={(e) => setPanelForm({ ...panelForm, image: e.target.value })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white font-mono outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      {/* Button Styling */}
+                      <div className="pt-2 border-t border-[#18181b] grid grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Button Text</label>
+                          <input
+                            type="text"
+                            value={panelForm.buttonText}
+                            onChange={(e) => setPanelForm({ ...panelForm, buttonText: e.target.value })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Button Emoji</label>
+                          <input
+                            type="text"
+                            value={panelForm.buttonEmoji}
+                            onChange={(e) => setPanelForm({ ...panelForm, buttonEmoji: e.target.value })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-zinc-400 mb-1 font-semibold">Button Color</label>
+                          <select
+                            value={panelForm.buttonColor}
+                            onChange={(e) => setPanelForm({ ...panelForm, buttonColor: e.target.value })}
+                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none"
+                          >
+                            <option value="Primary">Blurple (Primary)</option>
+                            <option value="Success">Green (Success)</option>
+                            <option value="Danger">Red (Danger)</option>
+                            <option value="Secondary">Grey (Secondary)</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* =================================================== */}
+                {/* TAB 2: TICKET TYPES & INTAKE QUESTIONS */}
+                {/* =================================================== */}
+                {activeModalTab === "types" && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-[#000000] rounded-2xl border border-[#18181b] space-y-3">
+                      <div className="flex items-center justify-between">
+                        <h4 className="font-bold text-white text-xs uppercase tracking-wider text-emerald-400 flex items-center gap-1.5">
+                          Ticket Types & Custom Questions Manager
+                        </h4>
+                        <span className="text-[10px] font-mono text-zinc-500">{panelForm.reasons?.length || 0} Configured Types</span>
+                      </div>
+                      <p className="text-[11px] text-zinc-500">
+                        When users open a ticket, they select from these ticket types in a Discord dropdown menu. Each ticket type gets its own specific modal questions!
+                      </p>
+
+                      {/* Ticket Types Accordion List */}
+                      <div className="space-y-3 pt-2">
+                        {panelForm.reasons && panelForm.reasons.length > 0 ? (
+                          panelForm.reasons.map((r: TicketReason, idx: number) => {
+                            const isExpanded = expandedReasonIdx === idx;
+                            const reasonQuestions = r.questions || [];
+                            return (
+                              <div key={idx} className="rounded-2xl bg-[#090a0f] border border-[#18181b] overflow-hidden shadow-lg">
+                                <div className="p-3.5 flex items-center justify-between bg-[#050507]">
+                                  <div className="flex items-center gap-3">
+                                    <span className="text-xl">{r.emoji}</span>
+                                    <div>
+                                      <span className="font-bold text-white block text-sm">{r.label}</span>
+                                      <span className="text-[11px] text-zinc-400">{r.description}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setExpandedReasonIdx(isExpanded ? null : idx);
+                                        setSelectedPreviewReasonIdx(idx);
+                                        setPreviewTab("questions");
+                                      }}
+                                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
+                                        reasonQuestions.length > 0
+                                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
+                                          : "bg-[#18181b] text-zinc-400 hover:text-white border border-[#27272a]"
+                                      }`}
+                                    >
+                                      <span>📋 {reasonQuestions.length} Questions</span>
+                                      {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleRemoveReason(idx)}
+                                      className="p-1.5 text-zinc-500 hover:text-rose-400 transition-colors"
+                                      title="Delete Ticket Type"
+                                    >
+                                      <Trash2 className="w-4 h-4" />
+                                    </button>
+                                  </div>
+                                </div>
+
+                                {/* Accordion Questions Builder */}
+                                {isExpanded && (
+                                  <div className="p-4 bg-[#000000] border-t border-[#18181b] space-y-3">
+                                    <span className="font-bold text-emerald-400 text-xs block uppercase tracking-wider">
+                                      Modal Popup Questions for: {r.label}
+                                    </span>
+
+                                    <div className="space-y-2">
+                                      {reasonQuestions.length > 0 ? (
+                                        reasonQuestions.map((rq: IntakeQuestion, qIdx: number) => (
+                                          <div key={rq.id} className="flex items-center justify-between p-3 rounded-xl bg-[#090a0f] border border-[#18181b]">
+                                            <div className="flex items-center gap-2.5">
+                                              <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px] flex items-center justify-center">
+                                                Q{qIdx + 1}
+                                              </span>
+                                              <div>
+                                                <span className="font-bold text-white block">{rq.label}</span>
+                                                <span className="text-[10px] text-zinc-500">
+                                                  Style: {rq.style} • {rq.required ? "Required" : "Optional"}
+                                                </span>
+                                              </div>
+                                            </div>
+                                            <button
+                                              type="button"
+                                              onClick={() => handleRemoveReasonQuestion(idx, qIdx)}
+                                              className="p-1.5 text-zinc-500 hover:text-rose-400"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <p className="text-xs text-zinc-500 italic">No questions added for this type yet.</p>
+                                      )}
+                                    </div>
+
+                                    {/* Add Question to this reason */}
+                                    {reasonQuestions.length < 5 && (
+                                      <div className="pt-2 border-t border-[#18181b] space-y-2">
+                                        <span className="font-semibold text-white text-[11px] block">Add Question to {r.label}</span>
+                                        <div className="grid grid-cols-2 gap-2">
+                                          <input
+                                            type="text"
+                                            placeholder="Question Title (e.g. Transaction ID)"
+                                            value={reasonQTitle}
+                                            onChange={(e) => setReasonQTitle(e.target.value)}
+                                            className="p-2 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                                          />
+                                          <input
+                                            type="text"
+                                            placeholder="Placeholder (e.g. TX-987654)"
+                                            value={reasonQPlaceholder}
+                                            onChange={(e) => setReasonQPlaceholder(e.target.value)}
+                                            className="p-2 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                                          />
+                                        </div>
+                                        <div className="flex items-center gap-4 text-[11px]">
+                                          <label className="flex items-center gap-1.5 text-zinc-400 font-semibold cursor-pointer">
+                                            <input
+                                              type="radio"
+                                              name={`rqstyle_${idx}`}
+                                              checked={reasonQStyle === "short"}
+                                              onChange={() => setReasonQStyle("short")}
+                                              className="accent-discord-brand"
+                                            />
+                                            Single Line (Short)
+                                          </label>
+                                          <label className="flex items-center gap-1.5 text-zinc-400 font-semibold cursor-pointer">
+                                            <input
+                                              type="radio"
+                                              name={`rqstyle_${idx}`}
+                                              checked={reasonQStyle === "paragraph"}
+                                              onChange={() => setReasonQStyle("paragraph")}
+                                              className="accent-discord-brand"
+                                            />
+                                            Multi Line (Paragraph)
+                                          </label>
+                                          <label className="flex items-center gap-1.5 text-zinc-400 font-semibold cursor-pointer ml-auto">
+                                            <input
+                                              type="checkbox"
+                                              checked={reasonQRequired}
+                                              onChange={(e) => setReasonQRequired(e.target.checked)}
+                                              className="accent-discord-brand"
+                                            />
+                                            Required
+                                          </label>
+                                        </div>
+                                        <button
+                                          type="button"
+                                          onClick={() => handleAddReasonQuestion(idx)}
+                                          className="px-3.5 py-1.5 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-bold text-xs hover:bg-emerald-600 hover:text-white transition-all flex items-center gap-1.5"
+                                        >
+                                          <Plus className="w-4 h-4" /> Add Question to {r.label}
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })
+                        ) : (
+                          <p className="text-xs text-zinc-500 italic p-3 text-center">No ticket types created yet. Panel will display a single button.</p>
+                        )}
+                      </div>
+
+                      {/* Add Ticket Type Form */}
+                      <div className="pt-3 border-t border-[#18181b] space-y-2">
+                        <span className="font-bold text-white text-xs block">Add New Ticket Type Option</span>
+                        <div className="grid grid-cols-3 gap-2">
+                          <input
+                            type="text"
+                            placeholder="Type Name (e.g. Bug Report)"
+                            value={newReasonLabel}
+                            onChange={(e) => setNewReasonLabel(e.target.value)}
+                            className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Emoji (e.g. 🐛)"
+                            value={newReasonEmoji}
+                            onChange={(e) => setNewReasonEmoji(e.target.value)}
+                            className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                          />
+                          <input
+                            type="text"
+                            placeholder="Short description..."
+                            value={newReasonDesc}
+                            onChange={(e) => setNewReasonDesc(e.target.value)}
+                            className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={handleAddReason}
+                          className="px-4 py-2 rounded-xl bg-discord-brand/20 border border-discord-brand/40 text-discord-brand font-bold text-xs hover:bg-discord-brand hover:text-white transition-all flex items-center gap-1.5"
+                        >
+                          <Plus className="w-4 h-4" /> Add Ticket Type
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* =================================================== */}
+                {/* TAB 3: SUPPORTER ROLES & PERMISSIONS */}
+                {/* =================================================== */}
+                {activeModalTab === "roles" && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-[#000000] rounded-2xl border border-[#18181b] space-y-3">
+                      <h4 className="font-bold text-white text-xs uppercase tracking-wider text-sky-400 flex items-center gap-2">
+                        <Shield className="w-4 h-4" /> Supporter Roles Selection
+                      </h4>
+                      <p className="text-[11px] text-zinc-500">
+                        Select Discord roles allowed to manage tickets from this panel. Supporter roles receive explicit channel permissions and are pinged upon ticket creation.
+                      </p>
+
+                      <div className="flex flex-wrap gap-2 pt-2">
+                        {roles.map((r) => {
+                          const isSelected = panelForm.supportRoles?.includes(r.id);
+                          return (
+                            <button
+                              key={r.id}
+                              type="button"
+                              onClick={() => handleToggleSupportRole(r.id)}
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
+                                isSelected
+                                  ? "bg-sky-500/20 text-sky-400 border border-sky-500/40"
+                                  : "bg-[#090a0f] text-zinc-500 border border-[#18181b] hover:text-white"
+                              }`}
+                            >
+                              <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color || "#38bdf8" }} />
+                              <span>{r.name}</span>
+                              {isSelected && <Check className="w-3.5 h-3.5" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* =================================================== */}
+                {/* TAB 4: WELCOME EMBED */}
+                {/* =================================================== */}
+                {activeModalTab === "welcome" && (
+                  <div className="space-y-4">
+                    <div className="p-4 bg-[#000000] rounded-2xl border border-[#18181b] space-y-3">
+                      <h4 className="font-bold text-white text-xs uppercase tracking-wider text-purple-400">
+                        Ticket Channel Welcome Message
+                      </h4>
+
+                      <div>
+                        <label className="block text-zinc-400 mb-1 font-semibold">Welcome Embed Title</label>
+                        <input
+                          type="text"
+                          value={panelForm.welcomeTitle || ""}
+                          onChange={(e) => setPanelForm({ ...panelForm, welcomeTitle: e.target.value })}
+                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                        />
+                      </div>
+
+                      <div>
+                        <label className="block text-zinc-400 mb-1 font-semibold">Welcome Embed Description</label>
+                        <textarea
+                          value={panelForm.welcomeDescription || ""}
+                          onChange={(e) => setPanelForm({ ...panelForm, welcomeDescription: e.target.value })}
+                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand h-24"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
 
-              {/* Live Preview Column */}
+              {/* Right Column: Live Interactive Discord Preview (5 Cols) */}
               <div className="lg:col-span-5 space-y-3 bg-[#000000] p-5 rounded-2xl border border-[#18181b] flex flex-col">
                 <div className="flex items-center justify-between border-b border-[#18181b] pb-2">
                   <span className="text-[10px] font-bold uppercase tracking-wider text-zinc-500">
-                    Discord Embed Preview
+                    Live Discord Mockup
                   </span>
+
+                  <div className="flex items-center gap-1 bg-[#090a0f] p-1 rounded-xl border border-[#18181b]">
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab("panel")}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                        previewTab === "panel" ? "bg-discord-brand text-white" : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      Panel
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab("questions")}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                        previewTab === "questions" ? "bg-purple-600 text-white" : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      Form Modal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setPreviewTab("welcome")}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all ${
+                        previewTab === "welcome" ? "bg-emerald-600 text-white" : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      Welcome
+                    </button>
+                  </div>
                 </div>
 
-                <div className="flex-1 bg-[#090a0f] p-4 rounded-2xl border border-[#18181b] space-y-3 font-sans">
+                {/* Discord Preview Mockup */}
+                <div className="flex-1 bg-[#090a0f] p-4 rounded-2xl border border-[#18181b] space-y-3 font-sans overflow-y-auto max-h-[550px]">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-discord-brand flex items-center justify-center font-bold text-white text-xs">
                       TGG
@@ -1231,26 +1686,122 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                     </div>
                   </div>
 
-                  <div className="p-3.5 rounded-xl bg-[#000000] border-l-4 space-y-2 border-[#5865F2]">
-                    <h4 className="text-sm font-bold text-white">{panelForm.embedTitle || panelForm.name}</h4>
-                    <p className="text-xs text-zinc-400">{panelForm.embedDescription}</p>
-                  </div>
+                  {previewTab === "panel" && (
+                    <div className="space-y-3">
+                      <div
+                        className="p-3.5 rounded-xl bg-[#000000] space-y-2 border-l-4 relative overflow-hidden"
+                        style={{ borderColor: panelForm.embedColor || "#5865F2" }}
+                      >
+                        {panelForm.thumbnail && (
+                          <img src={panelForm.thumbnail} alt="" className="w-14 h-14 rounded-md object-cover absolute top-3 right-3 border border-[#18181b]" />
+                        )}
+                        <h4 className="text-sm font-bold text-white pr-14">{panelForm.embedTitle || panelForm.name}</h4>
+                        <p className="text-xs text-zinc-300 whitespace-pre-wrap leading-relaxed">{panelForm.embedDescription}</p>
+
+                        {panelForm.image && (
+                          <div className="pt-2">
+                            <img src={panelForm.image} alt="Banner" className="w-full max-h-36 object-cover rounded-lg border border-[#18181b]" />
+                          </div>
+                        )}
+                      </div>
+
+                      {panelForm.reasons && panelForm.reasons.length > 0 && (
+                        <div className="p-2.5 rounded-xl bg-[#000000] border border-[#18181b] flex items-center justify-between text-xs text-zinc-400">
+                          <span>Select a ticket reason...</span>
+                          <ChevronDown className="w-4 h-4" />
+                        </div>
+                      )}
+
+                      <button
+                        disabled
+                        className={`flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs text-white opacity-90 ${
+                          panelForm.buttonColor === "Success"
+                            ? "bg-emerald-600"
+                            : panelForm.buttonColor === "Danger"
+                            ? "bg-rose-600"
+                            : panelForm.buttonColor === "Secondary"
+                            ? "bg-[#27272a]"
+                            : "bg-discord-brand"
+                        }`}
+                      >
+                        <span>{panelForm.buttonEmoji}</span>
+                        <span>{panelForm.buttonText || "Create Ticket"}</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {previewTab === "questions" && (
+                    <div className="bg-[#000000] p-4 rounded-2xl border border-[#18181b] space-y-3">
+                      {panelForm.reasons && panelForm.reasons.length > 0 && (
+                        <div className="pb-2 border-b border-[#18181b]">
+                          <label className="text-[10px] font-bold text-zinc-500 block mb-1">Preview Ticket Type:</label>
+                          <select
+                            value={selectedPreviewReasonIdx}
+                            onChange={(e) => setSelectedPreviewReasonIdx(Number(e.target.value))}
+                            className="w-full p-1.5 rounded-lg bg-[#090a0f] border border-[#18181b] text-white text-xs font-bold"
+                          >
+                            {panelForm.reasons.map((r: TicketReason, idx: number) => (
+                              <option key={idx} value={idx}>
+                                {r.emoji} {r.label} ({r.questions?.length || 0} questions)
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                      )}
+
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-white text-xs">
+                          {activePreviewReason ? `${activePreviewReason.emoji} ${activePreviewReason.label}` : panelForm.embedTitle || "Ticket Form"}
+                        </span>
+                        <span className="text-zinc-500 text-xs">✕</span>
+                      </div>
+
+                      {activePreviewQuestions.length > 0 ? (
+                        activePreviewQuestions.map((q: IntakeQuestion, idx: number) => (
+                          <div key={idx} className="space-y-1">
+                            <label className="text-[11px] font-semibold text-zinc-400 block">
+                              {q.label} {q.required && <span className="text-rose-400">*</span>}
+                            </label>
+                            <div className="p-2 rounded-xl bg-[#090a0f] border border-[#18181b] text-zinc-500 text-[10px]">
+                              {q.placeholder}
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <p className="text-xs text-zinc-500 py-4 text-center">No questions configured for this type.</p>
+                      )}
+
+                      <button disabled className="w-full py-2 bg-discord-brand text-white font-bold text-xs rounded-xl opacity-90">
+                        Submit Ticket Information
+                      </button>
+                    </div>
+                  )}
+
+                  {previewTab === "welcome" && (
+                    <div className="p-3.5 rounded-xl bg-[#000000] space-y-2 border-l-4 border-discord-brand">
+                      <h4 className="text-sm font-bold text-white">{panelForm.welcomeTitle || "👋 Welcome to your ticket!"}</h4>
+                      <p className="text-xs text-zinc-300">{panelForm.welcomeDescription}</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
+            {/* Modal Footer */}
             <div className="p-4 bg-[#000000] border-t border-[#18181b] flex items-center justify-end gap-3">
               <button
+                type="button"
                 onClick={() => setIsPanelModalOpen(false)}
                 className="px-4 py-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-white text-xs font-semibold"
               >
                 Cancel
               </button>
               <button
+                type="button"
                 onClick={handleSavePanel}
                 className="px-5 py-2 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white text-xs font-bold shadow-lg shadow-discord-brand/20"
               >
-                Save Panel
+                Save Panel Changes
               </button>
             </div>
           </div>
