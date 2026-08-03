@@ -1,5 +1,6 @@
 import { Client, GatewayIntentBits, Partials } from "discord.js";
 import { broadcastEvent } from "../socket/socketManager";
+import { setupTicketInteractions } from "./ticketHandler";
 
 export const discordClient = new Client({
   intents: [
@@ -7,8 +8,11 @@ export const discordClient = new Client({
     GatewayIntentBits.GuildEmojisAndStickers,
     GatewayIntentBits.GuildInvites,
     GatewayIntentBits.GuildVoiceStates,
+    GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.MessageContent,
+    GatewayIntentBits.GuildMembers,
   ],
-  partials: [Partials.Channel, Partials.User],
+  partials: [Partials.Channel, Partials.User, Partials.Message],
 });
 
 export function isBotReady(): boolean {
@@ -17,6 +21,7 @@ export function isBotReady(): boolean {
 
 discordClient.once("ready", (client) => {
   console.log(`[GuildPilot Bot] Logged in as ${client.user.tag}`);
+  setupTicketInteractions(client);
   broadcastEvent("botStatusChange", {
     ready: true,
     tag: client.user.tag,

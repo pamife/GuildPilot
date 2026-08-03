@@ -24,3 +24,94 @@ model AuditLog {
   details   String
   timestamp DateTime @default(now())
 }
+
+model TicketPanel {
+  id               String   @id @default(uuid())
+  guildId          String
+  name             String
+  description      String?
+  embedTitle       String?
+  embedDescription String?
+  embedColor       String   @default("#5865F2")
+  thumbnail        String?
+  image            String?
+  footer           String?
+  channelId        String?
+  categoryId       String?
+  buttonText       String   @default("Create Ticket")
+  buttonEmoji      String?  @default("📩")
+  buttonColor      String   @default("Primary") // Primary, Secondary, Success, Danger
+  allowedRoles     String   @default("[]") // JSON array of role IDs
+  supportRoles     String   @default("[]") // JSON array of role IDs
+  maxOpenTickets   Int      @default(1)
+  autoCloseHours   Int      @default(0)
+  transcriptEnabled Boolean @default(true)
+  messageId        String?
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  tickets          Ticket[]
+}
+
+model TicketCategory {
+  id          String   @id @default(uuid())
+  guildId     String
+  name        String
+  description String?
+  emoji       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Ticket {
+  id              String       @id @default(uuid())
+  ticketNumber    Int
+  guildId         String
+  panelId         String?
+  panel           TicketPanel? @relation(fields: [panelId], references: [id], onDelete: SetNull)
+  channelId       String       @unique
+  userId          String
+  userTag         String
+  userAvatar      String?
+  status          String       @default("OPEN") // OPEN, CLOSED, CLAIMED
+  claimedByUserId String?
+  claimedByTag    String?
+  claimedByAvatar String?
+  categoryId      String?
+  closedByUserId  String?
+  closedByTag     String?
+  closedAt        DateTime?
+  transcriptUrl   String?
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  logs            TicketLog[]
+}
+
+model TicketLog {
+  id           String   @id @default(uuid())
+  guildId      String
+  ticketId     String?
+  ticket       Ticket?  @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  ticketNumber Int
+  action       String   // OPENED, CLOSED, DELETED, CLAIMED, REOPENED, USER_ADDED, USER_REMOVED
+  executorId   String
+  executorTag  String
+  details      String?
+  timestamp    DateTime @default(now())
+}
+
+model TicketSetting {
+  id                  String   @id @default(uuid())
+  guildId             String   @unique
+  namingFormat        String   @default("ticket-{username}") // ticket-{username}, {username}-ticket, ticket-{number}
+  defaultSupportRoles String   @default("[]") // JSON array of role IDs
+  defaultCategoryId   String?
+  logChannelId        String?
+  closeConfirmation   Boolean  @default(true)
+  deleteDelaySeconds  Int      @default(5)
+  transcriptStorage   String   @default("local") // local, none
+  maxTicketsPerUser   Int      @default(3)
+  autoArchive         Boolean  @default(false)
+  updatedAt           DateTime @updatedAt
+}

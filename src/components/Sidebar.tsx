@@ -18,6 +18,7 @@ import {
   LogOut,
   Radio,
   Activity,
+  Ticket,
 } from "lucide-react";
 
 export type ViewType =
@@ -31,6 +32,7 @@ export type ViewType =
   | "invites"
   | "templates"
   | "utilities"
+  | "tickets"
   | "host-server";
 
 interface GuildOption {
@@ -65,6 +67,7 @@ export function Sidebar({
 
   const navigationItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "tickets", label: "Ticket System", icon: Ticket },
     { id: "channels", label: "Channel Manager", icon: Hash },
     { id: "categories", label: "Category Manager", icon: FolderTree },
     { id: "roles", label: "Role Manager", icon: Shield },

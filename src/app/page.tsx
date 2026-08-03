@@ -13,6 +13,7 @@ import { InviteManagerView } from "@/components/views/InviteManagerView";
 import { TemplatesView } from "@/components/views/TemplatesView";
 import { UtilitiesView } from "@/components/views/UtilitiesView";
 import { HostServerView } from "@/components/views/HostServerView";
+import { TicketsView } from "@/components/views/TicketsView";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { ShieldAlert, LogIn, Radio, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
@@ -403,6 +404,9 @@ function DashboardContent() {
           </div>
         )}
         {currentView === "host-server" && <HostServerView />}
+        {currentView === "tickets" && (
+          <TicketsView selectedGuildId={selectedGuildId} channels={channels} roles={roles} />
+        )}
         {currentView === "overview" && (
           <OverviewView
             guildDetails={guildDetails}
