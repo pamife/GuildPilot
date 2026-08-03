@@ -15,7 +15,7 @@ import { UtilitiesView } from "@/components/views/UtilitiesView";
 import { HostServerView } from "@/components/views/HostServerView";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
-import { ShieldAlert, LogIn, Radio, RefreshCw } from "lucide-react";
+import { ShieldAlert, LogIn, Radio, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
 
 function DashboardContent() {
   const { showToast } = useToast();
@@ -37,6 +37,7 @@ function DashboardContent() {
   const [invites, setInvites] = useState<any[]>([]);
   const [templates, setTemplates] = useState<any[]>([]);
   const [botStatus, setBotStatus] = useState<{ ready: boolean; tag: string; ping: number } | null>(null);
+  const [updateNotification, setUpdateNotification] = useState<any>(null);
 
   // Check auth status
   const checkAuth = async () => {
@@ -50,6 +51,27 @@ function DashboardContent() {
       setAuthError(err.response?.data?.error || "Please authenticate to access GuildPilot.");
     } finally {
       setLoadingAuth(false);
+    }
+  };
+
+  // Fetch server update notification
+  const fetchUpdateNotification = async () => {
+    try {
+      const res = await api.get("/host-server/updates");
+      if (res.data && res.data.unread) {
+        setUpdateNotification(res.data);
+      }
+    } catch (err) {
+      // Ignore update check error
+    }
+  };
+
+  const handleDismissUpdate = async () => {
+    try {
+      await api.post("/host-server/updates/read");
+      setUpdateNotification(null);
+    } catch (e) {
+      setUpdateNotification(null);
     }
   };
 
@@ -105,6 +127,7 @@ function DashboardContent() {
   useEffect(() => {
     if (ownerUser) {
       fetchGuilds();
+      fetchUpdateNotification();
     }
   }, [ownerUser]);
 
@@ -127,11 +150,25 @@ function DashboardContent() {
       showToast(data.ready ? `Bot ${data.tag} is online` : "Bot disconnected", data.ready ? "success" : "error");
     };
 
+    const handleUpdateNotification = (data: any) => {
+      setUpdateNotification(data);
+      showToast(
+        data.message || `Server update installed (Commit: ${data.commitShort})`,
+        data.status === "error" ? "error" : "success"
+      );
+    };
+
+    const handleUpdateNotificationRead = () => {
+      setUpdateNotification(null);
+    };
+
     const handleLiveEvent = () => {
       fetchGuildData();
     };
 
     socket.on("botStatusChange", handleBotStatusChange);
+    socket.on("updateNotification", handleUpdateNotification);
+    socket.on("updateNotificationRead", handleUpdateNotificationRead);
     socket.on("guildUpdate", handleLiveEvent);
     socket.on("channelCreate", handleLiveEvent);
     socket.on("channelUpdate", handleLiveEvent);
@@ -148,6 +185,8 @@ function DashboardContent() {
 
     return () => {
       socket.off("botStatusChange", handleBotStatusChange);
+      socket.off("updateNotification", handleUpdateNotification);
+      socket.off("updateNotificationRead", handleUpdateNotificationRead);
       socket.off("guildUpdate", handleLiveEvent);
       socket.off("channelCreate", handleLiveEvent);
       socket.off("channelUpdate", handleLiveEvent);
@@ -339,6 +378,30 @@ function DashboardContent() {
 
       {/* Main View Shell */}
       <main className="flex-1 flex flex-col min-w-0 bg-[#313338] overflow-hidden">
+        {updateNotification && updateNotification.unread && (
+          <div className="bg-gradient-to-r from-emerald-600 via-discord-brand to-emerald-700 text-white px-4 py-2.5 flex items-center justify-between text-sm font-medium shadow-lg border-b border-emerald-400/40 shrink-0 animate-in slide-in-from-top duration-300">
+            <div className="flex items-center gap-3 overflow-hidden">
+              <div className="p-1.5 rounded-lg bg-white/20 shrink-0">
+                <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
+              </div>
+              <div className="truncate">
+                <span className="font-bold">{updateNotification.title || "GitHub Update Installed"}</span>:{" "}
+                <span>{updateNotification.message}</span>
+              </div>
+              {updateNotification.commitShort && (
+                <span className="text-xs font-mono bg-black/40 px-2 py-0.5 rounded text-emerald-200 shrink-0 border border-emerald-400/30">
+                  commit {updateNotification.commitShort}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={handleDismissUpdate}
+              className="text-xs bg-white/20 hover:bg-white/30 active:scale-95 text-white font-semibold px-3 py-1.5 rounded-lg transition-all shrink-0 flex items-center gap-1"
+            >
+              Als gelesen markieren
+            </button>
+          </div>
+        )}
         {currentView === "host-server" && <HostServerView />}
         {currentView === "overview" && (
           <OverviewView

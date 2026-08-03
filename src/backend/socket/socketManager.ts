@@ -2,6 +2,7 @@ import { Server as SocketIOServer } from "socket.io";
 import { Server as HTTPServer } from "http";
 import { isBotReady, discordClient } from "../bot/client";
 import { collectHostMetrics } from "../services/hostMonitorService";
+import { getLatestUpdate } from "../services/updateService";
 
 let io: SocketIOServer | null = null;
 let telemetryTimer: NodeJS.Timeout | null = null;
@@ -34,6 +35,16 @@ export function initSocketIO(server: HTTPServer) {
       socket.emit("hostMetricsUpdate", initialMetrics);
     } catch (e) {
       // Ignore initial metric error
+    }
+
+    // Send unread update notification if available
+    try {
+      const latestUpdate = getLatestUpdate();
+      if (latestUpdate && latestUpdate.unread) {
+        socket.emit("updateNotification", latestUpdate);
+      }
+    } catch (e) {
+      // Ignore update error
     }
 
     socket.on("disconnect", () => {

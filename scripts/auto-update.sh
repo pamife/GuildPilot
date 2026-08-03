@@ -116,6 +116,23 @@ rollback() {
   npm run build || true
   pm2 restart ecosystem.config.js || true
 
+  # Record failure notification for Webpanel
+  UPDATE_JSON="${PROJECT_DIR}/logs/latest-update.json"
+  cat <<EOF > "${UPDATE_JSON}"
+{
+  "id": "update_${LOCAL_HASH:0:7}_${BACKUP_TIMESTAMP}",
+  "commit": "${LOCAL_HASH}",
+  "commitShort": "${LOCAL_HASH:0:7}",
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "title": "GuildPilot Update Failed",
+  "message": "Update failed: ${error_msg}. Rolled back to commit ${LOCAL_HASH:0:7}",
+  "status": "error",
+  "unread": true
+}
+EOF
+
+  curl -H "Content-Type: application/json" -X POST -d @"${UPDATE_JSON}" http://localhost:3001/api/host-server/notify-update > /dev/null 2>&1 || true
+
   send_discord_notification \
     "❌ GuildPilot Update Failed - Rollback Executed" \
     "**Error:** ${error_msg}\n**Rolled back to commit:** \`${LOCAL_HASH:0:7}\`\n**Status:** Restored working state." \
@@ -173,6 +190,23 @@ if [ "${HEALTH_BACKEND}" != "200" ] || [ "${HEALTH_FRONTEND}" != "200" ]; then
 fi
 
 log "✅ SUCCESS: GuildPilot updated successfully to commit ${REMOTE_HASH:0:7}"
+
+# Record success update notification for Webpanel
+UPDATE_JSON="${PROJECT_DIR}/logs/latest-update.json"
+cat <<EOF > "${UPDATE_JSON}"
+{
+  "id": "update_${REMOTE_HASH:0:7}_${BACKUP_TIMESTAMP}",
+  "commit": "${REMOTE_HASH}",
+  "commitShort": "${REMOTE_HASH:0:7}",
+  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
+  "title": "GuildPilot Server Updated",
+  "message": "Server successfully pulled & installed update from GitHub (Commit: ${REMOTE_HASH:0:7})",
+  "status": "success",
+  "unread": true
+}
+EOF
+
+curl -H "Content-Type: application/json" -X POST -d @"${UPDATE_JSON}" http://localhost:3001/api/host-server/notify-update > /dev/null 2>&1 || true
 
 send_discord_notification \
   "✅ GuildPilot Updated Successfully" \

@@ -1,4 +1,5 @@
-import si from "systeminformation";
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const si = require("systeminformation");
 
 export interface HostStaticInfo {
   hostname: string;
@@ -123,7 +124,7 @@ export async function collectHostMetrics(): Promise<HostMetrics> {
     let totalRxBytes = 0;
     let totalTxBytes = 0;
 
-    networkStats.forEach((iface) => {
+    networkStats.forEach((iface: any) => {
       totalRxSec += iface.rx_sec || 0;
       totalTxSec += iface.tx_sec || 0;
       totalRxBytes += iface.rx_bytes || 0;
@@ -131,9 +132,9 @@ export async function collectHostMetrics(): Promise<HostMetrics> {
     });
 
     const topProcesses = (processes.list || [])
-      .sort((a, b) => b.cpu - a.cpu)
+      .sort((a: any, b: any) => b.cpu - a.cpu)
       .slice(0, 10)
-      .map((p) => ({
+      .map((p: any) => ({
         pid: p.pid,
         name: p.name,
         cpu: Number(p.cpu.toFixed(1)),
@@ -147,7 +148,7 @@ export async function collectHostMetrics(): Promise<HostMetrics> {
       static: staticInfo,
       cpu: {
         totalLoad: Number(currentLoad.currentLoad.toFixed(1)),
-        cores: currentLoad.cpus.map((c) => Number(c.load.toFixed(1))),
+        cores: currentLoad.cpus.map((c: any) => Number(c.load.toFixed(1))),
         temp: cpuTemp.main || null,
       },
       memory: {
@@ -156,7 +157,7 @@ export async function collectHostMetrics(): Promise<HostMetrics> {
         free: mem.free,
         usedPercent: Number(((mem.active / mem.total) * 100).toFixed(1)),
       },
-      disks: fsSize.map((d) => ({
+      disks: fsSize.map((d: any) => ({
         mount: d.mount,
         size: d.size,
         used: d.used,
@@ -177,7 +178,7 @@ export async function collectHostMetrics(): Promise<HostMetrics> {
       processes: {
         top: topProcesses,
       },
-      services: (services || []).map((s) => ({
+      services: (services || []).map((s: any) => ({
         name: s.name,
         running: s.running,
       })),

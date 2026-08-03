@@ -18,6 +18,7 @@ import {
 
 export function HostServerView() {
   const [metrics, setMetrics] = useState<any>(null);
+  const [updateInfo, setUpdateInfo] = useState<any>(null);
   const [searchProc, setSearchProc] = useState("");
   const [cpuHistory, setCpuHistory] = useState<number[]>(Array(30).fill(0));
   const [netRxHistory, setNetRxHistory] = useState<number[]>(Array(30).fill(0));
@@ -40,18 +41,32 @@ export function HostServerView() {
       }
     };
 
+    const handleUpdateNotif = (data: any) => {
+      setUpdateInfo(data);
+    };
+
     socket.on("hostMetricsUpdate", handleMetrics);
+    socket.on("updateNotification", handleUpdateNotif);
 
     // Initial fetch via API if socket has not emitted yet
-    fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/host-server/metrics`)
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+    fetch(`${apiUrl}/api/host-server/metrics`)
       .then((res) => res.json())
       .then((data) => {
         if (data && !data.error) handleMetrics(data);
       })
       .catch(() => {});
 
+    fetch(`${apiUrl}/api/host-server/updates`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.commit) setUpdateInfo(data);
+      })
+      .catch(() => {});
+
     return () => {
       socket.off("hostMetricsUpdate", handleMetrics);
+      socket.off("updateNotification", handleUpdateNotif);
     };
   }, []);
 
@@ -256,6 +271,32 @@ export function HostServerView() {
           </div>
         </div>
       </div>
+
+      {/* GitHub Auto-Sync & Update Status Banner */}
+      {updateInfo && updateInfo.commit && (
+        <div className="p-4 rounded-xl bg-gradient-to-r from-[#1e1f22] via-[#2b2d31] to-[#1e1f22] border border-[#35373c] shadow-lg flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className={`p-2.5 rounded-xl border ${updateInfo.status === "error" ? "bg-discord-red/20 border-discord-red/40 text-discord-red" : "bg-discord-green/20 border-discord-green/40 text-discord-green"}`}>
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                GitHub Auto-Update Engine
+                <span className={`text-[10px] font-mono px-2 py-0.5 rounded ${updateInfo.status === "error" ? "bg-discord-red/20 text-discord-red" : "bg-discord-green/20 text-discord-green font-bold"}`}>
+                  Commit {updateInfo.commitShort || updateInfo.commit.substring(0, 7)}
+                </span>
+              </h3>
+              <p className="text-xs text-discord-muted mt-0.5">
+                {updateInfo.message}
+              </p>
+            </div>
+          </div>
+          <div className="text-right text-xs text-discord-muted font-mono">
+            <span>Last Update: </span>
+            <strong className="text-white">{new Date(updateInfo.timestamp).toLocaleString()}</strong>
+          </div>
+        </div>
+      )}
 
       {/* Live Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
