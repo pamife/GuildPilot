@@ -6,9 +6,10 @@ export async function getGuildRoles(guildId: string) {
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
-  // Fetch full member cache so role.members.size is accurate
-  await guild.members.fetch().catch(() => null);
-  const roles = await guild.roles.fetch();
+  let roles = guild.roles.cache;
+  if (roles.size === 0) {
+    roles = await guild.roles.fetch().catch(() => guild.roles.cache);
+  }
 
   return roles
     .map((r) => ({

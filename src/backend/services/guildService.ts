@@ -27,25 +27,45 @@ export async function getGuilds() {
   }));
 }
 
+interface GuildDetailsCache {
+  data: any;
+  timestamp: number;
+}
+const guildDetailsCache = new Map<string, GuildDetailsCache>();
+const CACHE_TTL_MS = 5000; // 5 seconds cache
+
 export async function getGuildDetails(guildId: string) {
   if (!isBotReady()) throw new Error("Discord Bot is not connected.");
 
-  const guild = discordClient.guilds.cache.get(guildId) || (await discordClient.guilds.fetch(guildId));
+  // Check 5s TTL cache first for instant responses
+  const cached = guildDetailsCache.get(guildId);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL_MS) {
+    return cached.data;
+  }
+
+  const guild = discordClient.guilds.cache.get(guildId) || (await discordClient.guilds.fetch(guildId).catch(() => null));
   if (!guild) throw new Error("Guild not found.");
 
-  // Fetch full details if cached is incomplete
-  const channels = await guild.channels.fetch();
-  const roles = await guild.roles.fetch();
-  const emojis = await guild.emojis.fetch();
-  const stickers = await guild.stickers.fetch();
-  const invites = await guild.invites.fetch().catch(() => null);
+  // Use in-memory caches first for zero network delay
+  let channels = guild.channels.cache;
+  if (channels.size === 0) {
+    channels = await guild.channels.fetch().catch(() => guild.channels.cache);
+  }
+
+  let roles = guild.roles.cache;
+  if (roles.size === 0) {
+    roles = await guild.roles.fetch().catch(() => guild.roles.cache);
+  }
+
+  const emojis = guild.emojis.cache;
+  const stickers = guild.stickers.cache;
 
   const textCount = channels.filter((c) => c?.type === ChannelType.GuildText).size;
   const voiceCount = channels.filter((c) => c?.type === ChannelType.GuildVoice).size;
   const categoryCount = channels.filter((c) => c?.type === ChannelType.GuildCategory).size;
   const forumCount = channels.filter((c) => c?.type === ChannelType.GuildForum).size;
 
-  return {
+  const result = {
     id: guild.id,
     name: guild.name,
     icon: guild.iconURL(),
@@ -65,7 +85,7 @@ export async function getGuildDetails(guildId: string) {
       roles: roles.size,
       emojis: emojis.size,
       stickers: stickers.size,
-      invites: invites ? invites.size : 0,
+      invites: 0,
     },
     botStatus: {
       ready: isBotReady(),
@@ -74,6 +94,9 @@ export async function getGuildDetails(guildId: string) {
       uptime: discordClient.uptime,
     },
   };
+
+  guildDetailsCache.set(guildId, { data: result, timestamp: Date.now() });
+  return result;
 }
 
 export async function updateGuildSettings(
