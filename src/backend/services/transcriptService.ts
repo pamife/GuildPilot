@@ -36,6 +36,74 @@ export function getTranscriptFilePath(identifier: string, secondaryIdentifier?: 
   return pathById;
 }
 
+function formatDiscordText(text: string, guild?: any): string {
+  if (!text) return "";
+
+  // 1. Escape HTML special characters
+  let escaped = text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;");
+
+  // 2. Resolve User Mentions: &lt;@!?([0-9]+)&gt;
+  escaped = escaped.replace(/&lt;@!?([0-9]+)&gt;/g, (match, userId) => {
+    if (guild) {
+      const member = guild.members?.cache?.get(userId);
+      if (member) return `<span class="mention">@${member.displayName || member.user.username}</span>`;
+      const user = guild.client?.users?.cache?.get(userId);
+      if (user) return `<span class="mention">@${user.username}</span>`;
+    }
+    return `<span class="mention">@User</span>`;
+  });
+
+  // 3. Resolve Role Mentions: &lt;@&amp;([0-9]+)&gt;
+  escaped = escaped.replace(/&lt;@&amp;([0-9]+)&gt;/g, (match, roleId) => {
+    if (guild) {
+      const role = guild.roles?.cache?.get(roleId);
+      if (role) {
+        const colorStyle = role.hexColor && role.hexColor !== "#000000" ? `style="color: ${role.hexColor}; background-color: ${role.hexColor}20;"` : "";
+        return `<span class="mention role-mention" ${colorStyle}>@${role.name}</span>`;
+      }
+    }
+    return `<span class="mention role-mention">@Role</span>`;
+  });
+
+  // 4. Resolve Channel Mentions: &lt;#([0-9]+)&gt;
+  escaped = escaped.replace(/&lt;#([0-9]+)&gt;/g, (match, channelId) => {
+    if (guild) {
+      const ch = guild.channels?.cache?.get(channelId);
+      if (ch) return `<span class="mention channel-mention">#${ch.name}</span>`;
+    }
+    return `<span class="mention channel-mention">#channel</span>`;
+  });
+
+  // 5. Code blocks ```lang\ncode```
+  escaped = escaped.replace(/```(?:[a-z0-9_-]+)?\n?([\s\S]*?)```/gi, (match, code) => {
+    return `<pre><code>${code}</code></pre>`;
+  });
+
+  // 6. Inline code `code`
+  escaped = escaped.replace(/`([^`]+)`/g, "<code>$1</code>");
+
+  // 7. Bold **text**
+  escaped = escaped.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+
+  // 8. Underline __text__
+  escaped = escaped.replace(/__([^_]+)__/g, "<u>$1</u>");
+
+  // 9. Italic *text* or _text_
+  escaped = escaped.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+  escaped = escaped.replace(/_([^_]+)_/g, "<em>$1</em>");
+
+  // 10. Strikethrough ~~text~~
+  escaped = escaped.replace(/~~([^~]+)~~/g, "<s>$1</s>");
+
+  // 11. Newlines
+  escaped = escaped.replace(/\n/g, "<br/>");
+
+  return escaped;
+}
+
 export async function generateHtmlTranscript(
   channel: TextChannel,
   ticketInfo: { number: number; creatorTag: string; category?: string },
@@ -69,15 +137,13 @@ export async function generateHtmlTranscript(
   let messagesHtml = "";
 
   for (const msg of allMessages) {
+    const member = channel.guild?.members?.cache?.get(msg.author.id);
+    const authorName = member?.displayName || msg.author.globalName || msg.author.username;
     const avatar = msg.author.displayAvatarURL({ extension: "png", size: 64 });
     const timestamp = msg.createdAt.toLocaleString();
     const isBot = msg.author.bot;
 
-    let contentHtml = msg.content
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/\n/g, "<br/>");
+    let contentHtml = formatDiscordText(msg.content, channel.guild);
 
     // Format attachments
     let attachmentsHtml = "";
@@ -109,15 +175,15 @@ export async function generateHtmlTranscript(
         const colorHex = embed.hexColor || "#5865F2";
         embedsHtml += `
           <div class="transcript-embed" style="border-left: 4px solid ${colorHex}; background: #2b2d31; padding: 12px; border-radius: 6px; margin-top: 8px; max-width: 520px;">
-            ${embed.title ? `<div style="font-weight: bold; color: #fff; margin-bottom: 4px;">${embed.title}</div>` : ""}
-            ${embed.description ? `<div style="color: #dbdee1; font-size: 13px;">${embed.description.replace(/\n/g, "<br/>")}</div>` : ""}
+            ${embed.title ? `<div style="font-weight: bold; color: #fff; margin-bottom: 4px;">${formatDiscordText(embed.title, channel.guild)}</div>` : ""}
+            ${embed.description ? `<div style="color: #dbdee1; font-size: 13px;">${formatDiscordText(embed.description, channel.guild)}</div>` : ""}
             ${
               embed.fields && embed.fields.length > 0
                 ? `<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 8px; margin-top: 8px;">
                     ${embed.fields
                       .map(
                         (f) =>
-                          `<div><div style="font-size: 11px; font-weight: bold; color: #b5bac1;">${f.name}</div><div style="font-size: 13px; color: #dbdee1;">${f.value}</div></div>`
+                          `<div><div style="font-size: 11px; font-weight: bold; color: #b5bac1;">${formatDiscordText(f.name, channel.guild)}</div><div style="font-size: 13px; color: #dbdee1;">${formatDiscordText(f.value, channel.guild)}</div></div>`
                       )
                       .join("")}
                    </div>`
@@ -127,12 +193,17 @@ export async function generateHtmlTranscript(
       });
     }
 
+    // Skip rendering totally empty message rows (no text, attachments, or embeds)
+    if (!contentHtml && !attachmentsHtml && !embedsHtml) {
+      continue;
+    }
+
     messagesHtml += `
       <div class="transcript-message">
-        <img class="avatar" src="${avatar}" alt="${msg.author.username}" />
+        <img class="avatar" src="${avatar}" alt="${authorName}" />
         <div class="message-body">
           <div class="message-header">
-            <span class="username">${msg.author.username}</span>
+            <span class="username">${authorName}</span>
             ${isBot ? `<span class="bot-badge">BOT</span>` : ""}
             <span class="timestamp">${timestamp}</span>
           </div>
@@ -244,6 +315,62 @@ export async function generateHtmlTranscript(
       line-height: 1.375;
       color: #dbdee1;
       word-break: break-word;
+    }
+    .mention {
+      background-color: rgba(88, 101, 242, 0.15);
+      color: #c9cdfb;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+      display: inline-block;
+      font-size: 13px;
+    }
+    .role-mention {
+      background-color: rgba(88, 101, 242, 0.2);
+      font-weight: 600;
+    }
+    .channel-mention {
+      background-color: rgba(88, 101, 242, 0.15);
+      color: #c9cdfb;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-weight: 500;
+    }
+    code {
+      background-color: #1e1f22;
+      color: #dbdee1;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: Consolas, 'Andale Mono WT', 'Andale Mono', 'Lucida Console', Monaco, monospace;
+      font-size: 13px;
+    }
+    pre {
+      background-color: #1e1f22;
+      border: 1px solid #2b2d31;
+      padding: 10px 14px;
+      border-radius: 6px;
+      overflow-x: auto;
+      font-family: Consolas, 'Andale Mono WT', 'Andale Mono', 'Lucida Console', Monaco, monospace;
+      color: #dbdee1;
+      font-size: 13px;
+      margin: 6px 0;
+    }
+    pre code {
+      background: none;
+      padding: 0;
+    }
+    strong {
+      font-weight: 700;
+      color: #f2f3f5;
+    }
+    em {
+      font-style: italic;
+    }
+    u {
+      text-decoration: underline;
+    }
+    s {
+      text-decoration: line-through;
     }
     .footer {
       margin-top: 40px;
