@@ -102,33 +102,53 @@ try {
 
   log(`Updating from ${localCommit.substring(0, 7)} to ${remoteCommit.substring(0, 7)}...`);
 
-  // Step 2: Database Backup
+  // Step 2: Database Backup (Safe non-blocking backup)
   log("Step 2/6: Creating Database Backup Snapshot...");
   reportProgress(2, 6, 30, "Erstelle Datenbank-Sicherung...", "Backup der SQLite Datenbank vor dem Update...");
-  const backupsDir = path.join(projectDir, "backups");
-  if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir, { recursive: true });
-  const dbFile = path.join(projectDir, "prisma", "dev.db");
-  if (fs.existsSync(dbFile)) {
-    const backupFile = path.join(backupsDir, `db_${localCommit.substring(0, 7)}_${Date.now()}.db`);
-    fs.copyFileSync(dbFile, backupFile);
-    log(`Database backed up to ${backupFile}`);
+  try {
+    const backupsDir = path.join(projectDir, "backups");
+    if (!fs.existsSync(backupsDir)) fs.mkdirSync(backupsDir, { recursive: true });
+    const dbFile = path.join(projectDir, "prisma", "dev.db");
+    if (fs.existsSync(dbFile)) {
+      const backupFile = path.join(backupsDir, `db_${localCommit.substring(0, 7)}_${Date.now()}.db`);
+      fs.copyFileSync(dbFile, backupFile);
+      log(`Database backed up to ${backupFile}`);
+    }
+  } catch (backupErr) {
+    log(`Warning: Database backup skipped or failed (${backupErr.message}). Continuing update...`);
   }
 
-  // Step 3: Git Pull
+  // Step 3: Git Reset & Git Pull
   log("Step 3/6: Executing git pull origin main...");
   reportProgress(3, 6, 45, "Lade Quellcode herunter (git pull)...", `Ziel-Commit ${remoteCommit.substring(0, 7)} wird heruntergeladen...`);
-  execSync("git pull origin main", { cwd: projectDir, stdio: "inherit" });
+  try {
+    execSync("git reset --hard HEAD", { cwd: projectDir, stdio: "inherit" });
+    execSync("git pull origin main", { cwd: projectDir, stdio: "inherit" });
+  } catch (gitErr) {
+    reportProgress(3, 6, 45, `Git Pull fehlgeschlagen: ${gitErr.message}`, `❌ Git Pull-Fehler: ${gitErr.message}`, "error");
+    throw gitErr;
+  }
 
   // Step 4: Prisma Generate & DB Push
   log("Step 4/6: Synchronizing Prisma Client & Database Schema...");
   reportProgress(4, 6, 65, "Synchronisiere Datenbank-Schema...", "Npx prisma generate & db push...");
-  execSync("npx prisma generate", { cwd: projectDir, stdio: "inherit" });
-  execSync("npx prisma db push --accept-data-loss", { cwd: projectDir, stdio: "inherit" });
+  try {
+    execSync("npx prisma generate", { cwd: projectDir, stdio: "inherit" });
+    execSync("npx prisma db push --accept-data-loss", { cwd: projectDir, stdio: "inherit" });
+  } catch (prismaErr) {
+    reportProgress(4, 6, 65, `Prisma Sync fehlgeschlagen: ${prismaErr.message}`, `❌ Prisma-Fehler: ${prismaErr.message}`, "error");
+    throw prismaErr;
+  }
 
   // Step 5: Build Backend & Frontend
   log("Step 5/6: Building production binaries (npm run build)...");
   reportProgress(5, 6, 85, "Kompiliere Production Build (npm run build)...", "Bauen von Frontend & Backend binaries...");
-  execSync("npm run build", { cwd: projectDir, stdio: "inherit" });
+  try {
+    execSync("npm run build", { cwd: projectDir, stdio: "inherit" });
+  } catch (buildErr) {
+    reportProgress(5, 6, 85, `Build fehlgeschlagen: ${buildErr.message}`, `❌ Build-Fehler: ${buildErr.message}`, "error");
+    throw buildErr;
+  }
 
   // Step 6: Restart PM2 services
   log("Step 6/6: Restarting application services...");
@@ -151,7 +171,6 @@ try {
   }
 } catch (err) {
   console.error("❌ UPDATE FAILED:", err.message);
-  reportProgress(6, 6, 100, `Update fehlgeschlagen: ${err.message}`, `❌ Update-Fehler: ${err.message}`, "error");
   notifyUpdate({
     title: "GuildPilot Update Failed",
     message: `Update failed: ${err.message}`,

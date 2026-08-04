@@ -16,6 +16,7 @@ import {
   GuildMember,
 } from "discord.js";
 import {
+  getAppPanelById,
   getAppFormById,
   getAppForms,
   checkUserCanApply,
@@ -24,83 +25,147 @@ import {
   getApplicationById,
   addApplicationNote,
   getApplicationSettings,
+  updateAppPanel,
+  updateAppForm,
 } from "../services/applicationService";
 import { generateApplicationHtmlTranscript } from "../services/transcriptService";
 import { broadcastEvent } from "../socket/socketManager";
 
+export async function deployApplicationPanelEmbed(client: Client, panelId: string): Promise<string> {
+  const panel = await getAppPanelById(panelId);
+  if (!panel || !panel.channelId) throw new Error("Panel or target channel missing.");
+
+  const channel = (await client.channels.fetch(panel.channelId).catch(() => null)) as TextChannel;
+  if (!channel || !channel.isTextBased()) throw new Error("Could not access target channel on Discord");
+
+  const embed = new EmbedBuilder()
+    .setTitle(panel.embedTitle || panel.name)
+    .setDescription(panel.embedDescription || "Select an application position from the dropdown menu below to submit your application.")
+    .setColor((panel.embedColor as any) || "#5865F2");
+
+  if (panel.thumbnail) embed.setThumbnail(panel.thumbnail);
+  if (panel.image) embed.setImage(panel.image);
+  if (panel.footer) embed.setFooter({ text: panel.footer });
+
+  const components: any[] = [];
+  const forms: any[] = panel.forms || [];
+
+  if (forms.length > 0) {
+    if (panel.displayType === "dropdown") {
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId(`app_select_form:${panel.id}`)
+        .setPlaceholder("Select an application position...");
+
+      forms.forEach((f: any) => {
+        const option = new StringSelectMenuOptionBuilder()
+          .setLabel(f.name.substring(0, 100))
+          .setValue(f.id)
+          .setDescription((f.description || "Submit application for this position").substring(0, 100));
+
+        if (f.emoji) option.setEmoji(f.emoji);
+        else if (f.buttonEmoji) option.setEmoji(f.buttonEmoji);
+
+        selectMenu.addOptions(option);
+      });
+
+      components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
+    } else {
+      const row = new ActionRowBuilder<ButtonBuilder>();
+      forms.slice(0, 5).forEach((f: any) => {
+        const btnStyle =
+          f.buttonColor === "Secondary"
+            ? ButtonStyle.Secondary
+            : f.buttonColor === "Success"
+            ? ButtonStyle.Success
+            : f.buttonColor === "Danger"
+            ? ButtonStyle.Danger
+            : ButtonStyle.Primary;
+
+        const button = new ButtonBuilder()
+          .setCustomId(`app_apply:${f.id}`)
+          .setLabel(f.name.substring(0, 80))
+          .setStyle(btnStyle)
+          .setDisabled(!f.isOpen);
+
+        if (f.emoji) button.setEmoji(f.emoji);
+        else if (f.buttonEmoji) button.setEmoji(f.buttonEmoji);
+
+        row.addComponents(button);
+      });
+
+      components.push(row);
+    }
+  }
+
+  let message: any = null;
+  if (panel.messageId) {
+    const existingMsg = await channel.messages.fetch(panel.messageId).catch(() => null);
+    if (existingMsg) {
+      message = await existingMsg.edit({ embeds: [embed], components });
+      return existingMsg.id;
+    }
+  }
+
+  if (!message) {
+    message = await channel.send({ embeds: [embed], components });
+  }
+
+  await updateAppPanel(panel.id, { messageId: message.id });
+  return message.id;
+}
+
 export async function deployApplicationFormEmbed(client: Client, formId: string): Promise<string> {
   const form = await getAppFormById(formId);
   if (!form) throw new Error("Application form not found");
+
+  if (form.panelId) {
+    return await deployApplicationPanelEmbed(client, form.panelId);
+  }
+
   if (!form.channelId) throw new Error("Target channel ID is not configured for this form");
 
   const channel = (await client.channels.fetch(form.channelId).catch(() => null)) as TextChannel;
   if (!channel || !channel.isTextBased()) throw new Error("Could not access target channel on Discord");
 
-  // Fetch all forms associated with this channel to build dropdown menu
-  const allFormsInChannel = await getAppForms(form.guildId);
-  const channelForms = allFormsInChannel.filter((f) => f.channelId === form.channelId && f.isOpen);
-
   const embed = new EmbedBuilder()
     .setTitle(form.embedTitle || form.name)
-    .setDescription(form.embedDescription || "Select an application position from the dropdown menu below to submit your application.")
+    .setDescription(form.embedDescription || "Click the button below to submit your application.")
     .setColor((form.embedColor as any) || "#5865F2");
 
   if (form.thumbnail) embed.setThumbnail(form.thumbnail);
   if (form.image) embed.setImage(form.image);
   if (form.footer) embed.setFooter({ text: form.footer });
 
-  const components: any[] = [];
+  const btnStyle =
+    form.buttonColor === "Secondary"
+      ? ButtonStyle.Secondary
+      : form.buttonColor === "Success"
+      ? ButtonStyle.Success
+      : form.buttonColor === "Danger"
+      ? ButtonStyle.Danger
+      : ButtonStyle.Primary;
 
-  // Dropdown Select Menu Mode (like Ticket System reasons/dropdown)
-  if (form.displayType === "dropdown" || channelForms.length > 1) {
-    const selectMenu = new StringSelectMenuBuilder()
-      .setCustomId(`app_select_form:${form.id}`)
-      .setPlaceholder("Select an application position...");
+  const button = new ButtonBuilder()
+    .setCustomId(`app_apply:${form.id}`)
+    .setLabel(form.buttonText || "Apply Now")
+    .setStyle(btnStyle)
+    .setDisabled(!form.isOpen);
 
-    const formsToInclude = channelForms.length > 0 ? channelForms : [form];
+  if (form.emoji) button.setEmoji(form.emoji);
+  else if (form.buttonEmoji) button.setEmoji(form.buttonEmoji);
 
-    formsToInclude.forEach((f) => {
-      const option = new StringSelectMenuOptionBuilder()
-        .setLabel(f.name.substring(0, 100))
-        .setValue(f.id)
-        .setDescription((f.description || "Submit application for this position").substring(0, 100));
-
-      if (f.buttonEmoji) option.setEmoji(f.buttonEmoji);
-      selectMenu.addOptions(option);
-    });
-
-    components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
-  } else {
-    // Single Button Mode
-    const btnStyle =
-      form.buttonColor === "Secondary"
-        ? ButtonStyle.Secondary
-        : form.buttonColor === "Success"
-        ? ButtonStyle.Success
-        : form.buttonColor === "Danger"
-        ? ButtonStyle.Danger
-        : ButtonStyle.Primary;
-
-    const button = new ButtonBuilder()
-      .setCustomId(`app_apply:${form.id}`)
-      .setLabel(form.buttonText || "Apply Now")
-      .setStyle(btnStyle)
-      .setDisabled(!form.isOpen);
-
-    if (form.buttonEmoji) button.setEmoji(form.buttonEmoji);
-
-    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button));
-  }
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
 
   if (form.messageId) {
     const existingMsg = await channel.messages.fetch(form.messageId).catch(() => null);
     if (existingMsg) {
-      await existingMsg.edit({ embeds: [embed], components });
+      await existingMsg.edit({ embeds: [embed], components: [row] });
       return existingMsg.id;
     }
   }
 
-  const newMsg = await channel.send({ embeds: [embed], components });
+  const newMsg = await channel.send({ embeds: [embed], components: [row] });
+  await updateAppForm(form.id, { messageId: newMsg.id });
   return newMsg.id;
 }
 
@@ -321,7 +386,6 @@ async function triggerApplicationModal(interaction: any, formId: string) {
 }
 
 async function postApplicationChannelWelcome(channel: TextChannel, app: any, form: any) {
-  // Welcome Embed (like Ticket System Welcome Embed)
   const welcomeEmbed = new EmbedBuilder()
     .setTitle(form.welcomeTitle || `👋 Application #${app.appNumber} — ${form.name}`)
     .setDescription(form.welcomeDescription || `Welcome <@${app.userId}>! Reviewers will inspect your answers shortly.`)

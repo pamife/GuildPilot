@@ -5,13 +5,85 @@ import { GuildMember, Role } from "discord.js";
 const prisma = new PrismaClient();
 
 // ==========================================
-// FORMS & QUESTIONS
+// PANELS, FORMS & QUESTIONS
 // ==========================================
+
+export async function getAppPanels(guildId: string) {
+  return await prisma.appPanel.findMany({
+    where: { guildId },
+    include: {
+      forms: {
+        include: {
+          questions: { orderBy: { order: "asc" } },
+        },
+      },
+    },
+    orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getAppPanelById(panelId: string) {
+  return await prisma.appPanel.findUnique({
+    where: { id: panelId },
+    include: {
+      forms: {
+        include: {
+          questions: { orderBy: { order: "asc" } },
+        },
+      },
+    },
+  });
+}
+
+export async function createAppPanel(guildId: string, data: any) {
+  return await prisma.appPanel.create({
+    data: {
+      guildId,
+      name: data.name || "Application Center Panel",
+      description: data.description || "",
+      displayType: data.displayType || "dropdown",
+      embedTitle: data.embedTitle || "📝 Application Center",
+      embedDescription: data.embedDescription || "Select an application position from the dropdown menu below to submit your application.",
+      embedColor: data.embedColor || "#5865F2",
+      thumbnail: data.thumbnail || null,
+      image: data.image || null,
+      footer: data.footer || "GuildPilot Applications System",
+      welcomeTitle: data.welcomeTitle || "👋 Application Submitted!",
+      welcomeDescription: data.welcomeDescription || "Your application has been received.",
+      welcomeColor: data.welcomeColor || "#5865F2",
+      welcomeThumbnail: data.welcomeThumbnail || null,
+      welcomeImage: data.welcomeImage || null,
+      welcomeFooter: data.welcomeFooter || "GuildPilot Applications System",
+      channelId: data.channelId || null,
+    },
+    include: { forms: true },
+  });
+}
+
+export async function updateAppPanel(panelId: string, data: any) {
+  const payload = { ...data };
+  delete payload.id;
+  delete payload.guildId;
+  delete payload.forms;
+
+  return await prisma.appPanel.update({
+    where: { id: panelId },
+    data: payload,
+    include: { forms: true },
+  });
+}
+
+export async function deleteAppPanel(panelId: string) {
+  return await prisma.appPanel.delete({
+    where: { id: panelId },
+  });
+}
 
 export async function getAppForms(guildId: string) {
   return await prisma.appForm.findMany({
     where: { guildId },
     include: {
+      panel: true,
       questions: {
         orderBy: { order: "asc" },
       },
@@ -27,6 +99,7 @@ export async function getAppFormById(formId: string) {
   return await prisma.appForm.findUnique({
     where: { id: formId },
     include: {
+      panel: true,
       questions: {
         orderBy: { order: "asc" },
       },
@@ -38,9 +111,12 @@ export async function createAppForm(guildId: string, data: any) {
   return await prisma.appForm.create({
     data: {
       guildId,
+      panelId: data.panelId || null,
       name: data.name || "Untitled Application Form",
       description: data.description || "",
+      emoji: data.emoji || "📝",
       category: data.category || "General",
+      displayType: data.displayType || "dropdown",
       embedTitle: data.embedTitle || "📝 Application Form",
       embedDescription: data.embedDescription || "Click the button below to submit your application.",
       embedColor: data.embedColor || "#5865F2",

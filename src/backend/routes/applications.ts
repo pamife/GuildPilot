@@ -4,6 +4,11 @@ import path from "path";
 import { discordClient } from "../bot/client";
 import {
   getApplicationStats,
+  getAppPanels,
+  getAppPanelById,
+  createAppPanel,
+  updateAppPanel,
+  deleteAppPanel,
   getAppForms,
   getAppFormById,
   createAppForm,
@@ -23,7 +28,7 @@ import {
   updateApplicationSettings,
   getApplicationLogs,
 } from "../services/applicationService";
-import { deployApplicationFormEmbed } from "../bot/applicationHandler";
+import { deployApplicationPanelEmbed, deployApplicationFormEmbed } from "../bot/applicationHandler";
 import { generateApplicationHtmlTranscript } from "../services/transcriptService";
 import { TextChannel } from "discord.js";
 
@@ -36,6 +41,72 @@ router.get("/:guildId/applications/stats", async (req, res) => {
     res.json(stats);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to fetch application stats" });
+  }
+});
+
+// Panels CRUD & Deploy
+router.get("/:guildId/applications/panels", async (req, res) => {
+  try {
+    const panels = await getAppPanels(req.params.guildId);
+    res.json(panels);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to fetch panels" });
+  }
+});
+
+router.get("/:guildId/applications/panels/:panelId", async (req, res) => {
+  try {
+    const panel = await getAppPanelById(req.params.panelId);
+    if (!panel) return res.status(404).json({ error: "Panel not found" });
+    res.json(panel);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to fetch panel" });
+  }
+});
+
+router.post("/:guildId/applications/panels", async (req, res) => {
+  try {
+    const panel = await createAppPanel(req.params.guildId, req.body);
+    res.json(panel);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to create panel" });
+  }
+});
+
+router.patch("/:guildId/applications/panels/:panelId", async (req, res) => {
+  try {
+    const panel = await updateAppPanel(req.params.panelId, req.body);
+    let syncedLive = false;
+    if (panel.messageId && panel.channelId) {
+      try {
+        await deployApplicationPanelEmbed(discordClient, panel.id);
+        syncedLive = true;
+      } catch (syncErr) {
+        console.warn(`[Application System] Live sync error for panel ${panel.id}:`, syncErr);
+      }
+    }
+    res.json({ ...panel, syncedLive });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update panel" });
+  }
+});
+
+router.delete("/:guildId/applications/panels/:panelId", async (req, res) => {
+  try {
+    const result = await deleteAppPanel(req.params.panelId);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to delete panel" });
+  }
+});
+
+router.post("/:guildId/applications/panels/:panelId/deploy", async (req, res) => {
+  try {
+    const messageId = await deployApplicationPanelEmbed(discordClient, req.params.panelId);
+    await updateAppPanel(req.params.panelId, { messageId });
+    res.json({ success: true, messageId });
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to deploy panel embed" });
   }
 });
 

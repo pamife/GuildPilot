@@ -128,11 +128,40 @@ model TicketSetting {
   updatedAt           DateTime @updatedAt
 }
 
-model AppForm {
+model AppPanel {
   id                 String        @id @default(uuid())
   guildId            String
   name               String
   description        String?
+  displayType        String        @default("dropdown") // dropdown, button
+  embedTitle         String?       @default("📝 Application Center")
+  embedDescription   String?       @default("Select an application position from the dropdown menu below to submit your application.")
+  embedColor         String        @default("#5865F2")
+  thumbnail          String?
+  image              String?
+  footer             String?       @default("GuildPilot Applications System")
+  welcomeTitle       String?       @default("👋 Application Submitted!")
+  welcomeDescription String?       @default("Your application has been received. Reviewers will inspect your answers shortly.")
+  welcomeColor       String        @default("#5865F2")
+  welcomeThumbnail   String?
+  welcomeImage       String?
+  welcomeFooter      String?       @default("GuildPilot Applications System")
+  channelId          String?
+  messageId          String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+
+  forms              AppForm[]
+}
+
+model AppForm {
+  id                 String        @id @default(uuid())
+  guildId            String
+  panelId            String?
+  panel              AppPanel?     @relation(fields: [panelId], references: [id], onDelete: SetNull)
+  name               String
+  description        String?
+  emoji              String?       @default("📝")
   category           String?       @default("General")
   displayType        String        @default("dropdown") // dropdown, button
   embedTitle         String?       @default("📝 Server Applications")
