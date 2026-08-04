@@ -109,11 +109,40 @@ export function HostServerView() {
     };
   }, []);
 
+  // Active polling while update check or installation is running
+  useEffect(() => {
+    if (!checkingUpdate && !updateProgress?.isUpdating) return;
+
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+    const interval = setInterval(() => {
+      fetch(`${apiUrl}/api/host-server/update-progress`)
+        .then((res) => res.json())
+        .then((data) => {
+          if (data) setUpdateProgress(data);
+        })
+        .catch(() => {});
+    }, 800);
+
+    return () => clearInterval(interval);
+  }, [checkingUpdate, updateProgress?.isUpdating]);
+
   const handleCheckUpdate = async () => {
     setCheckingUpdate(true);
     setShowLogs(true);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+    // Optimistic progress state for step 1
+    setUpdateProgress((prev: any) => ({
+      isUpdating: true,
+      step: 1,
+      totalSteps: 6,
+      percent: 10,
+      currentAction: "Prüfe GitHub-Repository auf neue Commits...",
+      status: "checking",
+      logs: [...(prev?.logs || []), `[${new Date().toLocaleTimeString()}] Starte GitHub origin/main Abfrage...`],
+    }));
+
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
       const res = await fetch(`${apiUrl}/api/host-server/check-update`, { method: "POST" });
       const data = await res.json();
       if (data && data.message) {
@@ -135,6 +164,13 @@ export function HostServerView() {
         timestamp: new Date().toISOString(),
       });
     } finally {
+      // Immediately fetch current update-progress state
+      fetch(`${apiUrl}/api/host-server/update-progress`)
+        .then((res) => res.json())
+        .then((progressData) => {
+          if (progressData) setUpdateProgress(progressData);
+        })
+        .catch(() => {});
       setCheckingUpdate(false);
     }
   };

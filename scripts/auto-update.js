@@ -20,33 +20,51 @@ function reportProgress(step, totalSteps, percent, currentAction, logMsg, status
   const timeStr = new Date().toLocaleTimeString();
   const fullLog = logMsg ? `[${timeStr}] ${logMsg}` : null;
 
-  const data = JSON.stringify({
+  const progressFile = path.join(logsDir, "update-progress.json");
+  let existingLogs = [];
+  try {
+    if (fs.existsSync(progressFile)) {
+      const prev = JSON.parse(fs.readFileSync(progressFile, "utf-8"));
+      if (Array.isArray(prev.logs)) existingLogs = prev.logs;
+    }
+  } catch (e) {}
+
+  const logs = fullLog ? [...existingLogs, fullLog].slice(-100) : existingLogs;
+
+  const payload = {
     isUpdating: status === "running" || status === "checking",
     step,
     totalSteps: totalSteps || 6,
     percent,
     currentAction,
     status,
-    logs: fullLog ? [fullLog] : [],
-  });
+    logs,
+    timestamp: new Date().toISOString(),
+  };
 
-  const req = http.request(
-    {
-      hostname: "localhost",
-      port: 3001,
-      path: "/api/host-server/update-progress",
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "Content-Length": Buffer.byteLength(data),
+  try {
+    fs.writeFileSync(progressFile, JSON.stringify(payload, null, 2), "utf-8");
+  } catch (e) {}
+
+  try {
+    const dataStr = JSON.stringify(payload);
+    const req = http.request(
+      {
+        hostname: "localhost",
+        port: 3001,
+        path: "/api/host-server/update-progress",
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Content-Length": Buffer.byteLength(dataStr),
+        },
       },
-    },
-    () => {}
-  );
-
-  req.on("error", () => {}); // Ignore connection errors if backend is restarting
-  req.write(data);
-  req.end();
+      () => {}
+    );
+    req.on("error", () => {});
+    req.write(dataStr);
+    req.end();
+  } catch (e) {}
 }
 
 function notifyUpdate(payload) {

@@ -29,6 +29,7 @@ export interface UpdateProgressState {
 
 const LOGS_DIR = path.join(process.cwd(), "logs");
 const UPDATE_FILE = path.join(LOGS_DIR, "latest-update.json");
+const PROGRESS_FILE = path.join(LOGS_DIR, "update-progress.json");
 
 let activeProgressState: UpdateProgressState = {
   isUpdating: false,
@@ -42,6 +43,15 @@ let activeProgressState: UpdateProgressState = {
 };
 
 export function getUpdateProgress(): UpdateProgressState {
+  try {
+    if (fs.existsSync(PROGRESS_FILE)) {
+      const data = fs.readFileSync(PROGRESS_FILE, "utf-8");
+      const parsed = JSON.parse(data);
+      if (parsed && typeof parsed === "object") {
+        activeProgressState = { ...activeProgressState, ...parsed };
+      }
+    }
+  } catch (e) {}
   return activeProgressState;
 }
 
@@ -56,6 +66,11 @@ export function updateProgressState(partial: Partial<UpdateProgressState>): Upda
     logs: newLogs.slice(-100),
     timestamp: new Date().toISOString(),
   };
+
+  try {
+    ensureLogsDir();
+    fs.writeFileSync(PROGRESS_FILE, JSON.stringify(activeProgressState, null, 2), "utf-8");
+  } catch (e) {}
 
   broadcastEvent("updateProgress", activeProgressState);
   return activeProgressState;
