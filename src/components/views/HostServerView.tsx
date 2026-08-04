@@ -104,12 +104,34 @@ export function HostServerView() {
       })
       .catch(() => {});
 
+    fetch(`${apiUrl}/api/host-server/hourly-restart-info`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.minutesRemaining !== undefined) setHourlyRestartInfo(data);
+      })
+      .catch(() => {});
+
     return () => {
       socket.off("hostMetricsUpdate", handleMetrics);
       socket.off("updateNotification", handleUpdateNotif);
       socket.off("updateProgress", handleUpdateProgress);
     };
   }, []);
+
+  const [hourlyRestartInfo, setHourlyRestartInfo] = useState<{ nextRestart: string; minutesRemaining: number } | null>(null);
+  const [restartingNow, setRestartingNow] = useState(false);
+
+  const handleRestartNow = async () => {
+    if (!confirm("Bist du sicher, dass du das gesamte System jetzt neu starten möchtest? Alle Verbindungen & Caches werden neu geladen.")) return;
+    setRestartingNow(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      await fetch(`${apiUrl}/api/host-server/restart-now`, { method: "POST" });
+    } catch (e) {}
+    setTimeout(() => {
+      window.location.reload();
+    }, 3500);
+  };
 
   // Active polling while update check or installation is running
   useEffect(() => {
@@ -248,11 +270,26 @@ export function HostServerView() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#18191c] border border-[#35373c] text-xs text-discord-muted">
             <Clock className="w-4 h-4 text-discord-brand" />
             <span>Uptime: <strong className="text-white font-mono">{formatUptime(metrics?.uptime)}</strong></span>
           </div>
+
+          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#18191c] border border-[#35373c] text-xs text-discord-muted" title="Automatischer stündlicher System-Neustart (60 Min Reload)">
+            <RotateCcw className="w-4 h-4 text-sky-400" />
+            <span>Auto-Neustart: <strong className="text-white font-mono">in {hourlyRestartInfo?.minutesRemaining ?? "--"} Min</strong></span>
+          </div>
+
+          <button
+            onClick={handleRestartNow}
+            disabled={restartingNow}
+            title="Sofortigen kompletten System-Neustart durchführen"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-discord-red/10 hover:bg-discord-red/20 border border-discord-red/30 text-discord-red font-semibold text-xs transition-all disabled:opacity-50"
+          >
+            <RotateCcw className={`w-3.5 h-3.5 ${restartingNow ? "animate-spin" : ""}`} />
+            <span>{restartingNow ? "Neustart..." : "Jetzt neu starten"}</span>
+          </button>
 
           {metrics?.battery?.hasBattery && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#18191c] border border-[#35373c] text-xs text-discord-muted">

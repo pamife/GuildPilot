@@ -68,6 +68,8 @@ app.get("/", (req, res) => {
   res.redirect(`http://${host}:3000`);
 });
 
+import { initHourlyRestartScheduler } from "./services/hourlyRestartService";
+
 // Base Health Check
 app.get("/api/health", (req, res) => {
   res.json({ status: "ok", name: "GuildPilot Backend", timestamp: new Date() });
@@ -76,8 +78,9 @@ app.get("/api/health", (req, res) => {
 // Initialize Socket.IO
 initSocketIO(server);
 
-// Start Server and Discord Client
+// Start Server, Discord Client, and Hourly Restart Scheduler
 server.listen(Number(PORT), "0.0.0.0", async () => {
   console.log(`[GuildPilot Backend] Running on http://0.0.0.0:${PORT}`);
+  initHourlyRestartScheduler();
   await initDiscordBot();
 });

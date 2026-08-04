@@ -9,6 +9,7 @@ import {
   updateProgressState,
   resetUpdateProgress,
 } from "../services/updateService";
+import { getNextRestartTime, triggerImmediateRestart } from "../services/hourlyRestartService";
 
 const router = Router();
 
@@ -19,6 +20,18 @@ router.get("/metrics", async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: "Failed to collect host metrics" });
   }
+});
+
+// GET scheduled hourly restart info
+router.get("/hourly-restart-info", (req, res) => {
+  const info = getNextRestartTime();
+  res.json(info);
+});
+
+// POST endpoint to trigger immediate manual system restart
+router.post("/restart-now", (req, res) => {
+  triggerImmediateRestart("Manuell angeforderter System-Neustart via Dashboard");
+  res.json({ success: true, message: "System-Neustart initiiert..." });
 });
 
 // GET latest server update status
