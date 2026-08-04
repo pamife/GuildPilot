@@ -44,14 +44,22 @@ function DashboardContent() {
   // Check auth status
   const checkAuth = async () => {
     setLoadingAuth(true);
+    const timeoutTimer = setTimeout(() => {
+      setLoadingAuth(false);
+      setAuthError("Authentication check timed out.");
+    }, 4000);
+
     try {
       const res = await api.get("/auth/me");
+      clearTimeout(timeoutTimer);
       setOwnerUser(res.data.user);
       setAuthError(null);
     } catch (err: any) {
+      clearTimeout(timeoutTimer);
       console.warn("Auth check failed:", err.response?.data || err.message);
       setAuthError(err.response?.data?.error || "Please authenticate to access GuildPilot.");
     } finally {
+      clearTimeout(timeoutTimer);
       setLoadingAuth(false);
     }
   };
@@ -332,10 +340,17 @@ function DashboardContent() {
 
   if (loadingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-discord-darkest text-discord-header">
-        <div className="flex flex-col items-center gap-3">
+      <div style={{ backgroundColor: "#1e1f22", color: "#f2f3f5", minHeight: "100vh" }} className="min-h-screen flex flex-col items-center justify-center bg-discord-darkest text-discord-header p-4">
+        <div className="flex flex-col items-center gap-4 text-center max-w-sm">
           <RefreshCw className="w-10 h-10 animate-spin text-discord-brand" />
-          <p className="text-base font-semibold">Initializing GuildPilot Local Dashboard...</p>
+          <h2 className="text-lg font-bold">Initializing GuildPilot Local Dashboard...</h2>
+          <p className="text-xs text-zinc-400">Verbindung zum lokalen backend wird hergestellt...</p>
+          <button
+            onClick={() => setLoadingAuth(false)}
+            className="mt-2 px-4 py-2 bg-[#2b2d31] hover:bg-[#35373c] border border-[#35373c] text-xs font-bold rounded-xl text-zinc-300"
+          >
+            Zur Anmeldung / Dashboard springen
+          </button>
         </div>
       </div>
     );
