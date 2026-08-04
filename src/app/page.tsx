@@ -173,9 +173,17 @@ function DashboardContent() {
       fetchGuildData();
     };
 
+    const handleSystemRestarting = (data: any) => {
+      showToast(data.reason || "System wird neu gestartet...", "info");
+      setTimeout(() => {
+        window.location.reload();
+      }, 3000);
+    };
+
     socket.on("botStatusChange", handleBotStatusChange);
     socket.on("updateNotification", handleUpdateNotification);
     socket.on("updateNotificationRead", handleUpdateNotificationRead);
+    socket.on("systemRestarting", handleSystemRestarting);
     socket.on("guildUpdate", handleLiveEvent);
     socket.on("channelCreate", handleLiveEvent);
     socket.on("channelUpdate", handleLiveEvent);
@@ -194,6 +202,7 @@ function DashboardContent() {
       socket.off("botStatusChange", handleBotStatusChange);
       socket.off("updateNotification", handleUpdateNotification);
       socket.off("updateNotificationRead", handleUpdateNotificationRead);
+      socket.off("systemRestarting", handleSystemRestarting);
       socket.off("guildUpdate", handleLiveEvent);
       socket.off("channelCreate", handleLiveEvent);
       socket.off("channelUpdate", handleLiveEvent);

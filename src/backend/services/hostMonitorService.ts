@@ -95,11 +95,13 @@ export async function fetchHostStaticInfo(): Promise<HostStaticInfo> {
 
 const MONITORED_SERVICES = [
   "keep-awake",
+  "guildpilot-update",
   "plasma-powerdevil",
   "ssh",
   "sshd",
   "NetworkManager",
   "docker",
+  "pm2",
 ];
 
 export async function collectHostMetrics(): Promise<HostMetrics> {
@@ -178,10 +180,30 @@ export async function collectHostMetrics(): Promise<HostMetrics> {
       processes: {
         top: topProcesses,
       },
-      services: (services || []).map((s: any) => ({
-        name: s.name,
-        running: s.running,
-      })),
+      services: (services || []).map((s: any) => {
+        let isRunning = s.running;
+        if (s.name === "keep-awake" && !isRunning) {
+          const procList = processes?.list || [];
+          const matchesKeepAwake = procList.some((p: any) => {
+            const name = (p.name || "").toLowerCase();
+            const cmd = (p.cmd || "").toLowerCase();
+            return (
+              name.includes("keep-awake") ||
+              name.includes("systemd-inhibit") ||
+              name.includes("caffeine") ||
+              name.includes("nosleep") ||
+              cmd.includes("keep-awake") ||
+              cmd.includes("systemd-inhibit") ||
+              cmd.includes("caffeine")
+            );
+          });
+          if (matchesKeepAwake) isRunning = true;
+        }
+        return {
+          name: s.name,
+          running: isRunning,
+        };
+      }),
     };
   } catch (err) {
     console.error("[HostMonitor] Error collecting telemetry:", err);

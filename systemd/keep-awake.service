@@ -1,0 +1,12 @@
+[Unit]
+Description=GuildPilot Keep-Awake Host Service (Prevents System Sleep & Suspend)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/systemd-inhibit --what=idle:sleep:shutdown --who=GuildPilot --why="GuildPilot Host Server 24/7 Keep-Awake" /bin/sleep infinity
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

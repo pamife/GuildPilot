@@ -165,9 +165,22 @@ try {
   log("✅ UPDATE COMPLETED SUCCESSFULLY!");
 
   try {
-    execSync("pm2 restart all", { cwd: projectDir, stdio: "inherit" });
+    const isWin = process.platform === "win32";
+    const npxCmd = isWin ? "npx.cmd" : "npx";
+    const localPm2 = path.join(projectDir, "node_modules", ".bin", isWin ? "pm2.cmd" : "pm2");
+    const pm2Bin = fs.existsSync(localPm2) ? `"${localPm2}"` : `${npxCmd} pm2`;
+
+    try {
+      log(`Restarting services via PM2 (${pm2Bin} startOrRestart ecosystem.config.js)...`);
+      execSync(`${pm2Bin} startOrRestart ecosystem.config.js`, { cwd: projectDir, stdio: "inherit" });
+    } catch (e1) {
+      execSync(`${pm2Bin} restart all`, { cwd: projectDir, stdio: "inherit" });
+    }
   } catch (pm2Err) {
-    log("PM2 restart skipped or failed (process may be running directly).");
+    log(`PM2 restart skipped or failed (${pm2Err.message}). Restarting process directly...`);
+    setTimeout(() => {
+      process.exit(0);
+    }, 1500);
   }
 } catch (err) {
   console.error("❌ UPDATE FAILED:", err.message);

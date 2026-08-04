@@ -250,7 +250,7 @@ export function HostServerView() {
   ];
 
   return (
-    <div className="space-y-6 text-discord-header">
+    <div className="flex-1 overflow-y-auto p-6 space-y-6 text-discord-header">
       {/* Header Banner */}
       <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-xl bg-gradient-to-r from-[#1e1f22] to-[#2b2d31] border border-[#35373c] shadow-lg">
         <div className="flex items-center gap-4">
@@ -687,6 +687,21 @@ export function HostServerView() {
               </div>
             ))}
           </div>
+
+          {metrics?.services?.some((s: any) => s.name === "keep-awake" && !s.running) && (
+            <div className="p-3 rounded-lg bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 space-y-1.5 mt-2">
+              <p className="font-semibold flex items-center gap-1.5">
+                <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
+                Dienst "keep-awake" ist STOPPED
+              </p>
+              <p className="text-zinc-400 text-[11px] leading-relaxed">
+                Der Dienst verhindert Standby & Ruhezustand auf dem Server. Zur Aktivierung führe folgendes auf dem Host aus:
+              </p>
+              <code className="block bg-[#111214] p-2 rounded text-[10px] font-mono text-amber-200 select-all border border-[#35373c]">
+                sudo cp systemd/keep-awake.service /etc/systemd/system/ && sudo systemctl enable --now keep-awake
+              </code>
+            </div>
+          )}
         </div>
 
         {/* Top Processes Table */}
