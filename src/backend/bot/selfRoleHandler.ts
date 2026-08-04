@@ -118,12 +118,9 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           .setStyle(style);
 
         if (opt.emoji) {
-          const validEmoji = parseAndValidateEmoji(opt.emoji);
-          if (validEmoji) {
-            try {
-              button.setEmoji(validEmoji);
-            } catch (e) {}
-          }
+          try {
+            button.setEmoji(parseAndValidateEmoji(opt.emoji));
+          } catch (e) {}
         }
 
         currentRow.addComponents(button);
