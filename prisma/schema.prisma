@@ -281,6 +281,7 @@ model AppQuestion {
   minLength       Int?
   maxLength       Int?
   validationRegex String?
+  validationError String?
   helpText        String?
   order           Int      @default(0)
   createdAt       DateTime @default(now())

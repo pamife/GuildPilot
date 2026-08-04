@@ -510,16 +510,24 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
 
     if (q) {
       setEditingQuestion(q);
+      let parsedOptions = "";
+      try {
+        const opts = JSON.parse(q.options || "[]");
+        if (Array.isArray(opts)) parsedOptions = opts.join("\n");
+      } catch (e) {
+        parsedOptions = q.options || "";
+      }
+
       setQuestionPayload({
-        label: q.label,
-        type: q.type,
+        label: q.label || "",
+        type: q.type || "SHORT_TEXT",
         placeholder: q.placeholder || "",
-        required: q.required,
-        options: Array.isArray(JSON.parse(q.options || "[]"))
-          ? JSON.parse(q.options || "[]").join("\n")
-          : "",
+        required: q.required !== undefined ? q.required : true,
+        options: parsedOptions,
         minLength: q.minLength || "",
         maxLength: q.maxLength || "",
+        validationRegex: q.validationRegex || "",
+        validationError: q.validationError || "",
         helpText: q.helpText || "",
       });
     } else {
@@ -532,6 +540,8 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         options: "",
         minLength: "",
         maxLength: "",
+        validationRegex: "",
+        validationError: "",
         helpText: "",
       });
     }
@@ -551,7 +561,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
     }
 
     if (!questionPayload.label.trim()) {
-      showToast("Question label/title is required!", "error");
+      showToast("Question title/label is required!", "error");
       return;
     }
 
@@ -562,8 +572,16 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         .filter(Boolean);
 
       const payload = {
-        ...questionPayload,
+        label: questionPayload.label,
+        type: questionPayload.type,
+        placeholder: questionPayload.placeholder || null,
+        required: Boolean(questionPayload.required),
         options: optionsArray,
+        minLength: questionPayload.minLength ? parseInt(questionPayload.minLength, 10) : null,
+        maxLength: questionPayload.maxLength ? parseInt(questionPayload.maxLength, 10) : null,
+        validationRegex: questionPayload.validationRegex || null,
+        validationError: questionPayload.validationError || null,
+        helpText: questionPayload.helpText || null,
       };
 
       if (editingQuestion) {
@@ -571,7 +589,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         showToast("Question updated!", "success");
       } else {
         await api.post(`/guilds/${selectedGuildId}/applications/forms/${targetFormId}/questions`, payload);
-        showToast("Question added!", "success");
+        showToast("Question created!", "success");
       }
       setIsQuestionModalOpen(false);
       fetchQuestions();
@@ -1322,22 +1340,22 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
       {/* Question Editor Modal */}
       {isQuestionModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#35373c] pb-3">
+          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <HelpCircle className="w-5 h-5 text-discord-brand" />
-                {editingQuestion ? "Edit Question" : "Add Question"}
+                <HelpCircle className="w-5 h-5 text-indigo-400" />
+                {editingQuestion ? "Full Question Customizer & Settings" : "Create New Question"}
               </h3>
-              <button onClick={() => setIsQuestionModalOpen(false)} className="p-1 rounded bg-[#1e1f22] text-zinc-400">✕</button>
+              <button onClick={() => setIsQuestionModalOpen(false)} className="p-1.5 rounded-lg bg-[#0d0d11] border border-[#27272a] text-zinc-400 hover:text-white cursor-pointer">✕</button>
             </div>
 
-            <div className="space-y-3 text-xs">
+            <div className="space-y-4 text-xs overflow-y-auto pr-1">
               <div>
                 <label className="font-bold text-zinc-300 block mb-1">Target Form:</label>
                 <select
                   value={selectedFormId || ""}
                   onChange={(e) => setSelectedFormId(e.target.value)}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-semibold"
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white font-semibold outline-none"
                 >
                   {forms.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -1348,37 +1366,131 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
               </div>
 
               <div>
-                <label className="font-bold text-zinc-300 block mb-1">Question Label:</label>
+                <label className="font-bold text-zinc-300 block mb-1">Question Title / Prompt:</label>
                 <input
                   type="text"
-                  placeholder="e.g. Why do you want to join our team?"
+                  placeholder="e.g. Why do you want to join our team? or What is your Roblox Username?"
                   value={questionPayload.label}
                   onChange={(e) => setQuestionPayload({ ...questionPayload, label: e.target.value })}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
                 />
               </div>
 
               <div>
-                <label className="font-bold text-zinc-300 block mb-1">Type:</label>
+                <label className="font-bold text-zinc-300 block mb-1">Input Field Type:</label>
                 <select
                   value={questionPayload.type}
                   onChange={(e) => setQuestionPayload({ ...questionPayload, type: e.target.value })}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-bold"
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white font-bold outline-none"
                 >
-                  <option value="SHORT_TEXT">Short Text</option>
-                  <option value="PARAGRAPH">Paragraph</option>
-                  <option value="MULTIPLE_CHOICE">Multiple Choice</option>
-                  <option value="DROPDOWN">Dropdown Menu</option>
-                  <option value="YES_NO">Yes / No</option>
-                  <option value="NUMBER">Number Input</option>
-                  <option value="DATE">Date Input</option>
+                  <option value="SHORT_TEXT">Short Text (Single Line Input)</option>
+                  <option value="PARAGRAPH">Paragraph Text (Multi-Line Essay)</option>
+                  <option value="MULTIPLE_CHOICE">Multiple Choice Options</option>
+                  <option value="DROPDOWN">Dropdown Select Menu</option>
+                  <option value="YES_NO">Yes / No Toggle</option>
+                  <option value="NUMBER">Number Input (Age, User ID)</option>
+                  <option value="DATE">Date Selector</option>
                 </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-zinc-300 block mb-1">Placeholder Text (Inside Discord Input):</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Enter your detailed answer here..."
+                  value={questionPayload.placeholder}
+                  onChange={(e) => setQuestionPayload({ ...questionPayload, placeholder: e.target.value })}
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-zinc-300 block mb-1">Help Text / Subtitle Instructions:</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Please provide at least 2 sentences explaining your experience."
+                  value={questionPayload.helpText}
+                  onChange={(e) => setQuestionPayload({ ...questionPayload, helpText: e.target.value })}
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                />
+              </div>
+
+              {(questionPayload.type === "MULTIPLE_CHOICE" || questionPayload.type === "DROPDOWN") && (
+                <div>
+                  <label className="font-bold text-zinc-300 block mb-1">Options List (One option per line):</label>
+                  <textarea
+                    rows={4}
+                    placeholder={`Option 1\nOption 2\nOption 3`}
+                    value={questionPayload.options}
+                    onChange={(e) => setQuestionPayload({ ...questionPayload, options: e.target.value })}
+                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white font-mono outline-none"
+                  />
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-zinc-300 block mb-1">Min Length (Chars):</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 10"
+                    value={questionPayload.minLength}
+                    onChange={(e) => setQuestionPayload({ ...questionPayload, minLength: e.target.value })}
+                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-zinc-300 block mb-1">Max Length (Chars):</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 1000"
+                    value={questionPayload.maxLength}
+                    onChange={(e) => setQuestionPayload({ ...questionPayload, maxLength: e.target.value })}
+                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="font-bold text-zinc-300 block mb-1">Validation Regex (Optional):</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. ^[0-9]+$"
+                    value={questionPayload.validationRegex}
+                    onChange={(e) => setQuestionPayload({ ...questionPayload, validationRegex: e.target.value })}
+                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white font-mono outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="font-bold text-zinc-300 block mb-1">Custom Error Message:</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Must be a valid number!"
+                    value={questionPayload.validationError}
+                    onChange={(e) => setQuestionPayload({ ...questionPayload, validationError: e.target.value })}
+                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-2">
+                <input
+                  type="checkbox"
+                  id="req_check"
+                  checked={questionPayload.required}
+                  onChange={(e) => setQuestionPayload({ ...questionPayload, required: e.target.checked })}
+                  className="w-4 h-4 rounded border-[#27272a] bg-[#0d0d11] text-indigo-600 focus:ring-0 cursor-pointer"
+                />
+                <label htmlFor="req_check" className="font-bold text-zinc-200 cursor-pointer">
+                  Required Question (Must be answered before submitting)
+                </label>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#35373c]">
-              <button onClick={() => setIsQuestionModalOpen(false)} className="px-4 py-2 bg-[#1e1f22] text-zinc-300 rounded-xl font-bold text-xs">Cancel</button>
-              <button onClick={handleSaveQuestion} className="px-5 py-2 bg-discord-brand text-white font-bold rounded-xl text-xs">Save Question</button>
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
+              <button onClick={() => setIsQuestionModalOpen(false)} className="px-4 py-2 bg-[#0d0d11] border border-[#27272a] text-zinc-300 rounded-xl font-bold text-xs cursor-pointer">Cancel</button>
+              <button onClick={handleSaveQuestion} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-indigo-600/20 cursor-pointer">Save Question</button>
             </div>
           </div>
         </div>
