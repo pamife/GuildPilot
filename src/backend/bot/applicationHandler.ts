@@ -319,7 +319,7 @@ export function setupApplicationInteractions(client: Client) {
         broadcastEvent("applicationSubmitted", { guildId: app.guildId, appId: app.id, appNumber: app.appNumber });
 
         await interaction.editReply({
-          content: `✅ **Bewerbung erfolgreich eingereicht!** (App #${app.appNumber}). Das Server-Team wurde benachrichtigt.`,
+          content: `✅ **Application Submitted Successfully!** (App #${app.appNumber}). The server review team has been notified.`,
         });
       }
 
@@ -379,7 +379,7 @@ export function setupApplicationInteractions(client: Client) {
 async function handleApplicationStartViaDM(interaction: any, formId: string) {
   const form = await getAppFormById(formId);
   if (!form) {
-    return interaction.reply({ content: "❌ Diese Bewerbung existiert nicht mehr.", ephemeral: true });
+    return interaction.reply({ content: "❌ This application form no longer exists.", ephemeral: true });
   }
 
   const guildId = interaction.guildId;
@@ -390,7 +390,7 @@ async function handleApplicationStartViaDM(interaction: any, formId: string) {
 
   if (!form.questions || form.questions.length === 0) {
     return interaction.reply({
-      content: "⚠️ Für dieses Formular wurden noch keine Bewerbungsfragen konfiguriert.",
+      content: "⚠️ No application questions have been configured for this form yet.",
       ephemeral: true,
     });
   }
@@ -399,18 +399,18 @@ async function handleApplicationStartViaDM(interaction: any, formId: string) {
 
   // Build DM Embed & Start Fill Button inside User DM
   const dmEmbed = new EmbedBuilder()
-    .setTitle(`📝 Bewerbung: ${form.name}`)
+    .setTitle(`📝 Application: ${form.name}`)
     .setDescription(
-      `Willkommen <@${interaction.user.id}>!\n\nDu hast eine Bewerbung für **${form.name}** auf dem Server **${guildName}** gestartet.\n\nKlicke unten auf den Button, um das Bewerbungsformular auszufüllen.`
+      `Welcome <@${interaction.user.id}>!\n\nYou started an application for **${form.name}** on **${guildName}**.\n\nClick the button below to answer your application questions.`
     )
     .setColor((form.embedColor as any) || "#5865F2")
-    .setFooter({ text: `GuildPilot Bewerbungssystem • ${guildName}` })
+    .setFooter({ text: `GuildPilot Application System • ${guildName}` })
     .setTimestamp();
 
   const dmRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
       .setCustomId(`app_dm_fill:${form.id}:${guildId}`)
-      .setLabel(`📝 Bewerbungsfragen beantworten (${form.questions.length} Fragen)`)
+      .setLabel(`📝 Answer Application Questions (${form.questions.length} Questions)`)
       .setStyle(ButtonStyle.Primary)
   );
 
@@ -418,12 +418,12 @@ async function handleApplicationStartViaDM(interaction: any, formId: string) {
     await interaction.user.send({ embeds: [dmEmbed], components: [dmRow] });
 
     await interaction.reply({
-      content: `📩 **Direktnachricht gesendet!** Wir haben dir eine DM für die Bewerbung **${form.name}** geschickt. Bitte schaue in deine Discord DMs, um die Fragen auszufüllen!`,
+      content: `📩 **Direct Message Sent!** We sent you a DM for your **${form.name}** application. Please check your Discord DMs to answer the questions!`,
       ephemeral: true,
     });
   } catch (dmErr) {
     await interaction.reply({
-      content: `❌ **Direktnachrichten (DMs) sind blockiert!** Der Bot konnte dir keine DM senden. Bitte aktiviere *"Direktnachrichten von Servermitgliedern erlauben"* in deinen Discord-Datenschutzeinstellungen für diesen Server und versuche es erneut.`,
+      content: `❌ **Direct Messages (DMs) Blocked!** The bot could not send you a DM. Please enable *"Allow direct messages from server members"* in your Discord Privacy Settings for this server and try again.`,
       ephemeral: true,
     });
   }
@@ -454,7 +454,7 @@ async function postApplicationChannelWelcome(channel: TextChannel, app: any, for
       { name: "📥 Server Joined", value: app.joinDate || "N/A", inline: true },
       ...answersFields
     )
-    .setFooter({ text: `GuildPilot Applications System • Status: PENDING` })
+    .setFooter({ text: `GuildPilot Application System • Status: PENDING` })
     .setTimestamp();
 
   const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
