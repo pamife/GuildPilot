@@ -218,15 +218,27 @@ if ! (${PM2_CMD} startOrRestart ecosystem.config.js || ${PM2_CMD} restart all ||
   rollback "PM2 restart failed"
 fi
 
-# Step 6: Perform Health Checks
+# Step 6: Perform Health Checks with Retry Loop (Wait for Next.js warmup)
 log "Verifying application health..."
-sleep 5
+HEALTH_PASSED=false
+HEALTH_BACKEND="000"
+HEALTH_FRONTEND="000"
 
-HEALTH_BACKEND=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3001/api/health || echo "000")
-HEALTH_FRONTEND=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000")
+for i in {1..6}; do
+  sleep 5
+  HEALTH_BACKEND=$(curl -sL -o /dev/null -w "%{http_code}" http://localhost:3001/api/health || echo "000")
+  HEALTH_FRONTEND=$(curl -sL -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000")
 
-if [ "${HEALTH_BACKEND}" != "200" ] || [ "${HEALTH_FRONTEND}" != "200" ]; then
-  rollback "Health check failed (Backend: ${HEALTH_BACKEND}, Frontend: ${HEALTH_FRONTEND})"
+  log "Health check attempt ${i}/6: Backend HTTP ${HEALTH_BACKEND}, Frontend HTTP ${HEALTH_FRONTEND}"
+
+  if [[ "${HEALTH_BACKEND}" =~ ^(200|301|302|307|308)$ ]] && [[ "${HEALTH_FRONTEND}" =~ ^(200|301|302|307|308)$ ]]; then
+    HEALTH_PASSED=true
+    break
+  fi
+done
+
+if [ "${HEALTH_PASSED}" = "false" ]; then
+  rollback "Health check failed after 30s warmup (Backend: ${HEALTH_BACKEND}, Frontend: ${HEALTH_FRONTEND})"
 fi
 
 log "✅ SUCCESS: GuildPilot updated successfully to commit ${REMOTE_HASH:0:7}"

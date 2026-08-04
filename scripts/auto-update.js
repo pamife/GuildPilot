@@ -177,10 +177,7 @@ try {
       execSync(`${pm2Bin} restart all`, { cwd: projectDir, stdio: "inherit" });
     }
   } catch (pm2Err) {
-    log(`PM2 restart skipped or failed (${pm2Err.message}). Restarting process directly...`);
-    setTimeout(() => {
-      process.exit(0);
-    }, 1500);
+    log(`PM2 restart skipped or failed (${pm2Err.message}). Standalone mode detected.`);
   }
 } catch (err) {
   console.error("❌ UPDATE FAILED:", err.message);

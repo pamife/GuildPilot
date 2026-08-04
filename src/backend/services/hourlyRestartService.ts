@@ -39,12 +39,13 @@ export function triggerImmediateRestart(reason = "Automatischer stündlicher Neu
     try {
       exec("pm2 restart all", (err) => {
         if (err) {
-          console.log("[HourlyRestart] PM2 restart skipped/failed, executing process.exit(0)...");
-          process.exit(0);
+          console.log("[HourlyRestart] PM2 restart skipped/failed (not running under PM2). Rescheduling next hourly check.");
+          scheduleNextHourlyRestart();
         }
       });
     } catch (e) {
-      process.exit(0);
+      console.log("[HourlyRestart] PM2 restart exception. Rescheduling next hourly check.");
+      scheduleNextHourlyRestart();
     }
   }, 1000);
 }

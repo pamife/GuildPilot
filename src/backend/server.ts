@@ -80,6 +80,14 @@ app.get("/api/health", (req, res) => {
 // Initialize Socket.IO
 initSocketIO(server);
 
+process.on("uncaughtException", (err) => {
+  console.error("[GuildPilot Server] Uncaught Exception:", err);
+});
+
+process.on("unhandledRejection", (reason, promise) => {
+  console.error("[GuildPilot Server] Unhandled Rejection at:", promise, "reason:", reason);
+});
+
 // Start Server, Discord Client, and Hourly Restart Scheduler
 server.listen(Number(PORT), "0.0.0.0", async () => {
   console.log(`[GuildPilot Backend] Running on http://0.0.0.0:${PORT}`);

@@ -8,7 +8,6 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 3001
       },
-      cron_restart: "0 * * * *",
       autorestart: true,
       watch: false,
       max_memory_restart: "500M",
@@ -25,7 +24,6 @@ module.exports = {
         NODE_ENV: "production",
         PORT: 3000
       },
-      cron_restart: "0 * * * *",
       autorestart: true,
       watch: false,
       max_memory_restart: "500M",
