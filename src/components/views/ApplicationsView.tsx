@@ -87,6 +87,10 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
   const [questions, setQuestions] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [selectedApp, setSelectedApp] = useState<any>(null);
+  const [appSearchQuery, setAppSearchQuery] = useState("");
+  const [appStatusFilter, setAppStatusFilter] = useState("ALL");
+  const [newNoteContent, setNewNoteContent] = useState("");
+  const [decisionReason, setDecisionReason] = useState("");
 
   // Filter & Search states
   const [loading, setLoading] = useState(false);
@@ -609,6 +613,41 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
     }
   };
 
+  // Application Action & Review Handlers
+  const handleExecuteAppAction = async (appId: string, action: string) => {
+    if (!selectedGuildId) return;
+    try {
+      await api.post(`/guilds/${selectedGuildId}/applications/apps/${appId}/action`, {
+        action,
+        reason: decisionReason,
+      });
+      showToast(`Action "${action.toUpperCase()}" executed successfully!`, "success");
+      setDecisionReason("");
+      fetchData();
+      if (selectedApp?.id === appId) {
+        const updated = await api.get(`/guilds/${selectedGuildId}/applications/apps/${appId}`);
+        setSelectedApp(updated.data);
+      }
+    } catch (err: any) {
+      showToast(err.response?.data?.error || "Failed to execute action", "error");
+    }
+  };
+
+  const handleAddNote = async (appId: string) => {
+    if (!selectedGuildId || !newNoteContent.trim()) return;
+    try {
+      await api.post(`/guilds/${selectedGuildId}/applications/apps/${appId}/notes`, {
+        content: newNoteContent.trim(),
+      });
+      showToast("Staff note added!", "success");
+      setNewNoteContent("");
+      const updated = await api.get(`/guilds/${selectedGuildId}/applications/apps/${appId}`);
+      setSelectedApp(updated.data);
+    } catch (err: any) {
+      showToast(err.response?.data?.error || "Failed to add note", "error");
+    }
+  };
+
   const selectedForm = forms.find((f) => f.id === selectedFormId) || forms[0];
 
   return (
@@ -853,6 +892,144 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* APPLICATIONS & REVIEW QUEUE SUB-PAGE */}
+        {(activeSubPage === "applications" || activeSubPage === "review-queue") && (
+          <div className="space-y-6">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#09090b] p-5 rounded-2xl border border-[#1f1f23] shadow-lg">
+              <div>
+                <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                  {activeSubPage === "review-queue" ? <UserCheck className="w-6 h-6 text-indigo-400" /> : <ClipboardList className="w-6 h-6 text-indigo-400" />}
+                  {activeSubPage === "review-queue" ? "Review Queue" : "Submitted Applications List"}
+                </h2>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Inspect candidate answers, add staff notes, and accept or deny applications.
+                </p>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                {/* Search Input */}
+                <div className="relative">
+                  <Search className="w-4 h-4 text-zinc-400 absolute left-3 top-3" />
+                  <input
+                    type="text"
+                    placeholder="Search by tag, ID, or form..."
+                    value={appSearchQuery}
+                    onChange={(e) => setAppSearchQuery(e.target.value)}
+                    className="bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none w-64"
+                  />
+                </div>
+
+                {/* Status Filter */}
+                <select
+                  value={appStatusFilter}
+                  onChange={(e) => setAppStatusFilter(e.target.value)}
+                  className="bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white outline-none font-semibold cursor-pointer"
+                >
+                  <option value="ALL">All Statuses ({applications.length})</option>
+                  <option value="PENDING">🟡 Pending Review</option>
+                  <option value="CLAIMED">📌 Claimed</option>
+                  <option value="ACCEPTED">🟢 Accepted</option>
+                  <option value="DENIED">🔴 Denied</option>
+                  <option value="WAITLISTED">🟠 Waitlisted</option>
+                  <option value="CLOSED">🔒 Closed</option>
+                </select>
+              </div>
+            </div>
+
+            {/* Applications Grid / Table */}
+            {applications.filter((app) => {
+              const matchesStatus = activeSubPage === "review-queue"
+                ? (app.status === "PENDING" || app.status === "CLAIMED")
+                : (appStatusFilter === "ALL" || app.status === appStatusFilter);
+
+              const q = appSearchQuery.toLowerCase().trim();
+              const matchesSearch = !q ||
+                app.userTag?.toLowerCase().includes(q) ||
+                app.userId?.includes(q) ||
+                app.form?.name?.toLowerCase().includes(q) ||
+                String(app.appNumber).includes(q);
+
+              return matchesStatus && matchesSearch;
+            }).length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {applications
+                  .filter((app) => {
+                    const matchesStatus = activeSubPage === "review-queue"
+                      ? (app.status === "PENDING" || app.status === "CLAIMED")
+                      : (appStatusFilter === "ALL" || app.status === appStatusFilter);
+
+                    const q = appSearchQuery.toLowerCase().trim();
+                    const matchesSearch = !q ||
+                      app.userTag?.toLowerCase().includes(q) ||
+                      app.userId?.includes(q) ||
+                      app.form?.name?.toLowerCase().includes(q) ||
+                      String(app.appNumber).includes(q);
+
+                    return matchesStatus && matchesSearch;
+                  })
+                  .map((app) => (
+                    <div
+                      key={app.id}
+                      className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 space-y-4 shadow-lg transition-all flex flex-col justify-between"
+                    >
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between">
+                          <span className="text-xs font-mono font-bold text-indigo-400">App #{app.appNumber}</span>
+                          <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border ${
+                            app.status === "ACCEPTED"
+                              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/30"
+                              : app.status === "DENIED"
+                              ? "bg-rose-500/10 text-rose-400 border-rose-500/30"
+                              : app.status === "WAITLISTED"
+                              ? "bg-amber-500/10 text-amber-400 border-amber-500/30"
+                              : "bg-indigo-500/10 text-indigo-400 border-indigo-500/30"
+                          }`}>
+                            {app.status}
+                          </span>
+                        </div>
+
+                        <div className="flex items-center gap-3">
+                          {app.userAvatar ? (
+                            <img src={app.userAvatar} alt="" className="w-10 h-10 rounded-full border border-[#27272a]" />
+                          ) : (
+                            <div className="w-10 h-10 rounded-full bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold">
+                              {app.userTag?.substring(0, 2).toUpperCase()}
+                            </div>
+                          )}
+                          <div className="overflow-hidden">
+                            <h4 className="font-bold text-white text-sm truncate">{app.userTag}</h4>
+                            <p className="text-[11px] text-zinc-400 truncate">{app.form?.name || "Application Position"}</p>
+                          </div>
+                        </div>
+
+                        <div className="text-[11px] text-zinc-400 space-y-1 bg-[#0d0d11] p-3 rounded-xl border border-[#1f1f23]">
+                          <p><span className="font-semibold text-zinc-300">User ID:</span> {app.userId}</p>
+                          <p><span className="font-semibold text-zinc-300">Submitted:</span> {new Date(app.submittedAt).toLocaleDateString()}</p>
+                          <p><span className="font-semibold text-zinc-300">Answers:</span> {app.answers?.length || 0} questions answered</p>
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => setSelectedApp(app)}
+                        className="w-full mt-3 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-indigo-600/20 cursor-pointer flex items-center justify-center gap-2"
+                      >
+                        <Eye className="w-4 h-4" /> Inspect & Review Application
+                      </button>
+                    </div>
+                  ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-[#09090b] rounded-2xl border border-[#1f1f23] space-y-3">
+                <ClipboardList className="w-12 h-12 text-zinc-500 mx-auto" />
+                <h3 className="text-base font-bold text-white">No Applications Found</h3>
+                <p className="text-xs text-zinc-400 max-w-sm mx-auto">
+                  No submitted applications match your current search or status filter. Applications will appear here as soon as candidates submit them in Discord DMs.
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -1491,6 +1668,189 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
               <button onClick={() => setIsQuestionModalOpen(false)} className="px-4 py-2 bg-[#0d0d11] border border-[#27272a] text-zinc-300 rounded-xl font-bold text-xs cursor-pointer">Cancel</button>
               <button onClick={handleSaveQuestion} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-indigo-600/20 cursor-pointer">Save Question</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* APPLICATION INSPECTION & REVIEW MODAL */}
+      {selectedApp && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header */}
+            <div className="p-5 border-b border-[#1f1f23] bg-[#0d0d11] flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                {selectedApp.userAvatar ? (
+                  <img src={selectedApp.userAvatar} alt="" className="w-10 h-10 rounded-full border border-[#27272a]" />
+                ) : (
+                  <div className="w-10 h-10 rounded-full bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold text-sm">
+                    {selectedApp.userTag?.substring(0, 2).toUpperCase()}
+                  </div>
+                )}
+                <div>
+                  <h3 className="text-base font-bold text-white flex items-center gap-2">
+                    Application #{selectedApp.appNumber} — {selectedApp.userTag}
+                    <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/30">
+                      {selectedApp.status}
+                    </span>
+                  </h3>
+                  <p className="text-xs text-zinc-400">{selectedApp.form?.name || "Application Position"}</p>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setSelectedApp(null)}
+                className="p-1.5 rounded-lg bg-[#18181b] text-zinc-400 hover:text-white cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body: Q&A Answers + Candidate Info + Staff Notes */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs">
+              {/* Candidate Metadata */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-[#0d0d11] p-4 rounded-xl border border-[#1f1f23]">
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 block">User ID</span>
+                  <span className="font-mono text-white font-semibold">{selectedApp.userId}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 block">Account Created</span>
+                  <span className="text-white font-semibold">{selectedApp.accountAge || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 block">Server Joined</span>
+                  <span className="text-white font-semibold">{selectedApp.joinDate || "N/A"}</span>
+                </div>
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-zinc-400 block">Submitted At</span>
+                  <span className="text-white font-semibold">{new Date(selectedApp.submittedAt).toLocaleString()}</span>
+                </div>
+              </div>
+
+              {/* Answers Breakdown */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-white text-sm border-b border-[#1f1f23] pb-2 flex items-center gap-2">
+                  <ClipboardList className="w-4 h-4 text-indigo-400" /> Candidate Answers ({selectedApp.answers?.length || 0})
+                </h4>
+
+                <div className="space-y-3">
+                  {selectedApp.answers && selectedApp.answers.length > 0 ? (
+                    selectedApp.answers.map((a: any, idx: number) => (
+                      <div key={a.id || idx} className="p-4 bg-[#0d0d11] rounded-xl border border-[#1f1f23] space-y-1.5">
+                        <p className="font-bold text-indigo-400 text-xs">
+                          ❓ Question {idx + 1}: {a.questionLabel}
+                        </p>
+                        <p className="text-zinc-200 bg-[#18181b] p-3 rounded-lg border border-[#27272a] whitespace-pre-wrap leading-relaxed font-sans text-xs">
+                          {a.value || "No answer provided."}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-zinc-400">No answers recorded.</p>
+                  )}
+                </div>
+              </div>
+
+              {/* Action Controls & Reason Input */}
+              <div className="p-4 bg-[#0d0d11] rounded-xl border border-[#1f1f23] space-y-3">
+                <h4 className="font-bold text-white text-xs flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-indigo-400" /> Moderator Review Actions
+                </h4>
+
+                <div>
+                  <label className="font-bold text-zinc-300 block mb-1">Decision Reason / Staff Comment (Sent to user):</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Excellent experience! Accepted for trial position."
+                    value={decisionReason}
+                    onChange={(e) => setDecisionReason(e.target.value)}
+                    className="w-full bg-[#18181b] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                  />
+                </div>
+
+                <div className="flex flex-wrap items-center gap-2 pt-1">
+                  <button
+                    onClick={() => handleExecuteAppAction(selectedApp.id, "accept")}
+                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/20"
+                  >
+                    <CheckCircle2 className="w-4 h-4" /> Accept Application
+                  </button>
+                  <button
+                    onClick={() => handleExecuteAppAction(selectedApp.id, "deny")}
+                    className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-lg shadow-rose-600/20"
+                  >
+                    <XCircle className="w-4 h-4" /> Deny Application
+                  </button>
+                  <button
+                    onClick={() => handleExecuteAppAction(selectedApp.id, "waitlist")}
+                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-lg shadow-amber-600/20"
+                  >
+                    <Clock className="w-4 h-4" /> Place on Waitlist
+                  </button>
+                  <button
+                    onClick={() => handleExecuteAppAction(selectedApp.id, "claim")}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                  >
+                    📌 Claim Review
+                  </button>
+                  <button
+                    onClick={() => handleExecuteAppAction(selectedApp.id, "close")}
+                    className="px-4 py-2 bg-[#18181b] border border-[#27272a] text-zinc-300 hover:text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
+                  >
+                    🔒 Close & Generate Transcript
+                  </button>
+                </div>
+              </div>
+
+              {/* Staff Notes Section */}
+              <div className="space-y-3">
+                <h4 className="font-bold text-white text-sm border-b border-[#1f1f23] pb-2 flex items-center gap-2">
+                  <MessageSquare className="w-4 h-4 text-indigo-400" /> Internal Staff Notes ({selectedApp.notes?.length || 0})
+                </h4>
+
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder="Add an internal staff note..."
+                    value={newNoteContent}
+                    onChange={(e) => setNewNoteContent(e.target.value)}
+                    className="flex-1 bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                  />
+                  <button
+                    onClick={() => handleAddNote(selectedApp.id)}
+                    className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl cursor-pointer"
+                  >
+                    Add Note
+                  </button>
+                </div>
+
+                <div className="space-y-2">
+                  {selectedApp.notes && selectedApp.notes.length > 0 ? (
+                    selectedApp.notes.map((note: any) => (
+                      <div key={note.id} className="p-3 bg-[#0d0d11] rounded-xl border border-[#1f1f23] space-y-1">
+                        <div className="flex items-center justify-between text-[11px]">
+                          <span className="font-bold text-indigo-400">{note.authorTag}</span>
+                          <span className="text-zinc-500">{new Date(note.createdAt).toLocaleString()}</span>
+                        </div>
+                        <p className="text-zinc-300 text-xs">{note.content}</p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-zinc-500 text-xs">No internal notes yet.</p>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-[#1f1f23] bg-[#0d0d11] flex items-center justify-end">
+              <button
+                onClick={() => setSelectedApp(null)}
+                className="px-5 py-2 bg-[#18181b] border border-[#27272a] text-white font-bold rounded-xl text-xs cursor-pointer"
+              >
+                Close Inspector
+              </button>
             </div>
           </div>
         </div>

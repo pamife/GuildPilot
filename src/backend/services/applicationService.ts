@@ -258,6 +258,47 @@ export async function duplicateAppQuestion(questionId: string) {
 }
 
 // ==========================================
+// INTAKE SESSIONS (STEP-BY-STEP DM FLOW)
+// ==========================================
+
+export async function getAppIntakeSession(userId: string) {
+  return await prisma.appIntakeSession.findUnique({
+    where: { userId },
+  });
+}
+
+export async function createOrUpdateAppIntakeSession(
+  userId: string,
+  guildId: string,
+  formId: string,
+  currentStep: number,
+  answers: any[]
+) {
+  return await prisma.appIntakeSession.upsert({
+    where: { userId },
+    create: {
+      userId,
+      guildId,
+      formId,
+      currentStep,
+      answers: JSON.stringify(answers),
+    },
+    update: {
+      guildId,
+      formId,
+      currentStep,
+      answers: JSON.stringify(answers),
+    },
+  });
+}
+
+export async function deleteAppIntakeSession(userId: string) {
+  return await prisma.appIntakeSession.deleteMany({
+    where: { userId },
+  });
+}
+
+// ==========================================
 // APPLICATIONS WORKFLOW
 // ==========================================
 

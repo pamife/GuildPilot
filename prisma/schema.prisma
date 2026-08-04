@@ -344,11 +344,28 @@ model AppStatusHistory {
   id            String      @id @default(uuid())
   applicationId String
   application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
-  status        String
-  actorId       String
-  actorTag      String
+  status        String      @default("PENDING")
+  fromStatus    String?
+  toStatus      String?
+  actorId       String      @default("system")
+  actorTag      String      @default("System")
+  changedById   String?
+  changedByTag  String?
   details       String?
+  reason        String?
   timestamp     DateTime    @default(now())
+  createdAt     DateTime    @default(now())
+}
+
+model AppIntakeSession {
+  id          String   @id @default(uuid())
+  guildId     String
+  formId      String
+  userId      String   @unique
+  currentStep Int      @default(0)
+  answers     String   @default("[]") // JSON string of [{ questionId, questionLabel, questionType, value }]
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 }
 
 model AppSettings {

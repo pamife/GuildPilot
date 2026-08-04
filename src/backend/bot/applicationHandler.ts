@@ -6,27 +6,25 @@ import {
   ButtonStyle,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
-  ModalBuilder,
-  TextInputBuilder,
-  TextInputStyle,
   TextChannel,
   ChannelType,
   PermissionFlagsBits,
   Interaction,
-  GuildMember,
+  Message,
 } from "discord.js";
 import {
   getAppPanelById,
   getAppFormById,
-  getAppForms,
   checkUserCanApply,
   createApplicationSubmission,
   updateApplicationStatus,
   getApplicationById,
-  addApplicationNote,
   getApplicationSettings,
   updateAppPanel,
   updateAppForm,
+  getAppIntakeSession,
+  createOrUpdateAppIntakeSession,
+  deleteAppIntakeSession,
 } from "../services/applicationService";
 import { generateApplicationHtmlTranscript } from "../services/transcriptService";
 import { broadcastEvent } from "../socket/socketManager";
@@ -101,25 +99,21 @@ function safeSetEmoji(builder: any, emojiInput?: string | null): boolean {
   if (!cleaned) return false;
 
   try {
-    // 1. Custom Discord emoji format: <:name:123456789> or <a:name:123456789>
     const customMatch = cleaned.match(/<a?:(\w+):(\d+)>/);
     if (customMatch) {
       builder.setEmoji({ name: customMatch[1], id: customMatch[2] });
       return true;
     }
 
-    // 2. Custom Discord emoji ID only: 123456789012345678
     if (/^\d{17,20}$/.test(cleaned)) {
       builder.setEmoji({ id: cleaned });
       return true;
     }
 
-    // 3. Reject unparsed text like ":emoji:" or plain text words without unicode characters
     if (cleaned.startsWith(":") && cleaned.endsWith(":")) {
       return false;
     }
 
-    // 4. Standard Unicode Emoji
     builder.setEmoji(cleaned);
     return true;
   } catch (err) {
@@ -289,160 +283,20 @@ export async function deployApplicationFormEmbed(client: Client, formId: string)
 }
 
 export function setupApplicationInteractions(client: Client) {
+  // 1. Interaction Listener (Dropdown Select Menu & Apply Buttons)
   client.on("interactionCreate", async (interaction: Interaction) => {
     try {
-      // 1. Handle Dropdown Select Menu Selection on Server -> Send Direct Message (DM) to User
       if (interaction.isStringSelectMenu() && interaction.customId.startsWith("app_select_form:")) {
         const selectedFormId = interaction.values[0];
         await handleApplicationStartViaDM(interaction, selectedFormId);
       }
 
-      // 2. Handle Apply Button Click on Server -> Send Direct Message (DM) to User
       if (interaction.isButton() && interaction.customId.startsWith("app_apply:")) {
         const formId = interaction.customId.split(":")[1];
         await handleApplicationStartViaDM(interaction, formId);
       }
 
-      // 3. Handle DM Start Button Click inside User's DM Window
-      if (interaction.isButton() && interaction.customId.startsWith("app_dm_fill:")) {
-        const parts = interaction.customId.split(":");
-        const formId = parts[1];
-        const targetGuildId = parts[2];
-        const form = await getAppFormById(formId);
-        if (!form) return interaction.reply({ content: "❌ Application form not found.", ephemeral: true });
-
-        const modal = new ModalBuilder()
-          .setCustomId(`app_modal_submit:${form.id}:${targetGuildId}`)
-          .setTitle(form.name.substring(0, 45));
-
-        const questionsToPresent = form.questions.slice(0, 5);
-        const rows: ActionRowBuilder<TextInputBuilder>[] = [];
-
-        questionsToPresent.forEach((q) => {
-          const style = q.type === "PARAGRAPH" ? TextInputStyle.Paragraph : TextInputStyle.Short;
-
-          const textInput = new TextInputBuilder()
-            .setCustomId(`q_${q.id}`)
-            .setLabel(q.label.substring(0, 45))
-            .setStyle(style)
-            .setRequired(q.required);
-
-          if (q.placeholder) textInput.setPlaceholder(q.placeholder.substring(0, 100));
-          if (q.minLength) textInput.setMinLength(q.minLength);
-          if (q.maxLength) textInput.setMaxLength(q.maxLength);
-
-          rows.push(new ActionRowBuilder<TextInputBuilder>().addComponents(textInput));
-        });
-
-        modal.addComponents(...rows);
-        await interaction.showModal(modal);
-      }
-
-      // 4. Handle Application Modal Submission (from DM)
-      if (interaction.isModalSubmit() && interaction.customId.startsWith("app_modal_submit:")) {
-        await interaction.deferReply({ ephemeral: true });
-        const parts = interaction.customId.split(":");
-        const formId = parts[1];
-        const targetGuildId = parts[2] || interaction.guildId;
-
-        const form = await getAppFormById(formId);
-        if (!form) return interaction.editReply({ content: "❌ Application form not found." });
-
-        let guild: any = null;
-        if (targetGuildId) {
-          guild = await client.guilds.fetch(targetGuildId).catch(() => null);
-        } else if (interaction.guild) {
-          guild = interaction.guild;
-        }
-
-        const member = guild ? await guild.members.fetch(interaction.user.id).catch(() => null) : null;
-        const accountAge = interaction.user.createdAt.toLocaleDateString("en-US", {
-          year: "numeric",
-          month: "short",
-          day: "numeric",
-        });
-        const joinDate = member?.joinedAt
-          ? member.joinedAt.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
-          : "Unknown";
-
-        const currentRoles = member?.roles?.cache?.map((r: any) => r.name).filter((n: string) => n !== "@everyone") || [];
-
-        // Extract answers
-        const answers: any[] = [];
-        form.questions.slice(0, 5).forEach((q) => {
-          const value = interaction.fields.getTextInputValue(`q_${q.id}`);
-          answers.push({
-            questionId: q.id,
-            questionLabel: q.label,
-            questionType: q.type,
-            value: value || "N/A",
-          });
-        });
-
-        // Save to DB
-        const app = await createApplicationSubmission({
-          guildId: targetGuildId || form.guildId,
-          formId: form.id,
-          userId: interaction.user.id,
-          userTag: interaction.user.tag,
-          userAvatar: interaction.user.displayAvatarURL(),
-          accountAge,
-          joinDate,
-          currentRoles,
-          answers,
-        });
-
-        // Create Application Channel or send to Target Review Channel on Guild
-        let channelId: string | null = null;
-        if (guild) {
-          const settings = await getApplicationSettings(guild.id);
-          const targetCatId = form.categoryId || settings.defaultCategoryId;
-
-          if (targetCatId) {
-            try {
-              const chName = `app-${app.appNumber}-${interaction.user.username.substring(0, 10)}`;
-              const newChannel = await guild.channels.create({
-                name: chName,
-                type: ChannelType.GuildText,
-                parent: targetCatId,
-                permissionOverwrites: [
-                  {
-                    id: guild.id,
-                    deny: [PermissionFlagsBits.ViewChannel],
-                  },
-                  {
-                    id: interaction.user.id,
-                    allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
-                  },
-                ],
-              });
-
-              channelId = newChannel.id;
-              await postApplicationChannelWelcome(newChannel, app, form);
-            } catch (chErr) {
-              console.warn("[App System] Application channel creation error:", chErr);
-            }
-          } else if (form.targetChannelId) {
-            const targetCh = (await guild.channels.fetch(form.targetChannelId).catch(() => null)) as TextChannel;
-            if (targetCh && targetCh.isTextBased()) {
-              await postApplicationChannelWelcome(targetCh, app, form);
-            }
-          }
-        }
-
-        if (channelId) {
-          await updateApplicationStatus(app.id, "PENDING", { id: app.userId, tag: app.userTag }, { channelId });
-        }
-
-        // Broadcast Socket.IO event for live dashboard update
-        broadcastEvent("applicationSubmitted", { guildId: app.guildId, appId: app.id, appNumber: app.appNumber });
-
-        await interaction.editReply({
-          content: `✅ **Application Submitted Successfully!** (App #${app.appNumber}). The server review team has been notified.`,
-        });
-      }
-
-      // 5. Handle In-Channel Reviewer Control Buttons (Accept, Deny, Waitlist)
+      // Reviewer Control Buttons (Claim, Accept, Deny, Waitlist, Close, Transcript)
       if (interaction.isButton() && interaction.customId.startsWith("app_ctrl:")) {
         const parts = interaction.customId.split(":");
         const action = parts[1];
@@ -541,6 +395,145 @@ export function setupApplicationInteractions(client: Client) {
       console.error("[Application Handler] Interaction error:", err);
     }
   });
+
+  // 2. DM Message Listener for Step-by-Step Question Responses
+  client.on("messageCreate", async (message: Message) => {
+    try {
+      if (message.author.bot || message.guild) return; // Only process DMs from real users
+
+      const session = await getAppIntakeSession(message.author.id);
+      if (!session) return; // No active intake session for this user
+
+      const form = await getAppFormById(session.formId);
+      if (!form || !form.questions || form.questions.length === 0) {
+        await deleteAppIntakeSession(message.author.id);
+        await message.reply("❌ This application form is no longer available.");
+        return;
+      }
+
+      const questions = form.questions;
+      let answers: any[] = [];
+      try {
+        answers = JSON.parse(session.answers || "[]");
+      } catch (e) {}
+
+      const currentQ = questions[session.currentStep];
+      if (currentQ) {
+        answers.push({
+          questionId: currentQ.id,
+          questionLabel: currentQ.label,
+          questionType: currentQ.type,
+          value: message.content.trim(),
+        });
+      }
+
+      const nextStep = session.currentStep + 1;
+
+      if (nextStep < questions.length) {
+        // Send Next Question in DM
+        await createOrUpdateAppIntakeSession(message.author.id, session.guildId, session.formId, nextStep, answers);
+        const nextQ = questions[nextStep];
+
+        const nextEmbed = new EmbedBuilder()
+          .setTitle(`❓ Question ${nextStep + 1} of ${questions.length}`)
+          .setDescription(`**${nextQ.label}**\n\n_${nextQ.helpText || nextQ.placeholder || "Type your answer below in this chat..."}_`)
+          .setColor("#5865F2")
+          .setFooter({ text: `GuildPilot DM Intake • ${form.name}` });
+
+        await message.reply({ embeds: [nextEmbed] });
+      } else {
+        // All Questions Answered! Complete Application Submission
+        await deleteAppIntakeSession(message.author.id);
+
+        let guild: any = null;
+        if (session.guildId) {
+          guild = await client.guilds.fetch(session.guildId).catch(() => null);
+        }
+
+        const member = guild ? await guild.members.fetch(message.author.id).catch(() => null) : null;
+        const accountAge = message.author.createdAt.toLocaleDateString("en-US", {
+          year: "numeric",
+          month: "short",
+          day: "numeric",
+        });
+        const joinDate = member?.joinedAt
+          ? member.joinedAt.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
+          : "Unknown";
+
+        const currentRoles = member?.roles?.cache?.map((r: any) => r.name).filter((n: string) => n !== "@everyone") || [];
+
+        // Save Application to DB
+        const app = await createApplicationSubmission({
+          guildId: session.guildId,
+          formId: form.id,
+          userId: message.author.id,
+          userTag: message.author.tag,
+          userAvatar: message.author.displayAvatarURL(),
+          accountAge,
+          joinDate,
+          currentRoles,
+          answers,
+        });
+
+        // Create Review Channel or send to Target Channel on Guild
+        let channelId: string | null = null;
+        if (guild) {
+          const settings = await getApplicationSettings(guild.id);
+          const targetCatId = form.categoryId || settings.defaultCategoryId;
+
+          if (targetCatId) {
+            try {
+              const chName = `app-${app.appNumber}-${message.author.username.substring(0, 10)}`;
+              const newChannel = await guild.channels.create({
+                name: chName,
+                type: ChannelType.GuildText,
+                parent: targetCatId,
+                permissionOverwrites: [
+                  {
+                    id: guild.id,
+                    deny: [PermissionFlagsBits.ViewChannel],
+                  },
+                  {
+                    id: message.author.id,
+                    allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+                  },
+                ],
+              });
+
+              channelId = newChannel.id;
+              await postApplicationChannelWelcome(newChannel, app, form);
+            } catch (chErr) {
+              console.warn("[App System] Application channel creation error:", chErr);
+            }
+          } else if (form.targetChannelId) {
+            const targetCh = (await guild.channels.fetch(form.targetChannelId).catch(() => null)) as TextChannel;
+            if (targetCh && targetCh.isTextBased()) {
+              await postApplicationChannelWelcome(targetCh, app, form);
+            }
+          }
+        }
+
+        if (channelId) {
+          await updateApplicationStatus(app.id, "PENDING", { id: app.userId, tag: app.userTag }, { channelId });
+        }
+
+        // Broadcast Socket.IO event for live dashboard update
+        broadcastEvent("applicationSubmitted", { guildId: app.guildId, appId: app.id, appNumber: app.appNumber });
+
+        // Send Final Completion Embed to Applicant DM
+        const completionEmbed = buildEmbedHelper({
+          title: "🎉 Application Completed & Submitted!",
+          description: `Thank you <@${message.author.id}>! Your application for **${form.name}** (App #${app.appNumber}) has been received.\n\nOur review team will inspect your answers shortly.`,
+          color: "#23A55A",
+          showTimestamp: true,
+        });
+
+        await message.reply({ embeds: [completionEmbed] });
+      }
+    } catch (dmError) {
+      console.error("[App System] Error processing DM answer message:", dmError);
+    }
+  });
 }
 
 async function handleApplicationStartViaDM(interaction: any, formId: string) {
@@ -564,12 +557,18 @@ async function handleApplicationStartViaDM(interaction: any, formId: string) {
 
   const guildName = interaction.guild?.name || "Server";
 
-  // Build DM Embed using customizable dmEmbed fields
-  const dmEmbed = buildEmbedHelper({
-    title: form.dmTitle || `📝 Application: ${form.name}`,
+  // Start Step-by-Step DM Intake Session at Step 0
+  await deleteAppIntakeSession(interaction.user.id);
+  await createOrUpdateAppIntakeSession(interaction.user.id, guildId, form.id, 0, []);
+
+  const firstQuestion = form.questions[0];
+
+  // Welcome Embed
+  const welcomeEmbed = buildEmbedHelper({
+    title: form.dmTitle || `📝 Application Intake Started: ${form.name}`,
     description:
       form.dmDescription ||
-      `Welcome <@${interaction.user.id}>!\n\nYou started an application for **${form.name}** on **${guildName}**.\n\nClick the button below to answer your application questions.`,
+      `Welcome <@${interaction.user.id}>!\n\nYou started an application for **${form.name}** on **${guildName}**.\n\nPlease answer each question sent below directly in this DM chat.`,
     color: form.dmColor || "#5865F2",
     authorName: form.dmAuthorName || undefined,
     authorIcon: form.dmAuthorIcon || undefined,
@@ -580,21 +579,22 @@ async function handleApplicationStartViaDM(interaction: any, formId: string) {
     showTimestamp: true,
   });
 
-  const dmRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`app_dm_fill:${form.id}:${guildId}`)
-      .setLabel(`📝 Answer Application Questions (${form.questions.length} Questions)`)
-      .setStyle(ButtonStyle.Primary)
-  );
+  // Question 1 Prompt Embed
+  const q1Embed = new EmbedBuilder()
+    .setTitle(`❓ Question 1 of ${form.questions.length}`)
+    .setDescription(`**${firstQuestion.label}**\n\n_${firstQuestion.helpText || firstQuestion.placeholder || "Type your answer below in this chat..."}_`)
+    .setColor("#5865F2")
+    .setFooter({ text: `GuildPilot DM Intake • ${form.name}` });
 
   try {
-    await interaction.user.send({ embeds: [dmEmbed], components: [dmRow] });
+    await interaction.user.send({ embeds: [welcomeEmbed, q1Embed] });
 
     await interaction.reply({
-      content: `📩 **Direct Message Sent!** We sent you a DM for your **${form.name}** application. Please check your Discord DMs to answer the questions!`,
+      content: `📩 **Step-by-Step DM Intake Started!** We sent Question 1 for **${form.name}** to your Discord DMs. Please reply directly in DM chat to answer!`,
       ephemeral: true,
     });
   } catch (dmErr) {
+    await deleteAppIntakeSession(interaction.user.id);
     await interaction.reply({
       content: `❌ **Direct Messages (DMs) Blocked!** The bot could not send you a DM. Please enable *"Allow direct messages from server members"* in your Discord Privacy Settings for this server and try again.`,
       ephemeral: true,
