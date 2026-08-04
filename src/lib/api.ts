@@ -1,17 +1,20 @@
 import axios from "axios";
 
 const getApiBaseUrl = () => {
+  if (typeof window !== "undefined") {
+    const host = window.location.hostname;
+    const protocol = window.location.protocol;
+    return `${protocol}//${host}:3001`;
+  }
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL;
-  }
-  if (typeof window !== "undefined") {
-    return `${window.location.protocol}//${window.location.hostname}:3001`;
   }
   return "http://localhost:3001";
 };
 
 export const api = axios.create({
   withCredentials: true,
+  timeout: 5000,
   headers: {
     "Content-Type": "application/json",
   },

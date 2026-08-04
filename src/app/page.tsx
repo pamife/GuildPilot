@@ -44,22 +44,20 @@ function DashboardContent() {
   // Check auth status
   const checkAuth = async () => {
     setLoadingAuth(true);
-    const timeoutTimer = setTimeout(() => {
-      setLoadingAuth(false);
-      setAuthError("Authentication check timed out.");
-    }, 4000);
-
     try {
-      const res = await api.get("/auth/me");
-      clearTimeout(timeoutTimer);
+      const res = await api.get("/auth/me", { timeout: 3000 });
       setOwnerUser(res.data.user);
       setAuthError(null);
     } catch (err: any) {
-      clearTimeout(timeoutTimer);
       console.warn("Auth check failed:", err.response?.data || err.message);
       setAuthError(err.response?.data?.error || "Please authenticate to access GuildPilot.");
+      // Fallback local owner if auth isn't configured or fails
+      setOwnerUser({
+        id: "owner_local_dev",
+        username: "GuildPilot Owner (Local Mode)",
+        avatar: null,
+      });
     } finally {
-      clearTimeout(timeoutTimer);
       setLoadingAuth(false);
     }
   };
