@@ -1157,48 +1157,48 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
                   <span>{formData.footer}</span>
                 </div>
               )}
-            </div>
 
-            {/* Interactive Components Preview (Buttons or Select Menu) */}
-            <div className="bg-[#2b2d31] rounded-xl p-3 border border-[#1e1f22]">
-              {formData.displayType === "dropdown" ? (
-                <div className="space-y-1">
-                  <div className="bg-[#1e1f22] border border-[#383a40] rounded-lg p-2.5 flex items-center justify-between text-xs text-zinc-400">
-                    <span>{formData.placeholderText || "Select roles..."}</span>
-                    <ChevronDown className="w-4 h-4 text-zinc-500" />
+              {/* Interactive Components (Buttons or Dropdown) INSIDE Embed Container */}
+              <div className="pt-2 border-t border-[#383a40]/50">
+                {formData.displayType === "dropdown" ? (
+                  <div className="space-y-1">
+                    <div className="bg-[#1e1f22] border border-[#383a40] rounded-lg p-2.5 flex items-center justify-between text-xs text-zinc-400">
+                      <span>{formData.placeholderText || "Select roles..."}</span>
+                      <ChevronDown className="w-4 h-4 text-zinc-500" />
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="flex flex-wrap gap-2">
-                  {(!formData.options || formData.options.length === 0) ? (
-                    <span className="text-xs text-zinc-500 italic p-2">Keine Buttons hinzugefügt...</span>
-                  ) : (
-                    formData.options.map((opt, idx) => {
-                      let bgColor = "bg-[#4e5058] hover:bg-[#6d6f78] text-white";
-                      if (opt.buttonColor === "Primary") bgColor = "bg-[#5865f2] hover:bg-[#4752c4] text-white";
-                      if (opt.buttonColor === "Success") bgColor = "bg-[#23a55a] hover:bg-[#1f9250] text-white";
-                      if (opt.buttonColor === "Danger") bgColor = "bg-[#da373c] hover:bg-[#a1282c] text-white";
+                ) : (
+                  <div className="flex flex-wrap gap-2">
+                    {(!formData.options || formData.options.length === 0) ? (
+                      <span className="text-xs text-zinc-500 italic py-1">Keine Buttons hinzugefügt...</span>
+                    ) : (
+                      formData.options.map((opt, idx) => {
+                        let bgColor = "bg-[#4e5058] hover:bg-[#6d6f78] text-white";
+                        if (opt.buttonColor === "Primary") bgColor = "bg-[#5865f2] hover:bg-[#4752c4] text-white";
+                        if (opt.buttonColor === "Success") bgColor = "bg-[#23a55a] hover:bg-[#1f9250] text-white";
+                        if (opt.buttonColor === "Danger") bgColor = "bg-[#da373c] hover:bg-[#a1282c] text-white";
 
-                      const labelText = opt.label || opt.roleName || "News";
-                      const countText = opt.showMemberCount !== false ? " (117)" : "";
+                        const labelText = opt.label || opt.roleName || "News";
+                        const countText = opt.showMemberCount !== false ? " (117)" : "";
 
-                      return (
-                        <button
-                          key={idx}
-                          type="button"
-                          className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${bgColor}`}
-                        >
-                          {opt.emoji && <span className="text-sm">{opt.emoji}</span>}
-                          <span>
-                            {labelText}
-                            {countText}
-                          </span>
-                        </button>
-                      );
-                    })
-                  )}
-                </div>
-              )}
+                        return (
+                          <button
+                            key={idx}
+                            type="button"
+                            className={`px-3 py-1.5 rounded-md text-xs font-semibold flex items-center gap-1.5 transition-all shadow-sm ${bgColor}`}
+                          >
+                            {opt.emoji && <span className="text-sm">{opt.emoji}</span>}
+                            <span>
+                              {labelText}
+                              {countText}
+                            </span>
+                          </button>
+                        );
+                      })
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
