@@ -18,12 +18,11 @@ import { getSelfRolePanelById, updateSelfRolePanel } from "../services/selfRoleS
 
 // Helper function to build Discord Embed and Components (Buttons or Dropdown)
 export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) {
-  // Make sure guild roles and members are cached if possible
+  // Fetch guild roles quickly (does not hang like members.fetch)
   try {
     await guild.roles.fetch();
-    await guild.members.fetch();
   } catch (e) {
-    // Continue even if full member fetch fails on huge guilds
+    // Continue even if role fetch fails
   }
 
   const embed = new EmbedBuilder();
@@ -99,7 +98,9 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
         }
 
         if (opt.emoji) {
-          selectOption.setEmoji(opt.emoji);
+          try {
+            selectOption.setEmoji(opt.emoji);
+          } catch (e) {}
         }
 
         return selectOption;
