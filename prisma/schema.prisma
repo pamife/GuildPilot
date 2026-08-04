@@ -137,15 +137,36 @@ model AppPanel {
   embedTitle         String?       @default("📝 Application Center")
   embedDescription   String?       @default("Select an application position from the dropdown menu below to submit your application.")
   embedColor         String        @default("#5865F2")
+  embedAuthorName    String?
+  embedAuthorIcon    String?
+  embedAuthorUrl     String?
   thumbnail          String?
   image              String?
   footer             String?       @default("GuildPilot Applications System")
+  footerIcon         String?
+  showTimestamp      Boolean       @default(true)
+  embedFields        String        @default("[]") // JSON string of [{ name, value, inline }]
+
+  dmTitle            String?       @default("📝 Application Intake")
+  dmDescription      String?       @default("Click the button below to complete your application questions.")
+  dmColor            String        @default("#5865F2")
+  dmAuthorName       String?
+  dmAuthorIcon       String?
+  dmThumbnail        String?
+  dmImage            String?
+  dmFooter           String?       @default("GuildPilot Application System")
+  dmFooterIcon       String?
+
   welcomeTitle       String?       @default("👋 Application Submitted!")
   welcomeDescription String?       @default("Your application has been received. Reviewers will inspect your answers shortly.")
   welcomeColor       String        @default("#5865F2")
+  welcomeAuthorName  String?
+  welcomeAuthorIcon  String?
   welcomeThumbnail   String?
   welcomeImage       String?
   welcomeFooter      String?       @default("GuildPilot Applications System")
+  welcomeFooterIcon  String?
+
   channelId          String?
   messageId          String?
   createdAt          DateTime      @default(now())
@@ -167,15 +188,36 @@ model AppForm {
   embedTitle         String?       @default("📝 Server Applications")
   embedDescription   String?       @default("Select an application position from the dropdown menu below to submit your application.")
   embedColor         String        @default("#5865F2")
+  embedAuthorName    String?
+  embedAuthorIcon    String?
+  embedAuthorUrl     String?
   thumbnail          String?
   image              String?
   footer             String?       @default("GuildPilot Applications System")
+  footerIcon         String?
+  showTimestamp      Boolean       @default(true)
+  embedFields        String        @default("[]")
+
+  dmTitle            String?       @default("📝 Application Intake")
+  dmDescription      String?       @default("Click the button below to complete your application questions.")
+  dmColor            String        @default("#5865F2")
+  dmAuthorName       String?
+  dmAuthorIcon       String?
+  dmThumbnail        String?
+  dmImage            String?
+  dmFooter           String?       @default("GuildPilot Application System")
+  dmFooterIcon       String?
+
   welcomeTitle       String?       @default("👋 Application Submitted!")
   welcomeDescription String?       @default("Your application has been received. Reviewers will inspect your answers shortly.")
   welcomeColor       String        @default("#5865F2")
+  welcomeAuthorName  String?
+  welcomeAuthorIcon  String?
   welcomeThumbnail   String?
   welcomeImage       String?
   welcomeFooter      String?       @default("GuildPilot Applications System")
+  welcomeFooterIcon  String?
+
   buttonText         String        @default("Apply Now")
   buttonEmoji        String?       @default("📝")
   buttonColor        String        @default("Primary") // Primary, Secondary, Success, Danger

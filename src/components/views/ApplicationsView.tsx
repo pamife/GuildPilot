@@ -44,11 +44,12 @@ import {
   Layers,
   Palette,
   Image as ImageIcon,
-  FolderPlus,
+  User,
+  Link,
 } from "lucide-react";
 
 type SubPage = "dashboard" | "panels" | "forms" | "applications" | "questions" | "roles" | "review-queue" | "statistics" | "settings";
-type PanelTab = "embed" | "forms" | "welcome" | "channels";
+type PanelTab = "embed" | "dm_embed" | "welcome" | "forms" | "channels";
 
 interface ApplicationsViewProps {
   selectedGuildId: string | null;
@@ -87,18 +88,6 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
   const [questions, setQuestions] = useState<any[]>([]);
   const [applications, setApplications] = useState<any[]>([]);
   const [selectedApp, setSelectedApp] = useState<any>(null);
-  const [appSettings, setAppSettings] = useState<any>({
-    defaultReviewerRoles: [],
-    defaultCategoryId: "",
-    archiveCategoryId: "",
-    logChannelId: "",
-    transcriptStorage: "local",
-    defaultCooldownHours: 24,
-    maxAppsPerUser: 1,
-    autoCloseHours: 0,
-    autoArchive: false,
-    timezone: "UTC",
-  });
 
   // Filter & Search states
   const [loading, setLoading] = useState(false);
@@ -110,6 +99,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
   const [isPanelModalOpen, setIsPanelModalOpen] = useState(false);
   const [editingPanel, setEditingPanel] = useState<any>(null);
   const [panelModalTab, setPanelModalTab] = useState<PanelTab>("embed");
+  const [previewTab, setPreviewTab] = useState<"panel" | "dm" | "welcome">("panel");
 
   const [panelPayload, setPanelPayload] = useState<any>({
     name: "Application Center",
@@ -118,15 +108,35 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
     embedTitle: "📝 Server Application Center",
     embedDescription: "Select an application position from the dropdown menu below to submit your application.",
     embedColor: "#5865F2",
+    embedAuthorName: "",
+    embedAuthorIcon: "",
+    embedAuthorUrl: "",
     thumbnail: "",
     image: "",
     footer: "GuildPilot Applications System",
+    footerIcon: "",
+    showTimestamp: true,
+
+    dmTitle: "📝 Application Intake",
+    dmDescription: "Welcome! Click the button below to answer your application questions.",
+    dmColor: "#5865F2",
+    dmAuthorName: "",
+    dmAuthorIcon: "",
+    dmThumbnail: "",
+    dmImage: "",
+    dmFooter: "GuildPilot Application System",
+    dmFooterIcon: "",
+
     welcomeTitle: "👋 Application Submitted!",
     welcomeDescription: "Your application has been received. Reviewers will inspect your answers shortly.",
     welcomeColor: "#5865F2",
+    welcomeAuthorName: "",
+    welcomeAuthorIcon: "",
     welcomeThumbnail: "",
     welcomeImage: "",
     welcomeFooter: "GuildPilot Applications System",
+    welcomeFooterIcon: "",
+
     channelId: "",
   });
 
@@ -168,30 +178,22 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
     helpText: "",
   });
 
-  // Note & Decision Modal states
-  const [noteText, setNoteText] = useState("");
-  const [decisionReason, setDecisionReason] = useState("");
-  const [isDecisionModalOpen, setIsDecisionModalOpen] = useState(false);
-  const [pendingDecisionAction, setPendingDecisionAction] = useState<string | null>(null);
-
   // Fetch Core Data
   const fetchData = useCallback(async () => {
     if (!selectedGuildId) return;
     setLoading(true);
     try {
-      const [statsRes, panelsRes, formsRes, appsRes, settingsRes] = await Promise.all([
+      const [statsRes, panelsRes, formsRes, appsRes] = await Promise.all([
         api.get(`/guilds/${selectedGuildId}/applications/stats`).catch(() => ({ data: {} })),
         api.get(`/guilds/${selectedGuildId}/applications/panels`).catch(() => ({ data: [] })),
         api.get(`/guilds/${selectedGuildId}/applications/forms`).catch(() => ({ data: [] })),
         api.get(`/guilds/${selectedGuildId}/applications/apps`).catch(() => ({ data: [] })),
-        api.get(`/guilds/${selectedGuildId}/applications/settings`).catch(() => ({ data: {} })),
       ]);
 
       setStats(statsRes.data || {});
       setPanels(panelsRes.data || []);
       setForms(formsRes.data || []);
       setApplications(appsRes.data || []);
-      setAppSettings(settingsRes.data || {});
 
       if (panelsRes.data && panelsRes.data.length > 0 && !selectedPanelId) {
         setSelectedPanelId(panelsRes.data[0].id);
@@ -255,15 +257,35 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         embedTitle: panel.embedTitle || "",
         embedDescription: panel.embedDescription || "",
         embedColor: panel.embedColor || "#5865F2",
+        embedAuthorName: panel.embedAuthorName || "",
+        embedAuthorIcon: panel.embedAuthorIcon || "",
+        embedAuthorUrl: panel.embedAuthorUrl || "",
         thumbnail: panel.thumbnail || "",
         image: panel.image || "",
         footer: panel.footer || "",
+        footerIcon: panel.footerIcon || "",
+        showTimestamp: panel.showTimestamp !== false,
+
+        dmTitle: panel.dmTitle || "📝 Application Intake",
+        dmDescription: panel.dmDescription || "Welcome! Click the button below to answer your application questions.",
+        dmColor: panel.dmColor || "#5865F2",
+        dmAuthorName: panel.dmAuthorName || "",
+        dmAuthorIcon: panel.dmAuthorIcon || "",
+        dmThumbnail: panel.dmThumbnail || "",
+        dmImage: panel.dmImage || "",
+        dmFooter: panel.dmFooter || "GuildPilot Application System",
+        dmFooterIcon: panel.dmFooterIcon || "",
+
         welcomeTitle: panel.welcomeTitle || "👋 Application Submitted!",
         welcomeDescription: panel.welcomeDescription || "Your application has been received.",
         welcomeColor: panel.welcomeColor || "#5865F2",
+        welcomeAuthorName: panel.welcomeAuthorName || "",
+        welcomeAuthorIcon: panel.welcomeAuthorIcon || "",
         welcomeThumbnail: panel.welcomeThumbnail || "",
         welcomeImage: panel.welcomeImage || "",
         welcomeFooter: panel.welcomeFooter || "",
+        welcomeFooterIcon: panel.welcomeFooterIcon || "",
+
         channelId: panel.channelId || "",
       });
     } else {
@@ -275,19 +297,40 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         embedTitle: "📝 Server Application Center",
         embedDescription: "Select an application position from the dropdown menu below to submit your application.",
         embedColor: "#5865F2",
+        embedAuthorName: "",
+        embedAuthorIcon: "",
+        embedAuthorUrl: "",
         thumbnail: "",
         image: "",
         footer: "GuildPilot Applications System",
+        footerIcon: "",
+        showTimestamp: true,
+
+        dmTitle: "📝 Application Intake",
+        dmDescription: "Welcome! Click the button below to answer your application questions.",
+        dmColor: "#5865F2",
+        dmAuthorName: "",
+        dmAuthorIcon: "",
+        dmThumbnail: "",
+        dmImage: "",
+        dmFooter: "GuildPilot Application System",
+        dmFooterIcon: "",
+
         welcomeTitle: "👋 Application Submitted!",
         welcomeDescription: "Your application has been received.",
         welcomeColor: "#5865F2",
+        welcomeAuthorName: "",
+        welcomeAuthorIcon: "",
         welcomeThumbnail: "",
         welcomeImage: "",
         welcomeFooter: "GuildPilot Applications System",
+        welcomeFooterIcon: "",
+
         channelId: "",
       });
     }
     setPanelModalTab("embed");
+    setPreviewTab("panel");
     setIsPanelModalOpen(true);
   };
 
@@ -310,7 +353,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
   };
 
   const handleDeletePanel = async (panelId: string) => {
-    if (!selectedGuildId || !confirm("Delete this panel and unassign its forms?")) return;
+    if (!selectedGuildId || !confirm("Delete this panel?")) return;
     try {
       await api.delete(`/guilds/${selectedGuildId}/applications/panels/${panelId}`);
       showToast("Panel deleted", "success");
@@ -507,102 +550,6 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
     }
   };
 
-  const handleDuplicateQuestion = async (qId: string) => {
-    if (!selectedGuildId) return;
-    try {
-      await api.post(`/guilds/${selectedGuildId}/applications/questions/${qId}/duplicate`);
-      showToast("Question duplicated", "success");
-      fetchQuestions();
-    } catch (err) {
-      showToast("Failed to duplicate question", "error");
-    }
-  };
-
-  const handleMoveQuestion = async (index: number, direction: "up" | "down") => {
-    if (!questions || !selectedFormId) return;
-    const newQuestions = [...questions];
-    const targetIdx = direction === "up" ? index - 1 : index + 1;
-
-    if (targetIdx < 0 || targetIdx >= newQuestions.length) return;
-
-    const temp = newQuestions[index];
-    newQuestions[index] = newQuestions[targetIdx];
-    newQuestions[targetIdx] = temp;
-
-    setQuestions(newQuestions);
-
-    const questionIds = newQuestions.map((q) => q.id);
-    try {
-      await api.put(`/guilds/${selectedGuildId}/applications/forms/${selectedFormId}/questions/reorder`, {
-        questionIds,
-      });
-    } catch (e) {
-      fetchQuestions();
-    }
-  };
-
-  // Application Review & Decision Handlers
-  const handlePerformAction = async (appId: string, action: string, reason?: string) => {
-    if (!selectedGuildId) return;
-    try {
-      const res = await api.post(`/guilds/${selectedGuildId}/applications/apps/${appId}/action`, {
-        action,
-        reason,
-      });
-      showToast(`Action '${action}' executed successfully!`, "success");
-      if (selectedApp?.id === appId) {
-        setSelectedApp(res.data.application);
-      }
-      setIsDecisionModalOpen(false);
-      setDecisionReason("");
-      fetchData();
-    } catch (err: any) {
-      showToast(err.response?.data?.error || "Failed to execute decision", "error");
-    }
-  };
-
-  const handleAddNote = async () => {
-    if (!selectedGuildId || !selectedApp || !noteText.trim()) return;
-    try {
-      await api.post(`/guilds/${selectedGuildId}/applications/apps/${selectedApp.id}/notes`, {
-        content: noteText.trim(),
-      });
-      showToast("Reviewer note added!", "success");
-      setNoteText("");
-      const updated = await api.get(`/guilds/${selectedGuildId}/applications/apps/${selectedApp.id}`);
-      setSelectedApp(updated.data);
-    } catch (err: any) {
-      showToast("Failed to add note", "error");
-    }
-  };
-
-  const handleSaveSettings = async () => {
-    if (!selectedGuildId) return;
-    try {
-      await api.patch(`/guilds/${selectedGuildId}/applications/settings`, appSettings);
-      showToast("Application settings updated!", "success");
-      fetchData();
-    } catch (err: any) {
-      showToast("Failed to update settings", "error");
-    }
-  };
-
-  // Filtered Applications List
-  const filteredApps = applications.filter((app) => {
-    if (appStatusFilter !== "ALL" && app.status !== appStatusFilter) return false;
-    if (appFormFilter !== "ALL" && app.formId !== appFormFilter) return false;
-    if (appSearch.trim()) {
-      const q = appSearch.toLowerCase();
-      const matchTag = app.userTag.toLowerCase().includes(q);
-      const matchId = app.userId.includes(q);
-      const matchNum = String(app.appNumber).includes(q);
-      const matchForm = app.form?.name.toLowerCase().includes(q);
-      return matchTag || matchId || matchNum || matchForm;
-    }
-    return true;
-  });
-
-  const selectedPanel = panels.find((p) => p.id === selectedPanelId) || panels[0];
   const selectedForm = forms.find((f) => f.id === selectedFormId) || forms[0];
 
   return (
@@ -617,11 +564,11 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
             <h1 className="text-lg font-bold text-white flex items-center gap-2">
               Applications Workflow Engine
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-discord-brand/20 text-discord-brand font-semibold border border-discord-brand/30">
-                Multi-Form Panels & Dropdowns
+                Full 100% Embed Customization
               </span>
             </h1>
             <p className="text-xs text-zinc-400">
-              Manage multi-form panels, dropdown select menus, intake questions & auto roles
+              Customize title, description, color, author, thumbnail, image, footer, timestamp & DM embeds
             </p>
           </div>
         </div>
@@ -661,9 +608,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
 
       {/* Main View Area */}
       <main className="flex-1 overflow-y-auto p-6 space-y-6">
-        {/* ========================================== */}
-        {/* 1. DASHBOARD SUB-PAGE */}
-        {/* ========================================== */}
+        {/* DASHBOARD */}
         {activeSubPage === "dashboard" && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
@@ -710,15 +655,13 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
           </div>
         )}
 
-        {/* ========================================== */}
-        {/* 2. PANELS SUB-PAGE (Multi-Form Panels) */}
-        {/* ========================================== */}
+        {/* PANELS SUB-PAGE */}
         {activeSubPage === "panels" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Application Panels</h2>
-                <p className="text-xs text-zinc-400">Panels hold multiple forms in a single Discord embed & dropdown menu</p>
+                <p className="text-xs text-zinc-400">Customize every detail of your Discord channel embed, DM embed & review embeds</p>
               </div>
               <button
                 onClick={() => handleOpenPanelModal()}
@@ -743,13 +686,13 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                         onClick={() => handleDeployPanel(p.id)}
                         className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5"
                       >
-                        <Send className="w-3.5 h-3.5" /> Deploy Panel
+                        <Send className="w-3.5 h-3.5" /> Deploy
                       </button>
                       <button
                         onClick={() => handleOpenPanelModal(p)}
                         className="p-2 rounded-xl bg-[#1e1f22] text-zinc-300 hover:text-white"
                       >
-                        <Edit className="w-4 h-4" />
+                        <Edit className="w-4 h-4" /> Edit Embeds
                       </button>
                       <button
                         onClick={() => handleDeletePanel(p.id)}
@@ -760,7 +703,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                     </div>
                   </div>
 
-                  {/* Attached Forms in Panel */}
+                  {/* Attached Forms */}
                   <div className="space-y-2">
                     <div className="flex items-center justify-between text-xs font-bold text-zinc-400">
                       <span>Attached Forms ({p.forms?.length || 0}):</span>
@@ -805,7 +748,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                       </div>
                     ) : (
                       <div className="text-center py-4 bg-[#1e1f22] rounded-xl border border-[#35373c] text-xs text-zinc-400">
-                        No forms attached to this panel yet. Click "+ Add Form to Panel" above!
+                        No forms attached. Click "+ Add Form to Panel" above!
                       </div>
                     )}
                   </div>
@@ -815,9 +758,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
           </div>
         )}
 
-        {/* ========================================== */}
-        {/* 3. FORMS SUB-PAGE */}
-        {/* ========================================== */}
+        {/* FORMS SUB-PAGE */}
         {activeSubPage === "forms" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
@@ -856,20 +797,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
           </div>
         )}
 
-        {/* ========================================== */}
-        {/* 4. APPLICATIONS LIST SUB-PAGE */}
-        {/* ========================================== */}
-        {activeSubPage === "applications" && (
-          <div className="space-y-6">
-            <div className="bg-[#2b2d31] p-4 rounded-2xl border border-[#35373c]">
-              <h2 className="text-xl font-bold text-white">Application Submissions</h2>
-            </div>
-          </div>
-        )}
-
-        {/* ========================================== */}
-        {/* 5. QUESTIONS BUILDER SUB-PAGE */}
-        {/* ========================================== */}
+        {/* QUESTIONS SUB-PAGE */}
         {activeSubPage === "questions" && (
           <div className="space-y-6">
             <div className="flex items-center justify-between bg-[#2b2d31] p-4 rounded-2xl border border-[#35373c]">
@@ -906,10 +834,6 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
               {questions.map((q, idx) => (
                 <div key={q.id} className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-4 flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="flex flex-col gap-1">
-                      <button onClick={() => handleMoveQuestion(idx, "up")} disabled={idx === 0} className="p-1 rounded bg-[#1e1f22] text-zinc-400"><ChevronUp className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => handleMoveQuestion(idx, "down")} disabled={idx === questions.length - 1} className="p-1 rounded bg-[#1e1f22] text-zinc-400"><ChevronDown className="w-3.5 h-3.5" /></button>
-                    </div>
                     <div>
                       <h4 className="font-bold text-white text-sm">{q.label}</h4>
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-discord-brand/20 text-discord-brand">{q.type}</span>
@@ -924,122 +848,448 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
             </div>
           </div>
         )}
-
-        {/* ========================================== */}
-        {/* 6. ROLES SUB-PAGE */}
-        {/* ========================================== */}
-        {activeSubPage === "roles" && (
-          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-6 space-y-4">
-            <h3 className="text-lg font-bold text-white">Automatic Role Management</h3>
-          </div>
-        )}
-
-        {/* ========================================== */}
-        {/* 7. REVIEW QUEUE SUB-PAGE */}
-        {/* ========================================== */}
-        {activeSubPage === "review-queue" && (
-          <div className="bg-[#2b2d31] p-4 rounded-2xl border border-[#35373c]">
-            <h2 className="text-xl font-bold text-white">Reviewer Queue</h2>
-          </div>
-        )}
-
-        {/* ========================================== */}
-        {/* 8. STATISTICS SUB-PAGE */}
-        {/* ========================================== */}
-        {activeSubPage === "statistics" && (
-          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-6 space-y-4">
-            <h3 className="text-lg font-bold text-white">Statistics</h3>
-          </div>
-        )}
-
-        {/* ========================================== */}
-        {/* 9. SETTINGS SUB-PAGE */}
-        {/* ========================================== */}
-        {activeSubPage === "settings" && (
-          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-6 space-y-6 max-w-2xl">
-            <h3 className="text-lg font-bold text-white">Global Settings</h3>
-          </div>
-        )}
       </main>
 
-      {/* Panel Editor Modal */}
+      {/* FULL EMBED CUSTOMIZER PANEL MODAL */}
       {isPanelModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl max-w-3xl w-full p-6 space-y-4 shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#35373c] pb-3">
+          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl max-w-6xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden">
+            {/* Modal Header with Tabs */}
+            <div className="p-4 border-b border-[#35373c] bg-[#1e1f22] flex items-center justify-between">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
-                <Layers className="w-5 h-5 text-discord-brand" />
-                {editingPanel ? "Edit Application Panel" : "Create Application Panel"}
+                <Palette className="w-5 h-5 text-discord-brand" />
+                {editingPanel ? "Full Embed Customizer & Panel Editor" : "Create Application Panel"}
               </h3>
-              <button onClick={() => setIsPanelModalOpen(false)} className="p-1 rounded bg-[#1e1f22] text-zinc-400">✕</button>
-            </div>
 
-            <div className="space-y-4 text-xs">
-              <div>
-                <label className="font-bold text-zinc-300 block mb-1">Panel Name:</label>
-                <input
-                  type="text"
-                  placeholder="e.g. Staff Application Center"
-                  value={panelPayload.name}
-                  onChange={(e) => setPanelPayload({ ...panelPayload, name: e.target.value })}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-zinc-300 block mb-1">Display Mode (Discord Interface):</label>
-                <select
-                  value={panelPayload.displayType}
-                  onChange={(e) => setPanelPayload({ ...panelPayload, displayType: e.target.value })}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-bold"
-                >
-                  <option value="dropdown">🔽 Dropdown Menu Select (StringSelectMenu)</option>
-                  <option value="button">🔘 Buttons Row (ActionRow Buttons)</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="font-bold text-zinc-300 block mb-1">Target Discord Channel:</label>
-                <select
-                  value={panelPayload.channelId || ""}
-                  onChange={(e) => setPanelPayload({ ...panelPayload, channelId: e.target.value })}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-semibold"
-                >
-                  <option value="">Select Channel...</option>
-                  {channels
-                    .filter((c) => c.type === 0)
-                    .map((ch) => (
-                      <option key={ch.id} value={ch.id}>
-                        #{ch.name}
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="font-bold text-zinc-300 block mb-1">Embed Title:</label>
-                <input
-                  type="text"
-                  value={panelPayload.embedTitle}
-                  onChange={(e) => setPanelPayload({ ...panelPayload, embedTitle: e.target.value })}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                />
-              </div>
-
-              <div>
-                <label className="font-bold text-zinc-300 block mb-1">Embed Description:</label>
-                <textarea
-                  rows={3}
-                  value={panelPayload.embedDescription}
-                  onChange={(e) => setPanelPayload({ ...panelPayload, embedDescription: e.target.value })}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                />
+              <div className="flex items-center gap-1.5 bg-[#2b2d31] p-1 rounded-xl border border-[#35373c]">
+                {[
+                  { id: "embed", label: "1. Panel Embed", icon: Palette },
+                  { id: "dm_embed", label: "2. Applicant DM Embed", icon: MessageSquare },
+                  { id: "welcome", label: "3. Review Welcome Embed", icon: Sparkles },
+                  { id: "channels", label: "4. Target Channel", icon: Hash },
+                ].map((t) => (
+                  <button
+                    key={t.id}
+                    onClick={() => {
+                      setPanelModalTab(t.id as PanelTab);
+                      if (t.id === "embed") setPreviewTab("panel");
+                      if (t.id === "dm_embed") setPreviewTab("dm");
+                      if (t.id === "welcome") setPreviewTab("welcome");
+                    }}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                      panelModalTab === t.id ? "bg-discord-brand text-white shadow" : "text-zinc-400 hover:text-white"
+                    }`}
+                  >
+                    {t.label}
+                  </button>
+                ))}
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#35373c]">
-              <button onClick={() => setIsPanelModalOpen(false)} className="px-4 py-2 bg-[#1e1f22] text-zinc-300 rounded-xl font-bold text-xs">Cancel</button>
-              <button onClick={handleSavePanel} className="px-5 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl text-xs">Save Panel</button>
+            {/* Split Grid: Left Column (Full Embed Controls) | Right Column (Live Discord Preview) */}
+            <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
+              {/* Left Column: Embed Controls */}
+              <div className="p-6 overflow-y-auto space-y-4 text-xs border-r border-[#35373c]">
+                {panelModalTab === "embed" && (
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-white text-sm border-b border-[#35373c] pb-2 flex items-center gap-2">
+                      <Palette className="w-4 h-4 text-discord-brand" /> Panel Channel Embed Settings
+                    </h4>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">Panel Name:</label>
+                      <input
+                        type="text"
+                        value={panelPayload.name}
+                        onChange={(e) => setPanelPayload({ ...panelPayload, name: e.target.value })}
+                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">Display Mode (Discord Interface):</label>
+                      <select
+                        value={panelPayload.displayType}
+                        onChange={(e) => setPanelPayload({ ...panelPayload, displayType: e.target.value })}
+                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-bold"
+                      >
+                        <option value="dropdown">🔽 Dropdown Menu Select (StringSelectMenu)</option>
+                        <option value="button">🔘 Buttons Row (ActionRow Buttons)</option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">Embed Title:</label>
+                      <input
+                        type="text"
+                        value={panelPayload.embedTitle}
+                        onChange={(e) => setPanelPayload({ ...panelPayload, embedTitle: e.target.value })}
+                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">Embed Description:</label>
+                      <textarea
+                        rows={3}
+                        value={panelPayload.embedDescription}
+                        onChange={(e) => setPanelPayload({ ...panelPayload, embedDescription: e.target.value })}
+                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">Embed Color (Hex):</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={panelPayload.embedColor}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, embedColor: e.target.value })}
+                          className="w-12 h-10 bg-[#1e1f22] border border-[#35373c] rounded-xl cursor-pointer p-1"
+                        />
+                        <input
+                          type="text"
+                          value={panelPayload.embedColor}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, embedColor: e.target.value })}
+                          className="flex-1 bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3 pt-2">
+                      <div>
+                        <label className="font-bold text-zinc-300 block mb-1">Author Name:</label>
+                        <input
+                          type="text"
+                          placeholder="e.g. GuildPilot Systems"
+                          value={panelPayload.embedAuthorName}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, embedAuthorName: e.target.value })}
+                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-zinc-300 block mb-1">Author Icon URL:</label>
+                        <input
+                          type="text"
+                          placeholder="https://..."
+                          value={panelPayload.embedAuthorIcon}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, embedAuthorIcon: e.target.value })}
+                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-bold text-zinc-300 block mb-1">Thumbnail URL:</label>
+                        <input
+                          type="text"
+                          placeholder="https://..."
+                          value={panelPayload.thumbnail}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, thumbnail: e.target.value })}
+                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-zinc-300 block mb-1">Large Image URL:</label>
+                        <input
+                          type="text"
+                          placeholder="https://..."
+                          value={panelPayload.image}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, image: e.target.value })}
+                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-bold text-zinc-300 block mb-1">Footer Text:</label>
+                        <input
+                          type="text"
+                          value={panelPayload.footer}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, footer: e.target.value })}
+                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-zinc-300 block mb-1">Footer Icon URL:</label>
+                        <input
+                          type="text"
+                          placeholder="https://..."
+                          value={panelPayload.footerIcon}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, footerIcon: e.target.value })}
+                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {panelModalTab === "dm_embed" && (
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-white text-sm border-b border-[#35373c] pb-2 flex items-center gap-2">
+                      <MessageSquare className="w-4 h-4 text-discord-brand" /> Applicant Direct Message (DM) Embed
+                    </h4>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">DM Embed Title:</label>
+                      <input
+                        type="text"
+                        value={panelPayload.dmTitle}
+                        onChange={(e) => setPanelPayload({ ...panelPayload, dmTitle: e.target.value })}
+                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">DM Embed Description:</label>
+                      <textarea
+                        rows={3}
+                        value={panelPayload.dmDescription}
+                        onChange={(e) => setPanelPayload({ ...panelPayload, dmDescription: e.target.value })}
+                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">DM Embed Color (Hex):</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={panelPayload.dmColor}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, dmColor: e.target.value })}
+                          className="w-12 h-10 bg-[#1e1f22] border border-[#35373c] rounded-xl cursor-pointer p-1"
+                        />
+                        <input
+                          type="text"
+                          value={panelPayload.dmColor}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, dmColor: e.target.value })}
+                          className="flex-1 bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-mono"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="font-bold text-zinc-300 block mb-1">DM Thumbnail URL:</label>
+                        <input
+                          type="text"
+                          value={panelPayload.dmThumbnail}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, dmThumbnail: e.target.value })}
+                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="font-bold text-zinc-300 block mb-1">DM Large Image URL:</label>
+                        <input
+                          type="text"
+                          value={panelPayload.dmImage}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, dmImage: e.target.value })}
+                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">DM Footer Text:</label>
+                      <input
+                        type="text"
+                        value={panelPayload.dmFooter}
+                        onChange={(e) => setPanelPayload({ ...panelPayload, dmFooter: e.target.value })}
+                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {panelModalTab === "welcome" && (
+                  <div className="space-y-4">
+                    <h4 className="font-bold text-white text-sm border-b border-[#35373c] pb-2 flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-discord-brand" /> Review Channel Welcome Embed
+                    </h4>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">Welcome Embed Title:</label>
+                      <input
+                        type="text"
+                        value={panelPayload.welcomeTitle}
+                        onChange={(e) => setPanelPayload({ ...panelPayload, welcomeTitle: e.target.value })}
+                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">Welcome Embed Description:</label>
+                      <textarea
+                        rows={3}
+                        value={panelPayload.welcomeDescription}
+                        onChange={(e) => setPanelPayload({ ...panelPayload, welcomeDescription: e.target.value })}
+                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">Welcome Embed Color (Hex):</label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="color"
+                          value={panelPayload.welcomeColor}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, welcomeColor: e.target.value })}
+                          className="w-12 h-10 bg-[#1e1f22] border border-[#35373c] rounded-xl cursor-pointer p-1"
+                        />
+                        <input
+                          type="text"
+                          value={panelPayload.welcomeColor}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, welcomeColor: e.target.value })}
+                          className="flex-1 bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-mono"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {panelModalTab === "channels" && (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="font-bold text-zinc-300 block mb-1">Target Panel Channel:</label>
+                      <select
+                        value={panelPayload.channelId || ""}
+                        onChange={(e) => setPanelPayload({ ...panelPayload, channelId: e.target.value })}
+                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                      >
+                        <option value="">Select Channel...</option>
+                        {channels
+                          .filter((c) => c.type === 0)
+                          .map((ch) => (
+                            <option key={ch.id} value={ch.id}>
+                              #{ch.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Right Column: Live Discord Embed Preview Switcher */}
+              <div className="p-6 bg-[#313338] overflow-y-auto flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
+                      <Eye className="w-4 h-4 text-discord-brand" /> Live Discord Embed Preview
+                    </span>
+
+                    <div className="flex items-center gap-1 bg-[#1e1f22] p-1 rounded-xl border border-[#35373c]">
+                      <button
+                        onClick={() => setPreviewTab("panel")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                          previewTab === "panel" ? "bg-discord-brand text-white" : "text-zinc-400"
+                        }`}
+                      >
+                        Panel Embed
+                      </button>
+                      <button
+                        onClick={() => setPreviewTab("dm")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                          previewTab === "dm" ? "bg-discord-brand text-white" : "text-zinc-400"
+                        }`}
+                      >
+                        DM Embed
+                      </button>
+                      <button
+                        onClick={() => setPreviewTab("welcome")}
+                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                          previewTab === "welcome" ? "bg-discord-brand text-white" : "text-zinc-400"
+                        }`}
+                      >
+                        Welcome Embed
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Simulated Live Discord Embed Box */}
+                  {previewTab === "panel" && (
+                    <div
+                      style={{ borderLeftColor: panelPayload.embedColor || "#5865F2" }}
+                      className="bg-[#2b2d31] border-l-4 rounded-r-xl p-4 shadow-2xl space-y-3 relative"
+                    >
+                      {panelPayload.embedAuthorName && (
+                        <div className="flex items-center gap-2 text-xs font-bold text-white">
+                          {panelPayload.embedAuthorIcon && <img src={panelPayload.embedAuthorIcon} alt="" className="w-4 h-4 rounded-full" />}
+                          <span>{panelPayload.embedAuthorName}</span>
+                        </div>
+                      )}
+
+                      <h4 className="font-bold text-white text-base">{panelPayload.embedTitle || "Panel Title"}</h4>
+                      <p className="text-xs text-zinc-300 whitespace-pre-wrap">{panelPayload.embedDescription}</p>
+
+                      {panelPayload.image && <img src={panelPayload.image} alt="" className="w-full rounded-xl max-h-48 object-cover" />}
+
+                      {panelPayload.footer && (
+                        <p className="text-[10px] text-zinc-400 pt-2 border-t border-[#35373c]">{panelPayload.footer}</p>
+                      )}
+
+                      {/* Dropdown Select Menu or Button Preview */}
+                      {panelPayload.displayType === "dropdown" ? (
+                        <div className="mt-4 p-2.5 bg-[#1e1f22] border border-[#35373c] rounded-xl flex items-center justify-between text-xs text-zinc-400">
+                          <span>🔽 Select an application position...</span>
+                          <ChevronDown className="w-4 h-4" />
+                        </div>
+                      ) : (
+                        <div className="mt-4">
+                          <button className="px-4 py-2 bg-discord-brand text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-md">
+                            <span>📝</span>
+                            <span>Apply Now</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {previewTab === "dm" && (
+                    <div
+                      style={{ borderLeftColor: panelPayload.dmColor || "#5865F2" }}
+                      className="bg-[#2b2d31] border-l-4 rounded-r-xl p-4 shadow-2xl space-y-3"
+                    >
+                      <h4 className="font-bold text-white text-base">{panelPayload.dmTitle || "DM Title"}</h4>
+                      <p className="text-xs text-zinc-300">{panelPayload.dmDescription}</p>
+                      <div className="mt-4">
+                        <button className="px-4 py-2 bg-discord-brand text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-md">
+                          <span>📝</span>
+                          <span>Answer Application Questions</span>
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
+                  {previewTab === "welcome" && (
+                    <div
+                      style={{ borderLeftColor: panelPayload.welcomeColor || "#5865F2" }}
+                      className="bg-[#2b2d31] border-l-4 rounded-r-xl p-4 shadow-2xl space-y-3"
+                    >
+                      <h4 className="font-bold text-white text-base">{panelPayload.welcomeTitle}</h4>
+                      <p className="text-xs text-zinc-300">{panelPayload.welcomeDescription}</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="p-4 border-t border-[#35373c] bg-[#1e1f22] flex items-center justify-end gap-3">
+              <button
+                onClick={() => setIsPanelModalOpen(false)}
+                className="px-4 py-2 bg-[#2b2d31] hover:bg-[#35373c] text-zinc-300 rounded-xl font-bold text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSavePanel}
+                className="px-6 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl text-xs shadow-lg"
+              >
+                Save All Embed Settings
+              </button>
             </div>
           </div>
         </div>
@@ -1059,7 +1309,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
 
             <div className="space-y-3 text-xs">
               <div>
-                <label className="font-bold text-zinc-300 block mb-1">Parent Panel (Multi-Form Panel):</label>
+                <label className="font-bold text-zinc-300 block mb-1">Parent Panel:</label>
                 <select
                   value={formPayload.panelId || ""}
                   onChange={(e) => setFormPayload({ ...formPayload, panelId: e.target.value })}
@@ -1075,7 +1325,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
               </div>
 
               <div>
-                <label className="font-bold text-zinc-300 block mb-1">Form / Position Name:</label>
+                <label className="font-bold text-zinc-300 block mb-1">Form Name:</label>
                 <input
                   type="text"
                   placeholder="e.g. Moderator Application"
@@ -1097,7 +1347,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
               </div>
 
               <div>
-                <label className="font-bold text-zinc-300 block mb-1">Description (Displayed in Dropdown option):</label>
+                <label className="font-bold text-zinc-300 block mb-1">Description (Displayed in Dropdown):</label>
                 <input
                   type="text"
                   placeholder="e.g. Apply to become a server moderator"

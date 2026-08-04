@@ -31,6 +31,59 @@ import {
 import { generateApplicationHtmlTranscript } from "../services/transcriptService";
 import { broadcastEvent } from "../socket/socketManager";
 
+function buildEmbedHelper(config: {
+  title?: string;
+  description?: string;
+  color?: string;
+  authorName?: string;
+  authorIcon?: string;
+  authorUrl?: string;
+  thumbnail?: string;
+  image?: string;
+  footer?: string;
+  footerIcon?: string;
+  showTimestamp?: boolean;
+  fields?: any[];
+}): EmbedBuilder {
+  const embed = new EmbedBuilder();
+
+  if (config.title) embed.setTitle(config.title);
+  if (config.description) embed.setDescription(config.description);
+  if (config.color) embed.setColor((config.color as any) || "#5865F2");
+
+  if (config.authorName) {
+    embed.setAuthor({
+      name: config.authorName,
+      iconURL: config.authorIcon || undefined,
+      url: config.authorUrl || undefined,
+    });
+  }
+
+  if (config.thumbnail) embed.setThumbnail(config.thumbnail);
+  if (config.image) embed.setImage(config.image);
+
+  if (config.footer) {
+    embed.setFooter({
+      text: config.footer,
+      iconURL: config.footerIcon || undefined,
+    });
+  }
+
+  if (config.showTimestamp !== false) {
+    embed.setTimestamp();
+  }
+
+  if (Array.isArray(config.fields) && config.fields.length > 0) {
+    config.fields.forEach((f) => {
+      if (f.name && f.value) {
+        embed.addFields({ name: f.name, value: f.value, inline: Boolean(f.inline) });
+      }
+    });
+  }
+
+  return embed;
+}
+
 export async function deployApplicationPanelEmbed(client: Client, panelId: string): Promise<string> {
   const panel = await getAppPanelById(panelId);
   if (!panel || !panel.channelId) throw new Error("Panel or target channel missing.");
@@ -38,14 +91,25 @@ export async function deployApplicationPanelEmbed(client: Client, panelId: strin
   const channel = (await client.channels.fetch(panel.channelId).catch(() => null)) as TextChannel;
   if (!channel || !channel.isTextBased()) throw new Error("Could not access target channel on Discord");
 
-  const embed = new EmbedBuilder()
-    .setTitle(panel.embedTitle || panel.name)
-    .setDescription(panel.embedDescription || "Select an application position from the dropdown menu below to submit your application.")
-    .setColor((panel.embedColor as any) || "#5865F2");
+  let parsedFields: any[] = [];
+  try {
+    parsedFields = JSON.parse(panel.embedFields || "[]");
+  } catch (e) {}
 
-  if (panel.thumbnail) embed.setThumbnail(panel.thumbnail);
-  if (panel.image) embed.setImage(panel.image);
-  if (panel.footer) embed.setFooter({ text: panel.footer });
+  const embed = buildEmbedHelper({
+    title: panel.embedTitle || panel.name,
+    description: panel.embedDescription || "Select an application position from the dropdown menu below to submit your application.",
+    color: panel.embedColor || "#5865F2",
+    authorName: panel.embedAuthorName || undefined,
+    authorIcon: panel.embedAuthorIcon || undefined,
+    authorUrl: panel.embedAuthorUrl || undefined,
+    thumbnail: panel.thumbnail || undefined,
+    image: panel.image || undefined,
+    footer: panel.footer || "GuildPilot Applications System",
+    footerIcon: panel.footerIcon || undefined,
+    showTimestamp: panel.showTimestamp !== false,
+    fields: parsedFields,
+  });
 
   const components: any[] = [];
   const forms: any[] = panel.forms || [];
@@ -127,14 +191,25 @@ export async function deployApplicationFormEmbed(client: Client, formId: string)
   const channel = (await client.channels.fetch(form.channelId).catch(() => null)) as TextChannel;
   if (!channel || !channel.isTextBased()) throw new Error("Could not access target channel on Discord");
 
-  const embed = new EmbedBuilder()
-    .setTitle(form.embedTitle || form.name)
-    .setDescription(form.embedDescription || "Click the button below to submit your application.")
-    .setColor((form.embedColor as any) || "#5865F2");
+  let parsedFields: any[] = [];
+  try {
+    parsedFields = JSON.parse(form.embedFields || "[]");
+  } catch (e) {}
 
-  if (form.thumbnail) embed.setThumbnail(form.thumbnail);
-  if (form.image) embed.setImage(form.image);
-  if (form.footer) embed.setFooter({ text: form.footer });
+  const embed = buildEmbedHelper({
+    title: form.embedTitle || form.name,
+    description: form.embedDescription || "Click the button below to submit your application.",
+    color: form.embedColor || "#5865F2",
+    authorName: form.embedAuthorName || undefined,
+    authorIcon: form.embedAuthorIcon || undefined,
+    authorUrl: form.embedAuthorUrl || undefined,
+    thumbnail: form.thumbnail || undefined,
+    image: form.image || undefined,
+    footer: form.footer || "GuildPilot Applications System",
+    footerIcon: form.footerIcon || undefined,
+    showTimestamp: form.showTimestamp !== false,
+    fields: parsedFields,
+  });
 
   const btnStyle =
     form.buttonColor === "Secondary"
@@ -397,15 +472,21 @@ async function handleApplicationStartViaDM(interaction: any, formId: string) {
 
   const guildName = interaction.guild?.name || "Server";
 
-  // Build DM Embed & Start Fill Button inside User DM
-  const dmEmbed = new EmbedBuilder()
-    .setTitle(`📝 Application: ${form.name}`)
-    .setDescription(
-      `Welcome <@${interaction.user.id}>!\n\nYou started an application for **${form.name}** on **${guildName}**.\n\nClick the button below to answer your application questions.`
-    )
-    .setColor((form.embedColor as any) || "#5865F2")
-    .setFooter({ text: `GuildPilot Application System • ${guildName}` })
-    .setTimestamp();
+  // Build DM Embed using customizable dmEmbed fields
+  const dmEmbed = buildEmbedHelper({
+    title: form.dmTitle || `📝 Application: ${form.name}`,
+    description:
+      form.dmDescription ||
+      `Welcome <@${interaction.user.id}>!\n\nYou started an application for **${form.name}** on **${guildName}**.\n\nClick the button below to answer your application questions.`,
+    color: form.dmColor || "#5865F2",
+    authorName: form.dmAuthorName || undefined,
+    authorIcon: form.dmAuthorIcon || undefined,
+    thumbnail: form.dmThumbnail || undefined,
+    image: form.dmImage || undefined,
+    footer: form.dmFooter || `GuildPilot Application System • ${guildName}`,
+    footerIcon: form.dmFooterIcon || undefined,
+    showTimestamp: true,
+  });
 
   const dmRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
     new ButtonBuilder()
@@ -430,14 +511,18 @@ async function handleApplicationStartViaDM(interaction: any, formId: string) {
 }
 
 async function postApplicationChannelWelcome(channel: TextChannel, app: any, form: any) {
-  const welcomeEmbed = new EmbedBuilder()
-    .setTitle(form.welcomeTitle || `👋 Application #${app.appNumber} — ${form.name}`)
-    .setDescription(form.welcomeDescription || `Welcome <@${app.userId}>! Reviewers will inspect your answers shortly.`)
-    .setColor((form.welcomeColor as any) || "#5865F2");
-
-  if (form.welcomeThumbnail) welcomeEmbed.setThumbnail(form.welcomeThumbnail);
-  if (form.welcomeImage) welcomeEmbed.setImage(form.welcomeImage);
-  if (form.welcomeFooter) welcomeEmbed.setFooter({ text: form.welcomeFooter });
+  const welcomeEmbed = buildEmbedHelper({
+    title: form.welcomeTitle || `👋 Application #${app.appNumber} — ${form.name}`,
+    description: form.welcomeDescription || `Welcome <@${app.userId}>! Reviewers will inspect your answers shortly.`,
+    color: form.welcomeColor || "#5865F2",
+    authorName: form.welcomeAuthorName || undefined,
+    authorIcon: form.welcomeAuthorIcon || undefined,
+    thumbnail: form.welcomeThumbnail || undefined,
+    image: form.welcomeImage || undefined,
+    footer: form.welcomeFooter || "GuildPilot Applications System",
+    footerIcon: form.welcomeFooterIcon || undefined,
+    showTimestamp: true,
+  });
 
   const answersFields = app.answers.map((a: any) => ({
     name: `❓ ${a.questionLabel}`,
