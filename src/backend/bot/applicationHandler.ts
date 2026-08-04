@@ -28,6 +28,7 @@ import {
 } from "../services/applicationService";
 import { generateApplicationHtmlTranscript } from "../services/transcriptService";
 import { broadcastEvent } from "../socket/socketManager";
+import { parseAndValidateEmoji } from "../utils/emojiValidator";
 
 function replacePlaceholders(text: string, app: any, form: any, reason?: string): string {
   if (!text) return "";
@@ -94,27 +95,11 @@ function buildEmbedHelper(config: {
 }
 
 function safeSetEmoji(builder: any, emojiInput?: string | null): boolean {
-  if (!emojiInput || typeof emojiInput !== "string") return false;
-  const cleaned = emojiInput.trim();
-  if (!cleaned) return false;
+  const valid = parseAndValidateEmoji(emojiInput);
+  if (!valid) return false;
 
   try {
-    const customMatch = cleaned.match(/<a?:(\w+):(\d+)>/);
-    if (customMatch) {
-      builder.setEmoji({ name: customMatch[1], id: customMatch[2] });
-      return true;
-    }
-
-    if (/^\d{17,20}$/.test(cleaned)) {
-      builder.setEmoji({ id: cleaned });
-      return true;
-    }
-
-    if (cleaned.startsWith(":") && cleaned.endsWith(":")) {
-      return false;
-    }
-
-    builder.setEmoji(cleaned);
+    builder.setEmoji(valid);
     return true;
   } catch (err) {
     console.warn(`[App System] Skipping invalid emoji input: "${emojiInput}"`);

@@ -35,6 +35,7 @@ import {
   getTicketSettings,
 } from "../services/ticketService";
 import { generateHtmlTranscript } from "../services/transcriptService";
+import { parseAndValidateEmoji } from "../utils/emojiValidator";
 
 // Register Slash Commands globally for bot
 export async function registerSlashCommands(client: Client) {
@@ -173,7 +174,14 @@ export async function deployTicketPanelEmbed(client: Client, panelId: string): P
         .setLabel(r.label || "Support Reason")
         .setValue(r.value || r.label.toLowerCase().replace(/[^a-z0-9]/g, "_"))
         .setDescription(r.description || "Open ticket for this reason");
-      if (r.emoji) option.setEmoji(r.emoji);
+      if (r.emoji) {
+        const validEmoji = parseAndValidateEmoji(r.emoji);
+        if (validEmoji) {
+          try {
+            option.setEmoji(validEmoji);
+          } catch (e) {}
+        }
+      }
       selectMenu.addOptions(option);
     });
 
@@ -190,7 +198,12 @@ export async function deployTicketPanelEmbed(client: Client, panelId: string): P
       .setStyle(style);
 
     if (panel.buttonEmoji) {
-      button.setEmoji(panel.buttonEmoji);
+      const validEmoji = parseAndValidateEmoji(panel.buttonEmoji);
+      if (validEmoji) {
+        try {
+          button.setEmoji(validEmoji);
+        } catch (e) {}
+      }
     }
 
     components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button));

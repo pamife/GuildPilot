@@ -18,61 +18,7 @@ import {
   SectionBuilder,
 } from "discord.js";
 import { getSelfRolePanelById, updateSelfRolePanel } from "../services/selfRoleService";
-
-const EMOJI_SHORTCODES: Record<string, string> = {
-  ":envelope:": "📩",
-  ":news:": "📩",
-  ":tools:": "🛠️",
-  ":updates:": "🛠️",
-  ":eyes:": "👀",
-  ":leaks:": "👀",
-  ":scroll:": "📜",
-  ":polls:": "📜",
-  ":star:": "⭐️",
-  ":events:": "⭐️",
-  ":gift:": "🎁",
-  ":giveaways:": "🎁",
-  ":bell:": "🔔",
-  ":arrow_up:": "⬆️",
-  ":up:": "⬆️",
-  ":check:": "✅",
-  ":x:": "❌",
-  ":gear:": "⚙️",
-  ":link:": "🔗",
-  ":shield:": "🛡️",
-};
-
-// Helper to safely parse and validate emojis to avoid Discord API COMPONENT_INVALID_EMOJI error
-function parseAndValidateEmoji(emojiStr?: string | null) {
-  if (!emojiStr || typeof emojiStr !== "string") return null;
-  let trimmed = emojiStr.trim();
-  if (!trimmed) return null;
-
-  // Convert common shortcodes like :news: or :updates: to actual unicode emojis
-  if (EMOJI_SHORTCODES[trimmed.toLowerCase()]) {
-    trimmed = EMOJI_SHORTCODES[trimmed.toLowerCase()];
-  }
-
-  try {
-    const parsed = parseEmoji(trimmed);
-    if (!parsed || !parsed.name) return null;
-
-    // Custom emoji with ID (e.g. <:name:1234567890>)
-    if (parsed.id) {
-      return { id: parsed.id, name: parsed.name, animated: Boolean(parsed.animated) };
-    }
-
-    // Unicode emoji: Check that name is NOT plain ASCII (e.g. "updates" or ":updates:")
-    const isPlainAscii = /^[\x00-\x7F]+$/.test(parsed.name);
-    if (isPlainAscii) {
-      return null; // Reject plain text names which are invalid unicode emojis
-    }
-
-    return { name: parsed.name };
-  } catch (e) {
-    return null;
-  }
-}
+import { parseAndValidateEmoji } from "../utils/emojiValidator";
 
 // Helper to validate URLs for Discord media items
 function isValidUrl(str?: string | null): boolean {
