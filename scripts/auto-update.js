@@ -130,14 +130,8 @@ try {
   reportProgress(5, 6, 85, "Kompiliere Production Build (npm run build)...", "Bauen von Frontend & Backend binaries...");
   execSync("npm run build", { cwd: projectDir, stdio: "inherit" });
 
-  // Step 6: PM2 Restart if running under PM2
+  // Step 6: Restart PM2 services
   log("Step 6/6: Restarting application services...");
-  reportProgress(6, 6, 95, "Starte Anwendung & Dienste neu...", "Dienste werden per PM2 neu gestartet...");
-  try {
-    execSync("pm2 restart all", { cwd: projectDir, stdio: "inherit" });
-  } catch (pm2Err) {
-    log("PM2 restart skipped or failed (process may be running directly).");
-  }
 
   notifyUpdate({
     commit: remoteCommit,
@@ -149,6 +143,12 @@ try {
 
   reportProgress(6, 6, 100, `Update erfolgreich abgeschlossen! (Commit ${remoteCommit.substring(0, 7)})`, "✅ UPDATE ERFOLGREICH ABGESCHLOSSEN!", "success");
   log("✅ UPDATE COMPLETED SUCCESSFULLY!");
+
+  try {
+    execSync("pm2 restart all", { cwd: projectDir, stdio: "inherit" });
+  } catch (pm2Err) {
+    log("PM2 restart skipped or failed (process may be running directly).");
+  }
 } catch (err) {
   console.error("❌ UPDATE FAILED:", err.message);
   reportProgress(6, 6, 100, `Update fehlgeschlagen: ${err.message}`, `❌ Update-Fehler: ${err.message}`, "error");

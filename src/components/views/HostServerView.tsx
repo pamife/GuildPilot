@@ -437,11 +437,11 @@ export function HostServerView() {
 
             <button
               onClick={handleCheckUpdate}
-              disabled={checkingUpdate || updateProgress?.isUpdating}
+              disabled={checkingUpdate || (updateProgress?.isUpdating && updateProgress?.percent !== 100)}
               className="flex items-center gap-2 px-4 py-2 rounded-lg bg-discord-brand hover:bg-discord-brandHover active:scale-95 text-white font-semibold text-xs transition-all shadow-md disabled:opacity-50"
             >
-              <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdate || updateProgress?.isUpdating ? "animate-spin" : ""}`} />
-              {checkingUpdate || updateProgress?.isUpdating ? "Aktualisiere..." : "Nach Updates suchen"}
+              <RefreshCw className={`w-3.5 h-3.5 ${checkingUpdate || (updateProgress?.isUpdating && updateProgress?.percent !== 100) ? "animate-spin" : ""}`} />
+              {checkingUpdate || (updateProgress?.isUpdating && updateProgress?.percent !== 100) ? "Aktualisiere..." : "Nach Updates suchen"}
             </button>
           </div>
         </div>
@@ -451,7 +451,7 @@ export function HostServerView() {
           <div className="space-y-3 pt-2 border-t border-[#35373c]/60">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-white flex items-center gap-2">
-                {updateProgress?.isUpdating ? (
+                {updateProgress?.isUpdating && updateProgress?.percent !== 100 ? (
                   <span className="flex items-center gap-1.5 text-sky-400">
                     <Loader2 className="w-3.5 h-3.5 animate-spin" />
                     Fortschritt: Schritt {updateProgress.step || 1} von {updateProgress.totalSteps || 6}
@@ -477,7 +477,7 @@ export function HostServerView() {
                 className={`h-full rounded-full transition-all duration-500 ease-out ${
                   updateProgress?.status === "error"
                     ? "bg-discord-red"
-                    : updateProgress?.isUpdating || checkingUpdate
+                    : (updateProgress?.isUpdating && updateProgress?.percent !== 100) || checkingUpdate
                     ? "bg-gradient-to-r from-sky-500 via-indigo-500 to-discord-brand animate-pulse"
                     : "bg-discord-green"
                 }`}
@@ -488,9 +488,10 @@ export function HostServerView() {
             {/* 6 Step Cards Checklist Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-1">
               {updateSteps.map((s) => {
+                const isFinished = updateProgress?.percent === 100 || updateProgress?.status === "success" || (!updateProgress?.isUpdating && !checkingUpdate);
                 const currentStep = updateProgress?.step || (checkingUpdate ? 1 : 6);
-                const isDone = s.id < currentStep || updateProgress?.status === "success" || (!updateProgress?.isUpdating && updateProgress?.percent === 100);
-                const isCurrent = s.id === currentStep && (updateProgress?.isUpdating || checkingUpdate);
+                const isDone = isFinished || s.id < currentStep;
+                const isCurrent = !isFinished && s.id === currentStep && (updateProgress?.isUpdating || checkingUpdate);
                 const isError = s.id === currentStep && updateProgress?.status === "error";
 
                 return (
