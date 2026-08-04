@@ -594,17 +594,17 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
   const selectedForm = forms.find((f) => f.id === selectedFormId) || forms[0];
 
   return (
-    <div className="flex-1 flex flex-col h-screen bg-[#313338] text-zinc-100 overflow-hidden select-none">
+    <div className="flex-1 flex flex-col h-screen bg-[#000000] text-zinc-100 overflow-hidden select-none">
       {/* Top Navbar Header */}
-      <header className="h-16 bg-[#2b2d31] border-b border-[#1e1f22] px-6 flex items-center justify-between shrink-0 shadow-sm">
+      <header className="h-16 bg-[#09090b] border-b border-[#1f1f23] px-6 flex items-center justify-between shrink-0 shadow-md">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-discord-brand/20 border border-discord-brand/40 flex items-center justify-center text-discord-brand shadow-inner">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-inner">
             <ClipboardList className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white flex items-center gap-2">
+            <h1 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
               Applications Workflow Engine
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-discord-brand/20 text-discord-brand font-semibold border border-discord-brand/30">
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/30">
                 Custom DM & Decision Messages
               </span>
             </h1>
@@ -615,7 +615,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         </div>
 
         {/* Sub-Pages Navigation Bar */}
-        <div className="flex items-center gap-1 bg-[#1e1f22] p-1 rounded-xl border border-[#35373c]">
+        <div className="flex items-center gap-1 bg-[#0d0d11] p-1 rounded-xl border border-[#1f1f23]">
           {[
             { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
             { id: "panels", label: "Panels", icon: Layers },
@@ -633,10 +633,10 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
               <button
                 key={tab.id}
                 onClick={() => setActiveSubPage(tab.id as SubPage)}
-                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   isActive
-                    ? "bg-discord-brand text-white shadow-md font-bold"
-                    : "text-zinc-400 hover:text-white hover:bg-[#2b2d31]"
+                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 font-bold"
+                    : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -653,17 +653,17 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         {activeSubPage === "dashboard" && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 shadow-lg flex items-center justify-between">
+              <div className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Total Panels</p>
                   <h3 className="text-3xl font-extrabold text-white mt-1">{panels.length}</h3>
                 </div>
-                <div className="w-12 h-12 rounded-2xl bg-discord-brand/10 border border-discord-brand/30 flex items-center justify-center text-discord-brand">
+                <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400">
                   <Layers className="w-6 h-6" />
                 </div>
               </div>
 
-              <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 shadow-lg flex items-center justify-between">
+              <div className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Total Forms</p>
                   <h3 className="text-3xl font-extrabold text-white mt-1">{forms.length}</h3>
@@ -673,7 +673,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                 </div>
               </div>
 
-              <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 shadow-lg flex items-center justify-between">
+              <div className="bg-[#09090b] border border-[#1f1f23] hover:border-emerald-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Accepted</p>
                   <h3 className="text-3xl font-extrabold text-emerald-400 mt-1">{stats.accepted || 0}</h3>
@@ -683,7 +683,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                 </div>
               </div>
 
-              <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 shadow-lg flex items-center justify-between">
+              <div className="bg-[#09090b] border border-[#1f1f23] hover:border-rose-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Denied</p>
                   <h3 className="text-3xl font-extrabold text-rose-400 mt-1">{stats.denied || 0}</h3>
@@ -701,12 +701,12 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">Application Panels</h2>
-                <p className="text-xs text-zinc-400">Configure Intake Messages & Decision Messages per Panel/Form</p>
+                <h2 className="text-xl font-bold text-white tracking-tight">Application Panels</h2>
+                <p className="text-xs text-zinc-400 mt-0.5">Configure Intake Messages & Decision Messages per Panel/Form</p>
               </div>
               <button
                 onClick={() => handleOpenPanelModal()}
-                className="flex items-center gap-2 px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl shadow-lg transition-all"
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Create Panel
               </button>
@@ -714,10 +714,10 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {panels.map((p) => (
-                <div key={p.id} className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-6 shadow-xl space-y-4">
-                  <div className="flex items-center justify-between border-b border-[#35373c] pb-3">
+                <div key={p.id} className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-6 shadow-lg space-y-4 transition-all">
+                  <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
                     <div>
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-discord-brand px-2.5 py-0.5 rounded-full bg-discord-brand/10 border border-discord-brand/30">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30">
                         {p.displayType === "dropdown" ? "🔽 Dropdown Menu" : "🔘 Buttons"}
                       </span>
                       <h3 className="text-lg font-bold text-white mt-1">{p.name}</h3>
@@ -725,19 +725,19 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => handleDeployPanel(p.id)}
-                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs flex items-center gap-1.5"
+                        className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-semibold rounded-xl text-xs flex items-center gap-1.5 shadow-lg shadow-emerald-600/20 transition-all cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" /> Deploy
                       </button>
                       <button
                         onClick={() => handleOpenPanelModal(p)}
-                        className="p-2 rounded-xl bg-[#1e1f22] text-zinc-300 hover:text-white"
+                        className="p-2 rounded-xl bg-[#0d0d11] text-zinc-300 hover:text-white border border-[#1f1f23] cursor-pointer"
                       >
-                        <Edit className="w-4 h-4" /> Edit Embeds & Messages
+                        <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeletePanel(p.id)}
-                        className="p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-600 hover:text-white"
+                        className="p-2 rounded-xl bg-rose-500/10 text-rose-400 hover:bg-rose-600 hover:text-white border border-rose-500/20 cursor-pointer"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -750,7 +750,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                       <span>Attached Forms ({p.forms?.length || 0}):</span>
                       <button
                         onClick={() => handleOpenFormModal(undefined, p.id)}
-                        className="text-discord-brand hover:underline flex items-center gap-1"
+                        className="text-indigo-400 hover:underline flex items-center gap-1 cursor-pointer"
                       >
                         + Add Form to Panel
                       </button>
@@ -761,7 +761,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                         {p.forms.map((f: any) => (
                           <div
                             key={f.id}
-                            className="p-3 bg-[#1e1f22] rounded-xl border border-[#35373c] flex items-center justify-between text-xs"
+                            className="p-3 bg-[#0d0d11] rounded-xl border border-[#1f1f23] flex items-center justify-between text-xs"
                           >
                             <div className="flex items-center gap-2.5">
                               <span className="text-base">{f.emoji || "📝"}</span>
@@ -773,13 +773,13 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                             <div className="flex items-center gap-1.5">
                               <button
                                 onClick={() => handleOpenFormModal(f)}
-                                className="p-1.5 rounded-lg bg-[#2b2d31] text-zinc-300 hover:text-white"
+                                className="p-1.5 rounded-lg bg-[#18181b] text-zinc-300 hover:text-white cursor-pointer"
                               >
                                 <Edit className="w-3.5 h-3.5" />
                               </button>
                               <button
                                 onClick={() => handleDeleteForm(f.id)}
-                                className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-600 hover:text-white"
+                                className="p-1.5 rounded-lg bg-rose-500/10 text-rose-400 hover:bg-rose-600 hover:text-white cursor-pointer"
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
@@ -788,7 +788,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-4 bg-[#1e1f22] rounded-xl border border-[#35373c] text-xs text-zinc-400">
+                      <div className="text-center py-4 bg-[#0d0d11] rounded-xl border border-[#1f1f23] text-xs text-zinc-400">
                         No forms attached. Click "+ Add Form to Panel" above!
                       </div>
                     )}
@@ -804,12 +804,12 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h2 className="text-xl font-bold text-white">All Application Forms</h2>
-                <p className="text-xs text-zinc-400">Create & manage forms across all panels</p>
+                <h2 className="text-xl font-bold text-white tracking-tight">All Application Forms</h2>
+                <p className="text-xs text-zinc-400 mt-0.5">Create & manage forms across all panels</p>
               </div>
               <button
                 onClick={() => handleOpenFormModal()}
-                className="flex items-center gap-2 px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl shadow-lg transition-all"
+                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
               >
                 <Plus className="w-4 h-4" /> Create Form
               </button>
@@ -817,10 +817,10 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {forms.map((f) => (
-                <div key={f.id} className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 space-y-4 shadow-xl">
+                <div key={f.id} className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 space-y-4 shadow-lg transition-all">
                   <div className="flex items-center justify-between">
                     <span className="text-base">{f.emoji || "📝"}</span>
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-discord-brand/20 text-discord-brand">
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
                       {f.panel?.name || "Standalone Form"}
                     </span>
                   </div>
@@ -828,9 +828,9 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                     <h3 className="text-base font-bold text-white">{f.name}</h3>
                     <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{f.description || "No description."}</p>
                   </div>
-                  <div className="flex items-center justify-between pt-3 border-t border-[#35373c] text-xs">
-                    <button onClick={() => handleOpenFormModal(f)} className="px-3 py-1.5 bg-[#1e1f22] text-white rounded-lg font-bold">Edit</button>
-                    <button onClick={() => handleDeleteForm(f.id)} className="px-3 py-1.5 bg-rose-500/10 text-rose-400 rounded-lg font-bold">Delete</button>
+                  <div className="flex items-center justify-between pt-3 border-t border-[#1f1f23] text-xs">
+                    <button onClick={() => handleOpenFormModal(f)} className="px-3 py-1.5 bg-[#0d0d11] border border-[#27272a] text-white rounded-xl font-semibold hover:bg-[#18181b] cursor-pointer">Edit</button>
+                    <button onClick={() => handleDeleteForm(f.id)} className="px-3 py-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl font-semibold hover:bg-rose-600 hover:text-white cursor-pointer">Delete</button>
                   </div>
                 </div>
               ))}
@@ -841,11 +841,11 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         {/* QUESTIONS SUB-PAGE */}
         {activeSubPage === "questions" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between bg-[#2b2d31] p-4 rounded-2xl border border-[#35373c]">
+            <div className="flex items-center justify-between bg-[#09090b] p-5 rounded-2xl border border-[#1f1f23] shadow-lg">
               <div>
-                <h2 className="text-xl font-bold text-white">Question Builder</h2>
-                <p className="text-xs text-zinc-400">
-                  Target Form: <span className="font-bold text-discord-brand">{selectedForm?.name || "Select a form"}</span>
+                <h2 className="text-xl font-bold text-white tracking-tight">Question Builder</h2>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Target Form: <span className="font-bold text-indigo-400">{selectedForm?.name || "Select a form"}</span>
                 </p>
               </div>
 
@@ -853,7 +853,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                 <select
                   value={selectedFormId || ""}
                   onChange={(e) => setSelectedFormId(e.target.value)}
-                  className="bg-[#1e1f22] border border-[#35373c] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-discord-brand font-bold"
+                  className="bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white outline-none font-semibold cursor-pointer"
                 >
                   {forms.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -864,7 +864,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
 
                 <button
                   onClick={() => handleOpenQuestionModal()}
-                  className="flex items-center gap-2 px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl shadow-lg transition-all"
+                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
                 >
                   <Plus className="w-4 h-4" /> Add Question
                 </button>
@@ -873,16 +873,16 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
 
             <div className="space-y-3">
               {questions.map((q, idx) => (
-                <div key={q.id} className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-4 flex items-center justify-between">
+                <div key={q.id} className="bg-[#09090b] border border-[#1f1f23] rounded-2xl p-4 flex items-center justify-between shadow-lg">
                   <div className="flex items-center gap-4">
                     <div>
                       <h4 className="font-bold text-white text-sm">{q.label}</h4>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-discord-brand/20 text-discord-brand">{q.type}</span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">{q.type}</span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => handleOpenQuestionModal(q)} className="p-2 rounded-xl bg-[#1e1f22] text-zinc-300"><Edit className="w-4 h-4" /></button>
-                    <button onClick={() => handleDeleteQuestion(q.id)} className="p-2 rounded-xl bg-rose-500/10 text-rose-400"><Trash2 className="w-4 h-4" /></button>
+                    <button onClick={() => handleOpenQuestionModal(q)} className="p-2 rounded-xl bg-[#0d0d11] border border-[#27272a] text-zinc-300 hover:text-white cursor-pointer"><Edit className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteQuestion(q.id)} className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-600 hover:text-white cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               ))}

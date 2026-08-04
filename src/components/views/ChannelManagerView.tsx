@@ -155,33 +155,33 @@ export function ChannelManagerView({
   const renderChannelIcon = (type: number) => {
     switch (type) {
       case 0:
-        return <Hash className="w-4 h-4 text-discord-muted" />;
+        return <Hash className="w-4 h-4 text-indigo-400" />;
       case 2:
-        return <Volume2 className="w-4 h-4 text-discord-muted" />;
+        return <Volume2 className="w-4 h-4 text-indigo-400" />;
       case 4:
-        return <FolderTree className="w-4 h-4 text-discord-muted" />;
+        return <FolderTree className="w-4 h-4 text-indigo-400" />;
       case 15:
-        return <MessageSquare className="w-4 h-4 text-discord-muted" />;
+        return <MessageSquare className="w-4 h-4 text-indigo-400" />;
       default:
-        return <Hash className="w-4 h-4 text-discord-muted" />;
+        return <Hash className="w-4 h-4 text-indigo-400" />;
     }
   };
 
   const renderChannelRow = (ch: Channel) => (
     <div
       key={ch.id}
-      className="group flex items-center justify-between p-2.5 rounded-md bg-[#2b2d31] hover:bg-[#35373c] border border-[#35373c]/40 transition-colors"
+      className="group flex items-center justify-between p-3 rounded-xl bg-[#0d0d11] hover:bg-[#121218] border border-[#1f1f23] hover:border-indigo-500/30 transition-all shadow-sm"
     >
       <div className="flex items-center gap-2.5 min-w-0">
         {renderChannelIcon(ch.type)}
-        <span className="text-sm font-medium text-discord-header truncate">{ch.name}</span>
+        <span className="text-sm font-semibold text-zinc-200 truncate">{ch.name}</span>
         {ch.nsfw && (
           <span title="NSFW">
-            <Flame className="w-3.5 h-3.5 text-discord-red shrink-0" />
+            <Flame className="w-3.5 h-3.5 text-rose-400 shrink-0" />
           </span>
         )}
         {ch.slowmode ? (
-          <span className="flex items-center gap-1 text-[10px] bg-[#1e1f22] px-1.5 py-0.5 rounded text-discord-yellow">
+          <span className="flex items-center gap-1 text-[10px] bg-amber-500/10 border border-amber-500/20 px-2 py-0.5 rounded-full text-amber-300 font-mono">
             <Clock className="w-3 h-3" /> {ch.slowmode}s
           </span>
         ) : null}
@@ -191,21 +191,21 @@ export function ChannelManagerView({
         <button
           onClick={() => handleDuplicate(ch)}
           title="Duplicate Channel"
-          className="p-1 text-discord-muted hover:text-white hover:bg-[#1e1f22] rounded transition-colors"
+          className="p-1.5 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
         >
           <Copy className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => openEditModal(ch)}
           title="Channel Settings"
-          className="p-1 text-discord-muted hover:text-white hover:bg-[#1e1f22] rounded transition-colors"
+          className="p-1.5 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
         >
           <Settings className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => handleDelete(ch)}
           title="Delete Channel"
-          className="p-1 text-discord-muted hover:text-discord-red hover:bg-[#1e1f22] rounded transition-colors"
+          className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -218,15 +218,17 @@ export function ChannelManagerView({
       {/* Action Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-discord-header flex items-center gap-2">
-            <Hash className="w-6 h-6 text-discord-brand" />
+          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <Hash className="w-5 h-5" />
+            </div>
             Channel Manager
           </h2>
-          <p className="text-sm text-discord-muted">Create, edit, duplicate, and style channels with Discord symbols & aesthetic fonts.</p>
+          <p className="text-sm text-zinc-400 mt-0.5">Create, edit, duplicate, and style channels with Discord symbols & aesthetic fonts.</p>
         </div>
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg font-medium text-sm transition-colors shadow"
+          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Create Channel
         </button>
@@ -237,10 +239,10 @@ export function ChannelManagerView({
         {/* Uncategorized Channels */}
         {uncategorizedChannels.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-discord-muted px-1">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 px-1">
               Uncategorized Channels ({uncategorizedChannels.length})
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
               {uncategorizedChannels.map((ch) => renderChannelRow(ch))}
             </div>
           </div>
@@ -252,24 +254,24 @@ export function ChannelManagerView({
             .filter((c) => c.parentId === cat.id)
             .sort((a, b) => a.position - b.position);
           return (
-            <div key={cat.id} className="bg-[#1e1f22]/60 border border-[#35373c] rounded-xl p-4 space-y-3">
-              <div className="flex items-center justify-between border-b border-[#35373c]/60 pb-2">
-                <div className="flex items-center gap-2">
-                  <FolderTree className="w-4 h-4 text-discord-brand" />
-                  <span className="text-sm font-bold uppercase tracking-wider text-discord-header">{cat.name}</span>
-                  <span className="text-xs text-discord-muted">({childChannels.length} channels)</span>
+            <div key={cat.id} className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 space-y-3.5 shadow-lg transition-all">
+              <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
+                <div className="flex items-center gap-2.5">
+                  <FolderTree className="w-4 h-4 text-indigo-400" />
+                  <span className="text-sm font-bold uppercase tracking-wider text-white">{cat.name}</span>
+                  <span className="text-xs text-zinc-500 font-mono">({childChannels.length})</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEditModal(cat)}
-                    className="p-1 text-discord-muted hover:text-white rounded"
+                    className="p-1.5 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
                     title="Edit Category"
                   >
                     <Settings className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(cat)}
-                    className="p-1 text-discord-muted hover:text-discord-red rounded"
+                    className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
                     title="Delete Category"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
@@ -278,9 +280,9 @@ export function ChannelManagerView({
               </div>
 
               {childChannels.length === 0 ? (
-                <p className="text-xs text-discord-muted italic py-2">No channels inside this category.</p>
+                <p className="text-xs text-zinc-500 italic py-2">No channels inside this category.</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
                   {childChannels.map((ch) => renderChannelRow(ch))}
                 </div>
               )}
@@ -291,25 +293,25 @@ export function ChannelManagerView({
 
       {/* CREATE CHANNEL MODAL WITH FANCY STYLER */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#313338] border border-[#35373c] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="flex items-center justify-between p-4 border-b border-[#35373c]">
-              <h3 className="text-lg font-bold text-discord-header flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-discord-brand" /> Create Channel
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4">
+            <div className="flex items-center justify-between p-5 border-b border-[#1f1f23]">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-5 h-5 text-indigo-400" /> Create Channel
               </h3>
-              <button onClick={() => setIsCreateOpen(false)} className="text-discord-muted hover:text-white">
+              <button onClick={() => setIsCreateOpen(false)} className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-[#18181b]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCreateSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                   Channel Type
                 </label>
                 <select
                   value={newChannelType}
                   onChange={(e) => setNewChannelType(Number(e.target.value))}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl px-4 py-2.5 text-sm transition-all outline-none cursor-pointer"
                 >
                   <option value={0}>Text Channel (#)</option>
                   <option value={2}>Voice Channel (🔊)</option>
@@ -319,7 +321,7 @@ export function ChannelManagerView({
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                   Channel Name
                 </label>
                 <input
@@ -328,13 +330,13 @@ export function ChannelManagerView({
                   placeholder="e.g. 💬・general-chat"
                   value={newChannelName}
                   onChange={(e) => setNewChannelName(e.target.value)}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm font-semibold text-discord-header focus:outline-none focus:border-discord-brand"
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all outline-none"
                 />
               </div>
 
               {/* DISCORD SYMBOLS & DECORATION PRESETS */}
-              <div className="p-3 bg-[#1e1f22] border border-[#35373c] rounded-lg space-y-2">
-                <p className="text-xs font-bold text-discord-brand flex items-center gap-1.5">
+              <div className="p-4 bg-[#0d0d11] border border-[#1f1f23] rounded-xl space-y-2.5">
+                <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> Discord Channel Symbol Presets
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -343,18 +345,18 @@ export function ChannelManagerView({
                       key={sym.label}
                       type="button"
                       onClick={() => applySymbolToName(sym.prefix, setNewChannelName, newChannelName)}
-                      className="px-2 py-1 bg-[#2b2d31] hover:bg-discord-brand text-discord-header hover:text-white rounded text-xs transition-colors flex items-center gap-1 border border-[#35373c]"
+                      className="px-2.5 py-1 bg-[#18181b] hover:bg-indigo-600 text-zinc-300 hover:text-white rounded-lg text-xs transition-colors flex items-center gap-1 border border-[#27272a] cursor-pointer"
                     >
                       <span>{sym.prefix}</span>
-                      <span className="text-[10px] text-discord-muted">{sym.label}</span>
+                      <span className="text-[10px] text-zinc-500">{sym.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* DISCORD AESTHETIC FONT TRANSFORMERS */}
-              <div className="p-3 bg-[#1e1f22] border border-[#35373c] rounded-lg space-y-2">
-                <p className="text-xs font-bold text-discord-brand flex items-center gap-1.5">
+              <div className="p-4 bg-[#0d0d11] border border-[#1f1f23] rounded-xl space-y-2.5">
+                <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
                   <Type className="w-3.5 h-3.5" /> Aesthetic Font Styles
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -363,7 +365,7 @@ export function ChannelManagerView({
                       key={font.id}
                       type="button"
                       onClick={() => applyFontToName(font.id, setNewChannelName, newChannelName)}
-                      className="px-2.5 py-1 bg-[#2b2d31] hover:bg-discord-brand text-discord-header hover:text-white rounded text-xs transition-colors font-medium border border-[#35373c]"
+                      className="px-3 py-1 bg-[#18181b] hover:bg-indigo-600 text-zinc-300 hover:text-white rounded-lg text-xs transition-colors font-medium border border-[#27272a] cursor-pointer"
                     >
                       {font.sample}
                     </button>
@@ -373,13 +375,13 @@ export function ChannelManagerView({
 
               {newChannelType !== 4 && (
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                     Category Parent (Optional)
                   </label>
                   <select
                     value={newParentId}
                     onChange={(e) => setNewParentId(e.target.value)}
-                    className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl px-4 py-2.5 text-sm transition-all outline-none cursor-pointer"
                   >
                     <option value="">(No Category - Uncategorized)</option>
                     {categories.map((cat) => (
@@ -391,17 +393,17 @@ export function ChannelManagerView({
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#35373c]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-4 py-2 text-sm text-discord-muted hover:text-white"
+                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium shadow"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer"
                 >
                   Create Channel
                 </button>
@@ -413,19 +415,19 @@ export function ChannelManagerView({
 
       {/* EDIT CHANNEL MODAL WITH FANCY STYLER */}
       {isEditOpen && selectedChannel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#313338] border border-[#35373c] rounded-xl w-full max-w-lg shadow-2xl overflow-hidden animate-in zoom-in-95">
-            <div className="flex items-center justify-between p-4 border-b border-[#35373c]">
-              <h3 className="text-lg font-bold text-discord-header flex items-center gap-2">
-                <Settings className="w-5 h-5 text-discord-brand" /> Edit #{selectedChannel.name}
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4">
+            <div className="flex items-center justify-between p-5 border-b border-[#1f1f23]">
+              <h3 className="text-lg font-bold text-white flex items-center gap-2">
+                <Settings className="w-5 h-5 text-indigo-400" /> Edit #{selectedChannel.name}
               </h3>
-              <button onClick={() => setIsEditOpen(false)} className="text-discord-muted hover:text-white">
+              <button onClick={() => setIsEditOpen(false)} className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-[#18181b]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleEditSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                   Channel Name
                 </label>
                 <input
@@ -433,13 +435,13 @@ export function ChannelManagerView({
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm font-semibold text-discord-header focus:outline-none focus:border-discord-brand"
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all outline-none"
                 />
               </div>
 
               {/* DISCORD SYMBOLS & DECORATION PRESETS */}
-              <div className="p-3 bg-[#1e1f22] border border-[#35373c] rounded-lg space-y-2">
-                <p className="text-xs font-bold text-discord-brand flex items-center gap-1.5">
+              <div className="p-4 bg-[#0d0d11] border border-[#1f1f23] rounded-xl space-y-2.5">
+                <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> Symbol Presets
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -448,18 +450,18 @@ export function ChannelManagerView({
                       key={sym.label}
                       type="button"
                       onClick={() => applySymbolToName(sym.prefix, setEditName, editName)}
-                      className="px-2 py-1 bg-[#2b2d31] hover:bg-discord-brand text-discord-header hover:text-white rounded text-xs transition-colors flex items-center gap-1 border border-[#35373c]"
+                      className="px-2.5 py-1 bg-[#18181b] hover:bg-indigo-600 text-zinc-300 hover:text-white rounded-lg text-xs transition-colors flex items-center gap-1 border border-[#27272a] cursor-pointer"
                     >
                       <span>{sym.prefix}</span>
-                      <span className="text-[10px] text-discord-muted">{sym.label}</span>
+                      <span className="text-[10px] text-zinc-500">{sym.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* DISCORD AESTHETIC FONT TRANSFORMERS */}
-              <div className="p-3 bg-[#1e1f22] border border-[#35373c] rounded-lg space-y-2">
-                <p className="text-xs font-bold text-discord-brand flex items-center gap-1.5">
+              <div className="p-4 bg-[#0d0d11] border border-[#1f1f23] rounded-xl space-y-2.5">
+                <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
                   <Type className="w-3.5 h-3.5" /> Aesthetic Font Styles
                 </p>
                 <div className="flex flex-wrap gap-1.5">
@@ -468,7 +470,7 @@ export function ChannelManagerView({
                       key={font.id}
                       type="button"
                       onClick={() => applyFontToName(font.id, setEditName, editName)}
-                      className="px-2.5 py-1 bg-[#2b2d31] hover:bg-discord-brand text-discord-header hover:text-white rounded text-xs transition-colors font-medium border border-[#35373c]"
+                      className="px-3 py-1 bg-[#18181b] hover:bg-indigo-600 text-zinc-300 hover:text-white rounded-lg text-xs transition-colors font-medium border border-[#27272a] cursor-pointer"
                     >
                       {font.sample}
                     </button>
@@ -479,7 +481,7 @@ export function ChannelManagerView({
               {selectedChannel.type !== 4 && (
                 <>
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                       Topic
                     </label>
                     <textarea
@@ -487,18 +489,18 @@ export function ChannelManagerView({
                       placeholder="Channel topic..."
                       value={editTopic}
                       onChange={(e) => setEditTopic(e.target.value)}
-                      className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand resize-none"
+                      className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none resize-none"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                       Slowmode Cooldown
                     </label>
                     <select
                       value={editSlowmode}
                       onChange={(e) => setEditSlowmode(Number(e.target.value))}
-                      className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                      className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl px-4 py-2.5 text-sm transition-all outline-none cursor-pointer"
                     >
                       <option value={0}>Off</option>
                       <option value={5}>5 seconds</option>
@@ -512,27 +514,27 @@ export function ChannelManagerView({
                     </select>
                   </div>
 
-                  <div className="flex items-center justify-between p-3 bg-[#1e1f22] rounded-lg">
+                  <div className="flex items-center justify-between p-3.5 bg-[#0d0d11] border border-[#1f1f23] rounded-xl">
                     <div>
-                      <p className="text-sm font-semibold text-discord-header">NSFW Channel</p>
-                      <p className="text-xs text-discord-muted">Users must confirm age to view.</p>
+                      <p className="text-sm font-bold text-white">NSFW Channel</p>
+                      <p className="text-xs text-zinc-400">Users must confirm age to view.</p>
                     </div>
                     <input
                       type="checkbox"
                       checked={editNsfw}
                       onChange={(e) => setEditNsfw(e.target.checked)}
-                      className="w-5 h-5 accent-discord-brand rounded cursor-pointer"
+                      className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
                     />
                   </div>
 
                   <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                       Category Parent
                     </label>
                     <select
                       value={editParentId || ""}
                       onChange={(e) => setEditParentId(e.target.value || null)}
-                      className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                      className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl px-4 py-2.5 text-sm transition-all outline-none cursor-pointer"
                     >
                       <option value="">(No Category - Uncategorized)</option>
                       {categories.map((cat) => (
@@ -545,17 +547,17 @@ export function ChannelManagerView({
                 </>
               )}
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#35373c]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
                 <button
                   type="button"
                   onClick={() => setIsEditOpen(false)}
-                  className="px-4 py-2 text-sm text-discord-muted hover:text-white"
+                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium shadow"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer"
                 >
                   Save Changes
                 </button>

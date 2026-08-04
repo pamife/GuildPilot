@@ -32,29 +32,30 @@ export function OverviewView({ guildDetails, onRefresh, onNavigate }: OverviewPr
   return (
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
       {/* Header Banner Card */}
-      <div className="relative rounded-xl bg-gradient-to-r from-[#2b2d31] to-[#1e1f22] border border-[#35373c] overflow-hidden p-6 shadow-lg">
+      <div className="bg-[#09090b]/80 border border-[#1f1f23] rounded-2xl p-6 relative overflow-hidden backdrop-blur-xl shadow-xl">
+        <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 via-purple-500/10 to-pink-500/10 pointer-events-none" />
         {banner && (
-          <img src={banner} alt="Banner" className="absolute inset-0 w-full h-full object-cover opacity-20" />
+          <img src={banner} alt="Banner" className="absolute inset-0 w-full h-full object-cover opacity-15" />
         )}
         <div className="relative z-10 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             {icon ? (
-              <img src={icon} alt={name} className="w-16 h-16 rounded-2xl object-cover ring-4 ring-discord-dark" />
+              <img src={icon} alt={name} className="w-16 h-16 rounded-2xl object-cover ring-2 ring-indigo-500/30 shadow-lg" />
             ) : (
-              <div className="w-16 h-16 rounded-2xl bg-discord-brand flex items-center justify-center font-bold text-white text-2xl ring-4 ring-discord-dark shadow-md">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center font-bold text-white text-2xl shadow-lg ring-2 ring-indigo-500/30">
                 {name.substring(0, 2).toUpperCase()}
               </div>
             )}
             <div>
-              <h1 className="text-2xl font-bold text-discord-header">{name}</h1>
-              <p className="text-sm text-discord-muted mt-1 max-w-xl">
+              <h1 className="text-2xl font-bold text-white tracking-tight">{name}</h1>
+              <p className="text-sm text-zinc-400 mt-1 max-w-xl">
                 {description || "No description configured for this Discord server."}
               </p>
             </div>
           </div>
           <button
             onClick={onRefresh}
-            className="flex items-center gap-2 px-4 py-2 rounded-lg bg-[#35373c] hover:bg-discord-brand text-discord-header text-sm font-medium transition-colors shadow"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-semibold transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
           >
             <RefreshCw className="w-4 h-4" />
             Refresh Stats
@@ -70,13 +71,16 @@ export function OverviewView({ guildDetails, onRefresh, onNavigate }: OverviewPr
             <div
               key={i}
               onClick={() => onNavigate(card.view)}
-              className={`cursor-pointer bg-gradient-to-br ${card.color} backdrop-blur-sm border rounded-xl p-4 transition-all duration-200 hover:scale-[1.02] hover:shadow-xl`}
+              className="cursor-pointer bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/40 rounded-2xl p-5 transition-all duration-200 hover:-translate-y-0.5 shadow-lg group relative overflow-hidden"
             >
+              <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-indigo-500/10 to-transparent rounded-bl-full pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold uppercase tracking-wider text-discord-muted">{card.label}</span>
-                <Icon className="w-5 h-5 text-discord-header opacity-80" />
+                <span className="text-xs font-semibold uppercase tracking-wider text-zinc-400">{card.label}</span>
+                <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:scale-110 transition-transform">
+                  <Icon className="w-5 h-5" />
+                </div>
               </div>
-              <p className="text-3xl font-extrabold text-white mt-3 font-mono">{card.count}</p>
+              <p className="text-3xl font-extrabold text-white mt-3 font-mono tracking-tight">{card.count}</p>
             </div>
           );
         })}
@@ -85,52 +89,56 @@ export function OverviewView({ guildDetails, onRefresh, onNavigate }: OverviewPr
       {/* Channel Breakdown & Bot Status Row */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Channel Type Breakdown */}
-        <div className="lg:col-span-2 bg-[#2b2d31] border border-[#35373c] rounded-xl p-5 shadow">
-          <h3 className="text-base font-semibold text-discord-header mb-4 flex items-center gap-2">
-            <Hash className="w-5 h-5 text-discord-brand" />
+        <div className="lg:col-span-2 bg-[#09090b] border border-[#1f1f23] rounded-2xl p-6 shadow-lg">
+          <h3 className="text-base font-bold text-white mb-4 flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <Hash className="w-5 h-5" />
+            </div>
             Channel Architecture Breakdown
           </h3>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="p-3 bg-[#1e1f22] rounded-lg border border-[#35373c]/50">
-              <p className="text-xs text-discord-muted">Text Channels</p>
-              <p className="text-xl font-bold text-discord-header mt-1">{counts?.textChannels || 0}</p>
+            <div className="p-4 bg-[#0d0d11] rounded-xl border border-[#1f1f23]">
+              <p className="text-xs text-zinc-400 font-medium">Text Channels</p>
+              <p className="text-2xl font-bold text-white mt-1 font-mono">{counts?.textChannels || 0}</p>
             </div>
-            <div className="p-3 bg-[#1e1f22] rounded-lg border border-[#35373c]/50">
-              <p className="text-xs text-discord-muted">Voice Channels</p>
-              <p className="text-xl font-bold text-discord-header mt-1">{counts?.voiceChannels || 0}</p>
+            <div className="p-4 bg-[#0d0d11] rounded-xl border border-[#1f1f23]">
+              <p className="text-xs text-zinc-400 font-medium">Voice Channels</p>
+              <p className="text-2xl font-bold text-white mt-1 font-mono">{counts?.voiceChannels || 0}</p>
             </div>
-            <div className="p-3 bg-[#1e1f22] rounded-lg border border-[#35373c]/50">
-              <p className="text-xs text-discord-muted">Categories</p>
-              <p className="text-xl font-bold text-discord-header mt-1">{counts?.categoryChannels || 0}</p>
+            <div className="p-4 bg-[#0d0d11] rounded-xl border border-[#1f1f23]">
+              <p className="text-xs text-zinc-400 font-medium">Categories</p>
+              <p className="text-2xl font-bold text-white mt-1 font-mono">{counts?.categoryChannels || 0}</p>
             </div>
-            <div className="p-3 bg-[#1e1f22] rounded-lg border border-[#35373c]/50">
-              <p className="text-xs text-discord-muted">Forum Channels</p>
-              <p className="text-xl font-bold text-discord-header mt-1">{counts?.forumChannels || 0}</p>
+            <div className="p-4 bg-[#0d0d11] rounded-xl border border-[#1f1f23]">
+              <p className="text-xs text-zinc-400 font-medium">Forum Channels</p>
+              <p className="text-2xl font-bold text-white mt-1 font-mono">{counts?.forumChannels || 0}</p>
             </div>
           </div>
         </div>
 
         {/* Bot Local Diagnostics */}
-        <div className="bg-[#2b2d31] border border-[#35373c] rounded-xl p-5 shadow space-y-4">
-          <h3 className="text-base font-semibold text-discord-header flex items-center gap-2">
-            <Cpu className="w-5 h-5 text-discord-green" />
+        <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl p-6 shadow-lg space-y-4">
+          <h3 className="text-base font-bold text-white flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+              <Cpu className="w-5 h-5" />
+            </div>
             Bot Runtime Diagnostics
           </h3>
           <div className="space-y-3 text-sm">
-            <div className="flex items-center justify-between p-2.5 bg-[#1e1f22] rounded-lg">
-              <span className="text-discord-muted">Connection Status</span>
-              <span className="flex items-center gap-1.5 font-semibold text-discord-green">
+            <div className="flex items-center justify-between p-3 bg-[#0d0d11] rounded-xl border border-[#1f1f23]">
+              <span className="text-zinc-400">Connection Status</span>
+              <span className="flex items-center gap-1.5 font-semibold text-emerald-400 px-2.5 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-xs">
                 <Radio className="w-3.5 h-3.5 animate-pulse" />
                 {botStatus?.ready ? "Connected" : "Disconnected"}
               </span>
             </div>
-            <div className="flex items-center justify-between p-2.5 bg-[#1e1f22] rounded-lg">
-              <span className="text-discord-muted">Gateway Latency</span>
-              <span className="font-mono font-medium text-discord-header">{botStatus?.ping || 0} ms</span>
+            <div className="flex items-center justify-between p-3 bg-[#0d0d11] rounded-xl border border-[#1f1f23]">
+              <span className="text-zinc-400">Gateway Latency</span>
+              <span className="font-mono font-bold text-white">{botStatus?.ping || 0} ms</span>
             </div>
-            <div className="flex items-center justify-between p-2.5 bg-[#1e1f22] rounded-lg">
-              <span className="text-discord-muted">Mode</span>
-              <span className="font-semibold text-discord-brand">Local-Only (Single Owner)</span>
+            <div className="flex items-center justify-between p-3 bg-[#0d0d11] rounded-xl border border-[#1f1f23]">
+              <span className="text-zinc-400">Mode</span>
+              <span className="font-semibold text-indigo-400 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/20 text-xs">Local-Only (Owner)</span>
             </div>
           </div>
         </div>

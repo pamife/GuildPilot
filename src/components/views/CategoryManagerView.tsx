@@ -90,15 +90,17 @@ export function CategoryManagerView({
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-discord-header flex items-center gap-2">
-            <FolderTree className="w-6 h-6 text-discord-brand" />
+          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <FolderTree className="w-5 h-5" />
+            </div>
             Category Manager
           </h2>
-          <p className="text-sm text-discord-muted">Organize categories and move channels between them.</p>
+          <p className="text-sm text-zinc-400 mt-0.5">Organize categories and move channels between them.</p>
         </div>
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg font-medium text-sm transition-colors shadow"
+          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Create Category
         </button>
@@ -109,11 +111,11 @@ export function CategoryManagerView({
         {categories.map((cat) => {
           const childChannels = channels.filter((c) => c.parentId === cat.id);
           return (
-            <div key={cat.id} className="bg-[#2b2d31] border border-[#35373c] rounded-xl p-5 shadow space-y-4">
-              <div className="flex items-center justify-between border-b border-[#35373c]/60 pb-3">
+            <div key={cat.id} className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 shadow-lg space-y-4 transition-all">
+              <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
                 <div className="flex items-center gap-2.5">
-                  <FolderTree className="w-5 h-5 text-discord-brand" />
-                  <span className="text-base font-bold text-discord-header uppercase">{cat.name}</span>
+                  <FolderTree className="w-5 h-5 text-indigo-400" />
+                  <span className="text-base font-bold text-white uppercase tracking-wider">{cat.name}</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
@@ -121,14 +123,14 @@ export function CategoryManagerView({
                       setEditingCategory(cat);
                       setRenameName(cat.name);
                     }}
-                    className="p-1.5 text-discord-muted hover:text-white hover:bg-[#1e1f22] rounded transition-colors"
+                    className="p-1.5 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
                     title="Rename Category"
                   >
                     <Edit2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={() => handleDelete(cat)}
-                    className="p-1.5 text-discord-muted hover:text-discord-red hover:bg-[#1e1f22] rounded transition-colors"
+                    className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
                     title="Delete Category"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -137,26 +139,26 @@ export function CategoryManagerView({
               </div>
 
               <div className="space-y-2">
-                <p className="text-xs font-semibold text-discord-muted uppercase">Channels ({childChannels.length})</p>
+                <p className="text-xs font-bold text-zinc-400 uppercase tracking-wider">Channels ({childChannels.length})</p>
                 {childChannels.length === 0 ? (
-                  <p className="text-xs text-discord-muted italic">No channels in this category.</p>
+                  <p className="text-xs text-zinc-500 italic py-2">No channels in this category.</p>
                 ) : (
                   <div className="space-y-1.5">
                     {childChannels.map((ch) => (
                       <div
                         key={ch.id}
-                        className="flex items-center justify-between p-2 rounded bg-[#1e1f22] border border-[#35373c]/40 text-xs"
+                        className="flex items-center justify-between p-3 rounded-xl bg-[#0d0d11] border border-[#1f1f23] text-xs hover:border-[#27272a] transition-all"
                       >
                         <div className="flex items-center gap-2">
-                          <Hash className="w-3.5 h-3.5 text-discord-muted" />
-                          <span className="font-medium text-discord-header">{ch.name}</span>
+                          <Hash className="w-4 h-4 text-zinc-500" />
+                          <span className="font-semibold text-zinc-200">{ch.name}</span>
                         </div>
                         <button
                           onClick={() => {
                             setMovingChannel(ch);
                             setTargetCategory(ch.parentId || "");
                           }}
-                          className="flex items-center gap-1 text-[11px] text-discord-brand hover:underline font-medium"
+                          className="flex items-center gap-1 text-[11px] text-indigo-400 hover:text-indigo-300 font-semibold cursor-pointer"
                         >
                           Move <ArrowRight className="w-3 h-3" />
                         </button>
@@ -172,17 +174,17 @@ export function CategoryManagerView({
 
       {/* CREATE CATEGORY MODAL */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#313338] border border-[#35373c] rounded-xl w-full max-w-md p-5 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-discord-header">New Category</h3>
-              <button onClick={() => setIsCreateOpen(false)} className="text-discord-muted hover:text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
+              <h3 className="text-lg font-bold text-white">New Category</h3>
+              <button onClick={() => setIsCreateOpen(false)} className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#18181b]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                   Category Name
                 </label>
                 <input
@@ -191,20 +193,20 @@ export function CategoryManagerView({
                   placeholder="e.g. TEXT CHANNELS"
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
                 />
               </div>
               <div className="flex items-center justify-end gap-3 pt-3">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-4 py-2 text-sm text-discord-muted hover:text-white"
+                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20"
                 >
                   Create Category
                 </button>
@@ -216,17 +218,17 @@ export function CategoryManagerView({
 
       {/* RENAME CATEGORY MODAL */}
       {editingCategory && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#313338] border border-[#35373c] rounded-xl w-full max-w-md p-5 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-discord-header">Rename Category</h3>
-              <button onClick={() => setEditingCategory(null)} className="text-discord-muted hover:text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
+              <h3 className="text-lg font-bold text-white">Rename Category</h3>
+              <button onClick={() => setEditingCategory(null)} className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#18181b]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleRename} className="space-y-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                   New Category Name
                 </label>
                 <input
@@ -234,20 +236,20 @@ export function CategoryManagerView({
                   required
                   value={renameName}
                   onChange={(e) => setRenameName(e.target.value)}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
                 />
               </div>
               <div className="flex items-center justify-end gap-3 pt-3">
                 <button
                   type="button"
                   onClick={() => setEditingCategory(null)}
-                  className="px-4 py-2 text-sm text-discord-muted hover:text-white"
+                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20"
                 >
                   Save Name
                 </button>
@@ -259,23 +261,23 @@ export function CategoryManagerView({
 
       {/* MOVE CHANNEL MODAL */}
       {movingChannel && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#313338] border border-[#35373c] rounded-xl w-full max-w-md p-5 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-discord-header">Move #{movingChannel.name}</h3>
-              <button onClick={() => setMovingChannel(null)} className="text-discord-muted hover:text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
+              <h3 className="text-lg font-bold text-white">Move #{movingChannel.name}</h3>
+              <button onClick={() => setMovingChannel(null)} className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#18181b]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleMoveSubmit} className="space-y-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                   Target Category
                 </label>
                 <select
                   value={targetCategory}
                   onChange={(e) => setTargetCategory(e.target.value)}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl px-4 py-2.5 text-sm transition-all outline-none cursor-pointer"
                 >
                   <option value="">(Uncategorized)</option>
                   {categories.map((cat) => (
@@ -289,13 +291,13 @@ export function CategoryManagerView({
                 <button
                   type="button"
                   onClick={() => setMovingChannel(null)}
-                  className="px-4 py-2 text-sm text-discord-muted hover:text-white"
+                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20"
                 >
                   Move Channel
                 </button>

@@ -158,34 +158,36 @@ export function RoleManagerView({
     <div className="flex-1 overflow-y-auto p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-xl font-bold text-discord-header flex items-center gap-2">
-            <Shield className="w-6 h-6 text-discord-brand" />
+          <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
+            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+              <Shield className="w-5 h-5" />
+            </div>
             Role Manager
           </h2>
-          <p className="text-sm text-discord-muted">Create roles, customize colors, toggle permissions, and reorder hierarchy.</p>
+          <p className="text-sm text-zinc-400 mt-0.5">Create roles, customize colors, toggle permissions, and reorder hierarchy.</p>
         </div>
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="flex items-center gap-2 px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg font-medium text-sm transition-colors shadow"
+          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
         >
           <Plus className="w-4 h-4" /> Create Role
         </button>
       </div>
 
       {/* Role List */}
-      <div className="bg-[#2b2d31] border border-[#35373c] rounded-xl overflow-hidden shadow">
-        <div className="grid grid-cols-12 p-3 bg-[#1e1f22] text-xs font-bold uppercase tracking-wider text-discord-muted border-b border-[#35373c]">
+      <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg">
+        <div className="grid grid-cols-12 p-3.5 bg-[#0d0d11] text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-[#1f1f23]">
           <div className="col-span-5 flex items-center gap-2">Role Name</div>
           <div className="col-span-3">Members</div>
           <div className="col-span-2">Hierarchy</div>
           <div className="col-span-2 text-right">Actions</div>
         </div>
 
-        <div className="divide-y divide-[#35373c]/50">
+        <div className="divide-y divide-[#1f1f23]">
           {sortedRoles.map((role, idx) => (
             <div
               key={role.id}
-              className="grid grid-cols-12 p-3 items-center hover:bg-[#35373c]/40 transition-colors text-sm"
+              className="grid grid-cols-12 p-3.5 items-center hover:bg-[#0d0d11] transition-colors text-sm"
             >
               {/* Role Name & Color */}
               <div className="col-span-5 flex items-center gap-3">
@@ -193,15 +195,15 @@ export function RoleManagerView({
                   className="w-4 h-4 rounded-full border border-white/20 shrink-0 shadow-sm"
                   style={{ backgroundColor: role.color === "#000000" ? "#99aab5" : role.color }}
                 />
-                <span className="font-semibold text-discord-header truncate">
+                <span className="font-semibold text-zinc-200 truncate flex items-center gap-2">
                   {role.name}
-                  {role.managed && <span className="ml-2 text-[10px] bg-[#1e1f22] px-1.5 py-0.5 rounded text-discord-muted">MANAGED</span>}
+                  {role.managed && <span className="text-[10px] bg-indigo-500/10 border border-indigo-500/20 px-2 py-0.5 rounded-full text-indigo-400 font-mono">MANAGED</span>}
                 </span>
               </div>
 
               {/* Member count */}
-              <div className="col-span-3 text-discord-muted text-xs flex items-center gap-1.5">
-                <Users className="w-3.5 h-3.5" />
+              <div className="col-span-3 text-zinc-400 text-xs flex items-center gap-1.5 font-medium">
+                <Users className="w-3.5 h-3.5 text-zinc-500" />
                 {role.memberCount} members
               </div>
 
@@ -210,24 +212,24 @@ export function RoleManagerView({
                 <button
                   disabled={idx === 0 || role.name === "@everyone"}
                   onClick={() => handleMove(role, "up")}
-                  className="p-1 text-discord-muted hover:text-white disabled:opacity-30 disabled:hover:text-discord-muted"
+                  className="p-1.5 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-lg disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer"
                 >
                   <ArrowUp className="w-4 h-4" />
                 </button>
                 <button
                   disabled={idx === sortedRoles.length - 1 || role.name === "@everyone"}
                   onClick={() => handleMove(role, "down")}
-                  className="p-1 text-discord-muted hover:text-white disabled:opacity-30 disabled:hover:text-discord-muted"
+                  className="p-1.5 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-lg disabled:opacity-20 disabled:hover:bg-transparent cursor-pointer"
                 >
                   <ArrowDown className="w-4 h-4" />
                 </button>
               </div>
 
               {/* Actions */}
-              <div className="col-span-2 flex items-center justify-end gap-2">
+              <div className="col-span-2 flex items-center justify-end gap-1.5">
                 <button
                   onClick={() => openEditModal(role)}
-                  className="p-1.5 text-discord-muted hover:text-white hover:bg-[#1e1f22] rounded transition-colors"
+                  className="p-1.5 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
                   title="Edit Role & Permissions"
                 >
                   <Edit2 className="w-4 h-4" />
@@ -235,7 +237,7 @@ export function RoleManagerView({
                 {role.name !== "@everyone" && !role.managed && (
                   <button
                     onClick={() => handleDelete(role)}
-                    className="p-1.5 text-discord-muted hover:text-discord-red hover:bg-[#1e1f22] rounded transition-colors"
+                    className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
                     title="Delete Role"
                   >
                     <Trash2 className="w-4 h-4" />
@@ -249,17 +251,17 @@ export function RoleManagerView({
 
       {/* CREATE ROLE MODAL */}
       {isCreateOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#313338] border border-[#35373c] rounded-xl w-full max-w-md p-5 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-bold text-discord-header">Create Role</h3>
-              <button onClick={() => setIsCreateOpen(false)} className="text-discord-muted hover:text-white">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
+              <h3 className="text-lg font-bold text-white">Create Role</h3>
+              <button onClick={() => setIsCreateOpen(false)} className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#18181b]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                   Role Name
                 </label>
                 <input
@@ -268,57 +270,57 @@ export function RoleManagerView({
                   placeholder="e.g. Moderator"
                   value={newRoleName}
                   onChange={(e) => setNewRoleName(e.target.value)}
-                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1 flex items-center gap-2">
-                  <Palette className="w-3.5 h-3.5" /> Role Color
+                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5 flex items-center gap-2">
+                  <Palette className="w-3.5 h-3.5 text-indigo-400" /> Role Color
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 bg-[#0d0d11] border border-[#27272a] p-2.5 rounded-xl">
                   <input
                     type="color"
                     value={newRoleColor}
                     onChange={(e) => setNewRoleColor(e.target.value)}
-                    className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent"
+                    className="w-8 h-8 rounded-lg cursor-pointer border-0 bg-transparent"
                   />
-                  <span className="font-mono text-sm text-discord-header uppercase">{newRoleColor}</span>
+                  <span className="font-mono text-sm text-zinc-200 font-bold uppercase">{newRoleColor}</span>
                 </div>
               </div>
 
               <div className="space-y-3 pt-2">
-                <div className="flex items-center justify-between p-3 bg-[#1e1f22] rounded-lg">
-                  <span className="text-sm text-discord-header font-medium">Display separately (Hoist)</span>
+                <div className="flex items-center justify-between p-3.5 bg-[#0d0d11] border border-[#1f1f23] rounded-xl">
+                  <span className="text-sm text-zinc-200 font-semibold">Display separately (Hoist)</span>
                   <input
                     type="checkbox"
                     checked={newRoleHoist}
                     onChange={(e) => setNewRoleHoist(e.target.checked)}
-                    className="w-4 h-4 accent-discord-brand cursor-pointer"
+                    className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
                   />
                 </div>
-                <div className="flex items-center justify-between p-3 bg-[#1e1f22] rounded-lg">
-                  <span className="text-sm text-discord-header font-medium">Allow anyone to @mention</span>
+                <div className="flex items-center justify-between p-3.5 bg-[#0d0d11] border border-[#1f1f23] rounded-xl">
+                  <span className="text-sm text-zinc-200 font-semibold">Allow anyone to @mention</span>
                   <input
                     type="checkbox"
                     checked={newRoleMentionable}
                     onChange={(e) => setNewRoleMentionable(e.target.checked)}
-                    className="w-4 h-4 accent-discord-brand cursor-pointer"
+                    className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-3 border-t border-[#35373c]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-4 py-2 text-sm text-discord-muted hover:text-white"
+                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer"
                 >
                   Create Role
                 </button>
@@ -330,26 +332,26 @@ export function RoleManagerView({
 
       {/* EDIT ROLE & PERMISSIONS MODAL */}
       {editingRole && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
-          <div className="bg-[#313338] border border-[#35373c] rounded-xl w-full max-w-2xl max-h-[85vh] shadow-2xl flex flex-col overflow-hidden">
-            <div className="flex items-center justify-between p-4 border-b border-[#35373c] bg-[#2b2d31]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
+          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-2xl max-h-[85vh] shadow-2xl flex flex-col overflow-hidden">
+            <div className="flex items-center justify-between p-5 border-b border-[#1f1f23] bg-[#09090b]">
               <div className="flex items-center gap-3">
                 <div
-                  className="w-5 h-5 rounded-full"
+                  className="w-5 h-5 rounded-full ring-2 ring-white/20 shadow-md"
                   style={{ backgroundColor: editColor }}
                 />
-                <h3 className="text-lg font-bold text-discord-header">Edit Role: @{editingRole.name}</h3>
+                <h3 className="text-lg font-bold text-white">Edit Role: @{editingRole.name}</h3>
               </div>
-              <button onClick={() => setEditingRole(null)} className="text-discord-muted hover:text-white">
+              <button onClick={() => setEditingRole(null)} className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#18181b]">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto p-5 space-y-6">
+            <form onSubmit={handleEditSubmit} className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Basic Settings */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                     Role Name
                   </label>
                   <input
@@ -357,50 +359,50 @@ export function RoleManagerView({
                     required
                     value={editName}
                     onChange={(e) => setEditName(e.target.value)}
-                    className="w-full bg-[#1e1f22] border border-[#35373c] rounded-lg p-2.5 text-sm text-discord-header focus:outline-none focus:border-discord-brand"
+                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-discord-muted block mb-1">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
                     Role Color
                   </label>
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 bg-[#0d0d11] border border-[#27272a] p-2 rounded-xl">
                     <input
                       type="color"
                       value={editColor}
                       onChange={(e) => setEditColor(e.target.value)}
-                      className="w-10 h-10 rounded cursor-pointer border-0 bg-transparent"
+                      className="w-8 h-8 rounded-lg cursor-pointer border-0 bg-transparent"
                     />
-                    <span className="font-mono text-sm text-discord-header uppercase">{editColor}</span>
+                    <span className="font-mono text-sm text-zinc-200 font-bold uppercase">{editColor}</span>
                   </div>
                 </div>
               </div>
 
               {/* Toggles */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="flex items-center justify-between p-3 bg-[#1e1f22] rounded-lg">
-                  <span className="text-xs font-semibold text-discord-header">Display separately (Hoist)</span>
+                <div className="flex items-center justify-between p-3.5 bg-[#0d0d11] border border-[#1f1f23] rounded-xl">
+                  <span className="text-xs font-semibold text-zinc-200">Display separately (Hoist)</span>
                   <input
                     type="checkbox"
                     checked={editHoist}
                     onChange={(e) => setEditHoist(e.target.checked)}
-                    className="w-4 h-4 accent-discord-brand cursor-pointer"
+                    className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
                   />
                 </div>
-                <div className="flex items-center justify-between p-3 bg-[#1e1f22] rounded-lg">
-                  <span className="text-xs font-semibold text-discord-header">Allow @mention</span>
+                <div className="flex items-center justify-between p-3.5 bg-[#0d0d11] border border-[#1f1f23] rounded-xl">
+                  <span className="text-xs font-semibold text-zinc-200">Allow @mention</span>
                   <input
                     type="checkbox"
                     checked={editMentionable}
                     onChange={(e) => setEditMentionable(e.target.checked)}
-                    className="w-4 h-4 accent-discord-brand cursor-pointer"
+                    className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
                   />
                 </div>
               </div>
 
               {/* Permission Bitfield Matrix */}
               <div className="space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-discord-muted border-b border-[#35373c] pb-2">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 border-b border-[#1f1f23] pb-2">
                   Permissions Matrix
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -410,19 +412,19 @@ export function RoleManagerView({
                       <div
                         key={perm.name}
                         onClick={() => togglePermissionFlag(perm.flag)}
-                        className={`cursor-pointer p-3 rounded-lg border transition-colors flex items-start justify-between gap-3 ${
+                        className={`cursor-pointer p-3.5 rounded-xl border transition-all flex items-start justify-between gap-3 ${
                           isEnabled
-                            ? "bg-discord-brand/10 border-discord-brand/50 text-discord-header"
-                            : "bg-[#1e1f22] border-[#35373c] text-discord-muted"
+                            ? "bg-indigo-500/10 border-indigo-500/40 text-white"
+                            : "bg-[#0d0d11] border-[#1f1f23] text-zinc-400 hover:border-[#27272a]"
                         }`}
                       >
                         <div>
-                          <p className="text-xs font-bold text-discord-header">{perm.name}</p>
-                          <p className="text-[11px] text-discord-muted mt-0.5">{perm.desc}</p>
+                          <p className="text-xs font-bold text-white">{perm.name}</p>
+                          <p className="text-[11px] text-zinc-400 mt-0.5">{perm.desc}</p>
                         </div>
                         <div
-                          className={`w-5 h-5 rounded flex items-center justify-center shrink-0 mt-0.5 ${
-                            isEnabled ? "bg-discord-brand text-white" : "border border-[#35373c]"
+                          className={`w-5 h-5 rounded-lg flex items-center justify-center shrink-0 mt-0.5 ${
+                            isEnabled ? "bg-indigo-600 text-white" : "border border-[#27272a]"
                           }`}
                         >
                           {isEnabled && <Check className="w-3.5 h-3.5" />}
@@ -433,17 +435,17 @@ export function RoleManagerView({
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#35373c] sticky bottom-0 bg-[#313338]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23] sticky bottom-0 bg-[#0a0a0e] py-2">
                 <button
                   type="button"
                   onClick={() => setEditingRole(null)}
-                  className="px-4 py-2 text-sm text-discord-muted hover:text-white"
+                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white rounded-lg text-sm font-medium"
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer"
                 >
                   Save Changes
                 </button>

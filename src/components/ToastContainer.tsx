@@ -42,23 +42,23 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-lg shadow-xl border text-sm font-medium transition-all duration-200 animate-in slide-in-from-bottom-2 ${
+            className={`pointer-events-auto flex items-center justify-between gap-3 p-4 rounded-xl shadow-2xl border text-sm font-medium transition-all duration-200 animate-in slide-in-from-bottom-2 backdrop-blur-xl ${
               toast.type === "success"
-                ? "bg-[#2b2d31] border-discord-green/40 text-discord-header"
+                ? "bg-[#09090b]/95 border-emerald-500/30 text-emerald-200"
                 : toast.type === "error"
-                ? "bg-[#2b2d31] border-discord-red/40 text-discord-red"
-                : "bg-[#2b2d31] border-discord-brand/40 text-discord-text"
+                ? "bg-[#09090b]/95 border-rose-500/30 text-rose-200"
+                : "bg-[#09090b]/95 border-indigo-500/30 text-indigo-200"
             }`}
           >
             <div className="flex items-center gap-3">
-              {toast.type === "success" && <CheckCircle2 className="w-5 h-5 text-discord-green shrink-0" />}
-              {toast.type === "error" && <AlertCircle className="w-5 h-5 text-discord-red shrink-0" />}
-              {toast.type === "info" && <Info className="w-5 h-5 text-discord-brand shrink-0" />}
+              {toast.type === "success" && <CheckCircle2 className="w-5 h-5 text-emerald-400 shrink-0" />}
+              {toast.type === "error" && <AlertCircle className="w-5 h-5 text-rose-400 shrink-0" />}
+              {toast.type === "info" && <Info className="w-5 h-5 text-indigo-400 shrink-0" />}
               <span>{toast.message}</span>
             </div>
             <button
               onClick={() => removeToast(toast.id)}
-              className="text-discord-muted hover:text-white transition-colors"
+              className="text-zinc-500 hover:text-white transition-colors p-1 rounded-lg hover:bg-zinc-800/50"
             >
               <X className="w-4 h-4" />
             </button>

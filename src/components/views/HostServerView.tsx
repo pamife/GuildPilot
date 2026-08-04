@@ -264,19 +264,19 @@ export function HostServerView() {
                 Live Host Telemetry
               </span>
             </h1>
-            <p className="text-xs text-discord-muted mt-0.5">
+            <p className="text-xs text-zinc-400 mt-0.5">
               {metrics?.static?.distro} {metrics?.static?.release} ({metrics?.static?.arch}) • Kernel {metrics?.static?.kernel}
             </p>
           </div>
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#18191c] border border-[#35373c] text-xs text-discord-muted">
-            <Clock className="w-4 h-4 text-discord-brand" />
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0d0d11] border border-[#1f1f23] text-xs text-zinc-400">
+            <Clock className="w-4 h-4 text-indigo-400" />
             <span>Uptime: <strong className="text-white font-mono">{formatUptime(metrics?.uptime)}</strong></span>
           </div>
 
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#18191c] border border-[#35373c] text-xs text-discord-muted" title="Automatischer stündlicher System-Neustart (60 Min Reload)">
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0d0d11] border border-[#1f1f23] text-xs text-zinc-400" title="Automatischer stündlicher System-Neustart (60 Min Reload)">
             <RotateCcw className="w-4 h-4 text-sky-400" />
             <span>Auto-Neustart: <strong className="text-white font-mono">in {hourlyRestartInfo?.minutesRemaining ?? "--"} Min</strong></span>
           </div>
@@ -285,15 +285,15 @@ export function HostServerView() {
             onClick={handleRestartNow}
             disabled={restartingNow}
             title="Sofortigen kompletten System-Neustart durchführen"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-discord-red/10 hover:bg-discord-red/20 border border-discord-red/30 text-discord-red font-semibold text-xs transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 text-rose-400 font-semibold text-xs transition-all disabled:opacity-50 cursor-pointer"
           >
             <RotateCcw className={`w-3.5 h-3.5 ${restartingNow ? "animate-spin" : ""}`} />
             <span>{restartingNow ? "Neustart..." : "Jetzt neu starten"}</span>
           </button>
 
           {metrics?.battery?.hasBattery && (
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#18191c] border border-[#35373c] text-xs text-discord-muted">
-              <Zap className={`w-4 h-4 ${metrics.battery.isCharging ? "text-discord-green animate-pulse" : "text-amber-400"}`} />
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#0d0d11] border border-[#1f1f23] text-xs text-zinc-400">
+              <Zap className={`w-4 h-4 ${metrics.battery.isCharging ? "text-emerald-400 animate-pulse" : "text-amber-400"}`} />
               <span className="text-white font-medium">{metrics.battery.percent}% {metrics.battery.isCharging ? "⚡" : ""}</span>
             </div>
           )}
@@ -303,27 +303,27 @@ export function HostServerView() {
       {/* Main Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* CPU Card */}
-        <div className="p-4 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-3">
+        <div className="p-5 rounded-2xl bg-[#09090b] border border-[#1f1f23] space-y-3.5 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-sky-500/10 text-sky-400">
+              <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
                 <Cpu className="w-5 h-5" />
               </div>
-              <h2 className="text-sm font-semibold text-white">CPU Usage</h2>
+              <h2 className="text-sm font-bold text-white">CPU Usage</h2>
             </div>
             <span className="text-lg font-bold font-mono text-sky-400">
               {metrics?.cpu?.totalLoad ?? 0}%
             </span>
           </div>
 
-          <div className="w-full bg-[#1e1f22] h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-[#0d0d11] h-2 rounded-full overflow-hidden">
             <div
               className="bg-sky-400 h-full rounded-full transition-all duration-300"
               style={{ width: `${metrics?.cpu?.totalLoad || 0}%` }}
             />
           </div>
 
-          <div className="flex justify-between text-xs text-discord-muted pt-1">
+          <div className="flex justify-between text-xs text-zinc-400 pt-1">
             <span>Cores: <strong className="text-white">{metrics?.static?.cpuCores || "--"}</strong></span>
             <span>Clock: <strong className="text-white">{metrics?.static?.cpuSpeed || "--"} GHz</strong></span>
             <span>Temp: <strong className="text-white">{metrics?.cpu?.temp ? `${metrics.cpu.temp}°C` : "N/A"}</strong></span>
@@ -333,7 +333,7 @@ export function HostServerView() {
           {metrics?.cpu?.cores && (
             <div className="grid grid-cols-8 gap-1 pt-1">
               {metrics.cpu.cores.map((load: number, idx: number) => (
-                <div key={idx} className="h-6 bg-[#18191c] rounded overflow-hidden flex items-end" title={`Core ${idx + 1}: ${load}%`}>
+                <div key={idx} className="h-6 bg-[#0d0d11] rounded overflow-hidden flex items-end" title={`Core ${idx + 1}: ${load}%`}>
                   <div className="w-full bg-sky-400 transition-all duration-300" style={{ height: `${load}%` }} />
                 </div>
               ))}
@@ -342,101 +342,101 @@ export function HostServerView() {
         </div>
 
         {/* RAM Memory Card */}
-        <div className="p-4 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-3">
+        <div className="p-5 rounded-2xl bg-[#09090b] border border-[#1f1f23] space-y-3.5 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-emerald-500/10 text-emerald-400">
+              <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
                 <Activity className="w-5 h-5" />
               </div>
-              <h2 className="text-sm font-semibold text-white">RAM Memory</h2>
+              <h2 className="text-sm font-bold text-white">RAM Memory</h2>
             </div>
             <span className="text-lg font-bold font-mono text-emerald-400">
               {metrics?.memory?.usedPercent ?? 0}%
             </span>
           </div>
 
-          <div className="w-full bg-[#1e1f22] h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-[#0d0d11] h-2 rounded-full overflow-hidden">
             <div
               className="bg-emerald-400 h-full rounded-full transition-all duration-300"
               style={{ width: `${metrics?.memory?.usedPercent || 0}%` }}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs bg-[#18191c] p-2 rounded-lg">
+          <div className="grid grid-cols-2 gap-2 text-xs bg-[#0d0d11] border border-[#1f1f23] p-2.5 rounded-xl">
             <div>
-              <span className="text-discord-muted block">Used</span>
+              <span className="text-zinc-400 block">Used</span>
               <span className="font-mono text-white font-semibold">{formatBytes(metrics?.memory?.used)}</span>
             </div>
             <div>
-              <span className="text-discord-muted block">Total</span>
+              <span className="text-zinc-400 block">Total</span>
               <span className="font-mono text-white font-semibold">{formatBytes(metrics?.memory?.total)}</span>
             </div>
           </div>
         </div>
 
         {/* Disk Storage Card */}
-        <div className="p-4 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-3">
+        <div className="p-5 rounded-2xl bg-[#09090b] border border-[#1f1f23] space-y-3.5 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-amber-500/10 text-amber-400">
+              <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
                 <HardDrive className="w-5 h-5" />
               </div>
-              <h2 className="text-sm font-semibold text-white">Storage ( Root / )</h2>
+              <h2 className="text-sm font-bold text-white">Storage ( Root / )</h2>
             </div>
             <span className="text-lg font-bold font-mono text-amber-400">
               {metrics?.disks?.[0]?.usePercent ?? 0}%
             </span>
           </div>
 
-          <div className="w-full bg-[#1e1f22] h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-[#0d0d11] h-2 rounded-full overflow-hidden">
             <div
               className="bg-amber-400 h-full rounded-full transition-all duration-300"
               style={{ width: `${metrics?.disks?.[0]?.usePercent || 0}%` }}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs bg-[#18191c] p-2 rounded-lg">
+          <div className="grid grid-cols-2 gap-2 text-xs bg-[#0d0d11] border border-[#1f1f23] p-2.5 rounded-xl">
             <div>
-              <span className="text-discord-muted block">Used</span>
+              <span className="text-zinc-400 block">Used</span>
               <span className="font-mono text-white font-semibold">{formatBytes(metrics?.disks?.[0]?.used)}</span>
             </div>
             <div>
-              <span className="text-discord-muted block">Size</span>
+              <span className="text-zinc-400 block">Total</span>
               <span className="font-mono text-white font-semibold">{formatBytes(metrics?.disks?.[0]?.size)}</span>
             </div>
           </div>
         </div>
 
         {/* Network Card */}
-        <div className="p-4 rounded-xl bg-[#2b2d31] border border-[#383a40] space-y-3">
+        <div className="p-5 rounded-2xl bg-[#09090b] border border-[#1f1f23] space-y-3.5 shadow-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="p-2 rounded-lg bg-purple-500/10 text-purple-400">
+              <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400">
                 <Activity className="w-5 h-5" />
               </div>
-              <h2 className="text-sm font-semibold text-white">Network Traffic</h2>
+              <h2 className="text-sm font-bold text-white">Network Traffic</h2>
             </div>
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="p-2 rounded-lg bg-[#18191c] border border-sky-500/20 flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-[#0d0d11] border border-sky-500/20 flex items-center gap-2">
               <ArrowDownLeft className="w-4 h-4 text-sky-400" />
               <div>
-                <span className="text-discord-muted block text-[10px]">Download</span>
-                <span className="font-mono text-sky-400 font-bold">{formatBytes(metrics?.network?.totalRxSec || 0)}/s</span>
+                <span className="text-zinc-400 block text-[10px]">Download</span>
+                <span className="font-mono text-white font-bold">{formatBytes(metrics?.network?.totalRxSec || 0)}/s</span>
               </div>
             </div>
 
-            <div className="p-2 rounded-lg bg-[#18191c] border border-purple-500/20 flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-[#0d0d11] border border-purple-500/20 flex items-center gap-2">
               <ArrowUpRight className="w-4 h-4 text-purple-400" />
               <div>
-                <span className="text-discord-muted block text-[10px]">Upload</span>
-                <span className="font-mono text-purple-400 font-bold">{formatBytes(metrics?.network?.totalTxSec || 0)}/s</span>
+                <span className="text-zinc-400 block text-[10px]">Upload</span>
+                <span className="font-mono text-white font-bold">{formatBytes(metrics?.network?.totalTxSec || 0)}/s</span>
               </div>
             </div>
           </div>
 
-          <div className="text-[11px] text-discord-muted flex justify-between pt-1">
+          <div className="text-[11px] text-zinc-400 flex justify-between pt-1">
             <span>Total Rx: <strong className="text-white">{formatBytes(metrics?.network?.totalRxBytes)}</strong></span>
             <span>Total Tx: <strong className="text-white">{formatBytes(metrics?.network?.totalTxBytes)}</strong></span>
           </div>
@@ -444,15 +444,15 @@ export function HostServerView() {
       </div>
 
       {/* GitHub Auto-Sync & Update Status Card with Live Steps & Progress */}
-      <div className="p-5 rounded-xl bg-gradient-to-r from-[#1e1f22] via-[#2b2d31] to-[#1e1f22] border border-[#35373c] shadow-xl space-y-4">
+      <div className="p-6 rounded-2xl bg-[#09090b] border border-[#1f1f23] shadow-lg space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className={`p-3 rounded-xl border ${
               updateProgress?.status === "error" || updateInfo?.status === "error"
-                ? "bg-discord-red/20 border-discord-red/40 text-discord-red"
+                ? "bg-rose-500/10 border-rose-500/30 text-rose-400"
                 : updateProgress?.isUpdating || checkingUpdate
-                ? "bg-sky-500/20 border-sky-500/40 text-sky-400 animate-pulse"
-                : "bg-discord-green/20 border-discord-green/40 text-discord-green"
+                ? "bg-sky-500/10 border-sky-500/30 text-sky-400 animate-pulse"
+                : "bg-emerald-500/10 border-emerald-500/30 text-emerald-400"
             }`}>
               {checkingUpdate || updateProgress?.isUpdating ? (
                 <RefreshCw className="w-5 h-5 animate-spin" />
