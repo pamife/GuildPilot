@@ -193,9 +193,13 @@ export async function generateHtmlTranscript(
       });
     }
 
-    // Skip rendering totally empty message rows (no text, attachments, or embeds)
+    // If contentHtml is empty on a non-bot message, Discord stripped message content due to missing Intent
     if (!contentHtml && !attachmentsHtml && !embedsHtml) {
-      continue;
+      if (!isBot) {
+        contentHtml = `<span style="color: #f87171; font-style: italic; font-size: 12px; background: rgba(248, 113, 113, 0.1); padding: 3px 8px; border-radius: 4px; display: inline-block;">⚠️ Message text hidden — Enable 'MESSAGE CONTENT INTENT' in Discord Developer Portal</span>`;
+      } else {
+        continue;
+      }
     }
 
     messagesHtml += `

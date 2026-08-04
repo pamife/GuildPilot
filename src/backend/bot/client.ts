@@ -2,6 +2,8 @@ import { Client, GatewayIntentBits, Partials } from "discord.js";
 import { broadcastEvent } from "../socket/socketManager";
 import { setupTicketInteractions } from "./ticketHandler";
 
+export let hasMessageContentIntent = true;
+
 export let discordClient = new Client({
   intents: [
     GatewayIntentBits.Guilds,
@@ -122,6 +124,7 @@ export async function initDiscordBot() {
     // Handle DisallowedGatewayIntents error by falling back to standard non-privileged intents
     if (error.code === "DisallowedGatewayIntents" || error.message?.includes("intents")) {
       console.warn("[TheGodGen Bot] Privileged MessageContent intent disallowed by Discord portal. Retrying with standard intents...");
+      hasMessageContentIntent = false;
 
       try {
         discordClient = new Client({
