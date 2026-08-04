@@ -83,6 +83,17 @@ function isValidUrl(str?: string | null): boolean {
   }
 }
 
+export enum ComponentV2Type {
+  ActionRow = 1,
+  Button = 2,
+  StringSelect = 3,
+  Section = 9,
+  TextDisplay = 10,
+  MediaGallery = 11,
+  Separator = 12,
+  Container = 17,
+}
+
 // Helper function to build Discord Embed/Content and Components (Buttons or Dropdown)
 export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) {
   // Fetch guild roles & members quickly with 2-second timeout
@@ -95,24 +106,163 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     // Continue even if member fetch fails
   }
 
-  const isComponentsV2 = panel.layoutMode === "components_v2" || panel.layoutMode === "v2";
+  const isComponentsV2 = panel.layoutMode === "components_v2" || panel.layoutMode === "v2" || !panel.layoutMode;
   let content = "";
   const embeds: EmbedBuilder[] = [];
 
-  if (isComponentsV2) {
-    // Discord Components V2 / Native Container Layout (No Embed Box Border)
-    if (isValidUrl(panel.image)) {
-      content += `${panel.image.trim()}\n`;
+  const rawActionRows: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
+  const options = panel.options || [];
+
+  if (options.length > 0) {
+    if (panel.displayType === "dropdown") {
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId(`selfrole_select:${panel.id}`)
+        .setPlaceholder(panel.placeholderText || "Select roles...")
+        .setMinValues(0)
+        .setMaxValues(panel.multiSelect ? Math.min(options.length, 25) : 1);
+
+      const selectOptions = options.slice(0, 25).map((opt: any) => {
+        const role = guild.roles.cache.get(opt.roleId);
+        let memberCount = role ? role.members.size : 0;
+        if (memberCount === 0 && role && guild.members.cache.size > 0) {
+          memberCount = guild.members.cache.filter((m) => m.roles.cache.has(role.id)).size;
+        }
+
+        const roleName = opt.roleName || role?.name || "Unknown Role";
+        const baseLabel = opt.label || roleName;
+        const finalLabel = opt.showMemberCount ? `${baseLabel} (${memberCount})` : baseLabel;
+
+        const selectOption = new StringSelectMenuOptionBuilder()
+          .setLabel(finalLabel.substring(0, 100))
+          .setValue(opt.id);
+
+        if (opt.description) {
+          selectOption.setDescription(opt.description.substring(0, 100));
+        }
+
+        if (opt.emoji) {
+          const validEmoji = parseAndValidateEmoji(opt.emoji);
+          if (validEmoji) {
+            try {
+              selectOption.setEmoji(validEmoji);
+            } catch (e) {}
+          }
+        }
+
+        return selectOption;
+      });
+
+      selectMenu.addOptions(selectOptions);
+      rawActionRows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
+    } else {
+      // Button display mode (max 5 buttons per ActionRow, max 5 rows = 25 buttons total)
+      let currentRow = new ActionRowBuilder<ButtonBuilder>();
+
+      options.slice(0, 25).forEach((opt: any, idx: number) => {
+        if (idx > 0 && idx % 5 === 0) {
+          rawActionRows.push(currentRow);
+          currentRow = new ActionRowBuilder<ButtonBuilder>();
+        }
+
+        const role = guild.roles.cache.get(opt.roleId);
+        let memberCount = role ? role.members.size : 0;
+        if (memberCount === 0 && role && guild.members.cache.size > 0) {
+          memberCount = guild.members.cache.filter((m) => m.roles.cache.has(role.id)).size;
+        }
+
+        const roleName = opt.roleName || role?.name || "Unknown Role";
+        const baseLabel = opt.label || roleName;
+        const finalLabel = opt.showMemberCount ? `${baseLabel} (${memberCount})` : baseLabel;
+
+        let style = ButtonStyle.Secondary;
+        if (opt.buttonColor === "Primary") style = ButtonStyle.Primary;
+        if (opt.buttonColor === "Success") style = ButtonStyle.Success;
+        if (opt.buttonColor === "Danger") style = ButtonStyle.Danger;
+
+        const button = new ButtonBuilder()
+          .setCustomId(`selfrole_toggle:${panel.id}:${opt.id}`)
+          .setLabel(finalLabel.substring(0, 80))
+          .setStyle(style);
+
+        if (opt.emoji) {
+          const validEmoji = parseAndValidateEmoji(opt.emoji);
+          if (validEmoji) {
+            try {
+              button.setEmoji(validEmoji);
+            } catch (e) {}
+          }
+        }
+
+        currentRow.addComponents(button);
+      });
+
+      if (currentRow.components.length > 0) {
+        rawActionRows.push(currentRow);
+      }
     }
+  }
+
+  let finalComponents: any[] = [];
+
+  if (isComponentsV2) {
+    // Build Discord Components V2 Container Hierarchy:
+    // Container (17) -> Media Gallery (11) -> Separator (12) -> Text Display (10) -> Action Rows (1)
+    const containerInnerComponents: any[] = [];
+
+    // 1. Media Gallery Component (Type 11) - Large Image ABOVE text
+    if (isValidUrl(panel.image)) {
+      containerInnerComponents.push({
+        type: ComponentV2Type.MediaGallery,
+        items: [
+          {
+            media: {
+              url: panel.image.trim(),
+            },
+          },
+        ],
+      });
+
+      // 2. Separator Component (Type 12)
+      containerInnerComponents.push({
+        type: ComponentV2Type.Separator,
+        divider: true,
+        spacing: 1,
+      });
+    }
+
+    // 3. Text Display Component (Type 10)
+    let textContent = "";
     if (panel.embedTitle && panel.embedTitle.trim()) {
-      content += `# ${panel.embedTitle.trim()}\n`;
+      textContent += `# ${panel.embedTitle.trim()}\n`;
     }
     if (panel.embedDescription && panel.embedDescription.trim()) {
-      content += `${panel.embedDescription.trim()}\n`;
+      textContent += `${panel.embedDescription.trim()}\n`;
     }
     if (panel.footer && panel.footer.trim()) {
-      content += `\n*${panel.footer.trim()}*`;
+      textContent += `\n*${panel.footer.trim()}*`;
     }
+
+    if (textContent.trim()) {
+      containerInnerComponents.push({
+        type: ComponentV2Type.TextDisplay,
+        content: textContent.trim(),
+      });
+    } else {
+      content = `# ${panel.name || "Self Roles"}`;
+    }
+
+    // 4. Action Rows inside the Container Component (Type 1)
+    rawActionRows.forEach((row) => {
+      containerInnerComponents.push(row.toJSON());
+    });
+
+    // Wrap in Container Component (Type 17)
+    finalComponents = [
+      {
+        type: ComponentV2Type.Container,
+        components: containerInnerComponents,
+      },
+    ];
   } else {
     // Classic Discord Embed Layout
     const embed = new EmbedBuilder();
@@ -178,101 +328,10 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     }
 
     embeds.push(embed);
+    finalComponents = rawActionRows.map((r) => r.toJSON());
   }
 
-  const components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
-  const options = panel.options || [];
-
-  if (options.length > 0) {
-    if (panel.displayType === "dropdown") {
-      const selectMenu = new StringSelectMenuBuilder()
-        .setCustomId(`selfrole_select:${panel.id}`)
-        .setPlaceholder(panel.placeholderText || "Select roles...")
-        .setMinValues(0)
-        .setMaxValues(panel.multiSelect ? Math.min(options.length, 25) : 1);
-
-      const selectOptions = options.slice(0, 25).map((opt: any) => {
-        const role = guild.roles.cache.get(opt.roleId);
-        let memberCount = role ? role.members.size : 0;
-        if (memberCount === 0 && role && guild.members.cache.size > 0) {
-          memberCount = guild.members.cache.filter((m) => m.roles.cache.has(role.id)).size;
-        }
-
-        const roleName = opt.roleName || role?.name || "Unknown Role";
-        const baseLabel = opt.label || roleName;
-        const finalLabel = opt.showMemberCount ? `${baseLabel} (${memberCount})` : baseLabel;
-
-        const selectOption = new StringSelectMenuOptionBuilder()
-          .setLabel(finalLabel.substring(0, 100))
-          .setValue(opt.id);
-
-        if (opt.description) {
-          selectOption.setDescription(opt.description.substring(0, 100));
-        }
-
-        if (opt.emoji) {
-          const validEmoji = parseAndValidateEmoji(opt.emoji);
-          if (validEmoji) {
-            try {
-              selectOption.setEmoji(validEmoji);
-            } catch (e) {}
-          }
-        }
-
-        return selectOption;
-      });
-
-      selectMenu.addOptions(selectOptions);
-      components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
-    } else {
-      // Button display mode (max 5 buttons per ActionRow, max 5 rows = 25 buttons total)
-      let currentRow = new ActionRowBuilder<ButtonBuilder>();
-
-      options.slice(0, 25).forEach((opt: any, idx: number) => {
-        if (idx > 0 && idx % 5 === 0) {
-          components.push(currentRow);
-          currentRow = new ActionRowBuilder<ButtonBuilder>();
-        }
-
-        const role = guild.roles.cache.get(opt.roleId);
-        let memberCount = role ? role.members.size : 0;
-        if (memberCount === 0 && role && guild.members.cache.size > 0) {
-          memberCount = guild.members.cache.filter((m) => m.roles.cache.has(role.id)).size;
-        }
-
-        const roleName = opt.roleName || role?.name || "Unknown Role";
-        const baseLabel = opt.label || roleName;
-        const finalLabel = opt.showMemberCount ? `${baseLabel} (${memberCount})` : baseLabel;
-
-        let style = ButtonStyle.Secondary;
-        if (opt.buttonColor === "Primary") style = ButtonStyle.Primary;
-        if (opt.buttonColor === "Success") style = ButtonStyle.Success;
-        if (opt.buttonColor === "Danger") style = ButtonStyle.Danger;
-
-        const button = new ButtonBuilder()
-          .setCustomId(`selfrole_toggle:${panel.id}:${opt.id}`)
-          .setLabel(finalLabel.substring(0, 80))
-          .setStyle(style);
-
-        if (opt.emoji) {
-          const validEmoji = parseAndValidateEmoji(opt.emoji);
-          if (validEmoji) {
-            try {
-              button.setEmoji(validEmoji);
-            } catch (e) {}
-          }
-        }
-
-        currentRow.addComponents(button);
-      });
-
-      if (currentRow.components.length > 0) {
-        components.push(currentRow);
-      }
-    }
-  }
-
-  return { content, embeds, components };
+  return { content, embeds, components: finalComponents, rawActionRows };
 }
 
 // Deploy or Update Live Discord Panel Message
@@ -287,7 +346,7 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
   const channel = (await guild.channels.fetch(panel.channelId).catch(() => null)) as TextChannel;
   if (!channel || !channel.isTextBased()) throw new Error("Der gewählte Discord-Kanal wurde nicht gefunden oder ist kein Textkanal.");
 
-  const { content, embeds, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
+  const { content, embeds, components, rawActionRows } = await buildSelfRoleEmbedAndComponents(guild, panel);
 
   const payload: any = {
     content: content.trim() || undefined,
@@ -311,19 +370,33 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
     try {
       message = await channel.send(payload);
     } catch (sendErr: any) {
-      // Fallback: If Discord API rejects an emoji with COMPONENT_INVALID_EMOJI (code 50035), strip emojis and retry!
-      if (sendErr.code === 50035 || sendErr.message?.includes("INVALID_EMOJI") || sendErr.rawError?.errors?.components) {
-        console.warn("[SelfRole] Invalid emoji rejected by Discord API. Stripping emojis as fallback...");
-        const fallbackPanel = {
-          ...panel,
-          options: (panel.options || []).map((o: any) => ({ ...o, emoji: null })),
-        };
-        const fallback = await buildSelfRoleEmbedAndComponents(guild, fallbackPanel);
-        message = await channel.send({
-          content: fallback.content.trim() || undefined,
-          embeds: fallback.embeds,
-          components: fallback.components as any,
-        });
+      // Fallback 1: If raw V2 Container component is rejected by Discord API, fall back to native Markdown content + raw ActionRows!
+      if (sendErr.code === 50035 || sendErr.message?.includes("Invalid Component") || sendErr.rawError?.errors?.components) {
+        console.warn("[SelfRole] Discord V2 Container component rejected. Falling back to native markdown + ActionRows...");
+        let markdownContent = "";
+        if (panel.image && isValidUrl(panel.image)) markdownContent += `${panel.image.trim()}\n`;
+        if (panel.embedTitle) markdownContent += `# ${panel.embedTitle.trim()}\n`;
+        if (panel.embedDescription) markdownContent += `${panel.embedDescription.trim()}\n`;
+        if (panel.footer) markdownContent += `\n*${panel.footer.trim()}*`;
+
+        try {
+          message = await channel.send({
+            content: markdownContent.trim() || undefined,
+            components: rawActionRows as any,
+          });
+        } catch (fbErr: any) {
+          // Fallback 2: If emoji error occurred, strip emojis
+          const fallbackPanel = {
+            ...panel,
+            options: (panel.options || []).map((o: any) => ({ ...o, emoji: null })),
+          };
+          const fallback = await buildSelfRoleEmbedAndComponents(guild, fallbackPanel);
+          message = await channel.send({
+            content: fallback.content.trim() || undefined,
+            embeds: fallback.embeds,
+            components: fallback.components as any,
+          });
+        }
       } else if (sendErr.code === 50013) {
         throw new Error(`Der Bot hat keine Berechtigung 'Nachrichten senden' oder 'Links einbetten' im Kanal #${channel.name}.`);
       } else if (sendErr.code === 50001) {

@@ -1144,14 +1144,26 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
           </div>
 
           <div className="flex-1 p-4 bg-[#313338] overflow-y-auto space-y-3">
-            {/* Discord Live Embed Container */}
+            {/* Discord Live Embed / Component V2 Container */}
             <div className="bg-[#2b2d31] rounded-xl p-4 border border-[#1e1f22] shadow-2xl relative space-y-3 font-sans">
-              {/* Colored Left Border (Hidden if Neutral Dark #2b2d31) */}
-              {formData.embedColor && formData.embedColor.toLowerCase() !== "#2b2d31" && formData.embedColor !== "none" && (
+              {/* Colored Left Border (Hidden if Neutral Dark #2b2d31 or V2 layout) */}
+              {formData.embedColor && formData.embedColor.toLowerCase() !== "#2b2d31" && formData.embedColor !== "none" && formData.layoutMode === "embed" && (
                 <div
                   className="absolute top-0 bottom-0 left-0 w-1.5 rounded-l-xl"
                   style={{ backgroundColor: formData.embedColor }}
                 />
+              )}
+
+              {/* 1. Media Gallery Component (Large Image ABOVE text) */}
+              {formData.image && (
+                <div className="rounded-lg overflow-hidden border border-[#1e1f22] shadow-md">
+                  <img src={formData.image} alt="Header Banner" className="w-full object-cover max-h-48" />
+                </div>
+              )}
+
+              {/* 2. Separator */}
+              {formData.image && (
+                <div className="h-[1px] bg-[#383a40]/60 w-full" />
               )}
 
               {/* Author Header */}
@@ -1164,7 +1176,7 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
                 </div>
               )}
 
-              {/* Title & Description */}
+              {/* 3. Text Display (Title & Description) */}
               <div className="space-y-1">
                 {formData.embedTitle && (
                   <h2 className="text-base font-bold text-white leading-tight">{formData.embedTitle}</h2>
@@ -1175,13 +1187,6 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
                   </p>
                 )}
               </div>
-
-              {/* Large Graphic Header Banner Image */}
-              {formData.image && (
-                <div className="mt-2 rounded-lg overflow-hidden border border-[#1e1f22]">
-                  <img src={formData.image} alt="Header Banner" className="w-full object-cover max-h-48" />
-                </div>
-              )}
 
               {/* Custom Embed Fields */}
               {parsedFields.length > 0 && (
