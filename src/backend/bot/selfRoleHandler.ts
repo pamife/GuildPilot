@@ -17,11 +17,39 @@ import {
 } from "discord.js";
 import { getSelfRolePanelById, updateSelfRolePanel } from "../services/selfRoleService";
 
+const EMOJI_SHORTCODES: Record<string, string> = {
+  ":envelope:": "📩",
+  ":news:": "📩",
+  ":tools:": "🛠️",
+  ":updates:": "🛠️",
+  ":eyes:": "👀",
+  ":leaks:": "👀",
+  ":scroll:": "📜",
+  ":polls:": "📜",
+  ":star:": "⭐️",
+  ":events:": "⭐️",
+  ":gift:": "🎁",
+  ":giveaways:": "🎁",
+  ":bell:": "🔔",
+  ":arrow_up:": "⬆️",
+  ":up:": "⬆️",
+  ":check:": "✅",
+  ":x:": "❌",
+  ":gear:": "⚙️",
+  ":link:": "🔗",
+  ":shield:": "🛡️",
+};
+
 // Helper to safely parse and validate emojis to avoid Discord API COMPONENT_INVALID_EMOJI error
 function parseAndValidateEmoji(emojiStr?: string | null) {
   if (!emojiStr || typeof emojiStr !== "string") return null;
-  const trimmed = emojiStr.trim();
+  let trimmed = emojiStr.trim();
   if (!trimmed) return null;
+
+  // Convert common shortcodes like :news: or :updates: to actual unicode emojis
+  if (EMOJI_SHORTCODES[trimmed.toLowerCase()]) {
+    trimmed = EMOJI_SHORTCODES[trimmed.toLowerCase()];
+  }
 
   try {
     const parsed = parseEmoji(trimmed);
@@ -247,13 +275,25 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
         components: components as any,
       });
     } catch (sendErr: any) {
-      if (sendErr.code === 50013) {
+      // Fallback: If Discord API rejects an emoji with COMPONENT_INVALID_EMOJI (code 50035), strip emojis and retry!
+      if (sendErr.code === 50035 || sendErr.message?.includes("INVALID_EMOJI") || sendErr.rawError?.errors?.components) {
+        console.warn("[SelfRole] Invalid emoji rejected by Discord API. Stripping emojis as fallback...");
+        const fallbackPanel = {
+          ...panel,
+          options: (panel.options || []).map((o: any) => ({ ...o, emoji: null })),
+        };
+        const fallback = await buildSelfRoleEmbedAndComponents(guild, fallbackPanel);
+        message = await channel.send({
+          embeds: [fallback.embed],
+          components: fallback.components as any,
+        });
+      } else if (sendErr.code === 50013) {
         throw new Error(`Der Bot hat keine Berechtigung 'Nachrichten senden' oder 'Links einbetten' im Kanal #${channel.name}.`);
-      }
-      if (sendErr.code === 50001) {
+      } else if (sendErr.code === 50001) {
         throw new Error(`Der Bot hat keinen Zugriff auf den Kanal #${channel.name}.`);
+      } else {
+        throw new Error(`Discord API Fehler: ${sendErr.message || sendErr}`);
       }
-      throw new Error(`Discord API Fehler: ${sendErr.message || sendErr}`);
     }
   }
 
