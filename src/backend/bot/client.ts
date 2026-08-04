@@ -1,6 +1,7 @@
 import { Client, GatewayIntentBits, Partials } from "discord.js";
 import { broadcastEvent } from "../socket/socketManager";
 import { setupTicketInteractions } from "./ticketHandler";
+import { setupApplicationInteractions } from "./applicationHandler";
 
 export let hasMessageContentIntent = true;
 
@@ -24,6 +25,7 @@ function registerClientEvents(client: Client) {
   client.once("ready", (c) => {
     console.log(`[TheGodGen Bot] Logged in as ${c.user.tag}`);
     setupTicketInteractions(c);
+    setupApplicationInteractions(c);
     broadcastEvent("botStatusChange", {
       ready: true,
       tag: c.user.tag,

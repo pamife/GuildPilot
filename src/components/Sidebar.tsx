@@ -21,10 +21,13 @@ import {
   Ticket,
   Check,
   RefreshCw,
+  ClipboardList,
 } from "lucide-react";
 
 export type ViewType =
   | "overview"
+  | "applications"
+  | "tickets"
   | "channels"
   | "categories"
   | "roles"
@@ -34,7 +37,6 @@ export type ViewType =
   | "invites"
   | "templates"
   | "utilities"
-  | "tickets"
   | "host-server";
 
 interface GuildOption {
@@ -72,6 +74,7 @@ export function Sidebar({
 
   const navigationItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "applications", label: "Applications", icon: ClipboardList },
     { id: "tickets", label: "Ticket System", icon: Ticket },
     { id: "channels", label: "Channel Manager", icon: Hash },
     { id: "categories", label: "Category Manager", icon: FolderTree },

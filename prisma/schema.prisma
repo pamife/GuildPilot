@@ -127,3 +127,145 @@ model TicketSetting {
   autoArchive         Boolean  @default(false)
   updatedAt           DateTime @updatedAt
 }
+
+model AppForm {
+  id               String        @id @default(uuid())
+  guildId          String
+  name             String
+  description      String?
+  category         String?       @default("General")
+  embedTitle       String?       @default("📝 Server Staff Application")
+  embedDescription String?       @default("Click the button below to submit your application!")
+  embedColor       String        @default("#5865F2")
+  thumbnail        String?
+  image            String?
+  footer           String?       @default("GuildPilot Applications System")
+  buttonText       String        @default("Apply Now")
+  buttonEmoji      String?       @default("📝")
+  buttonColor      String        @default("Primary") // Primary, Secondary, Success, Danger
+  targetChannelId  String?
+  categoryId       String?
+  reviewerRoles    String        @default("[]") // JSON array of role IDs
+  applicantRoles   String        @default("[]") // JSON array of allowed role IDs
+  acceptedRoles    String        @default("[]") // JSON array of role IDs to grant on Accept
+  deniedRoles      String        @default("[]") // JSON array of role IDs to grant/remove on Deny
+  cooldownHours    Int           @default(24)
+  maxActiveApps    Int           @default(1)
+  isOpen           Boolean       @default(true)
+  messageId        String?
+  channelId        String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  questions        AppQuestion[]
+  applications     Application[]
+}
+
+model AppQuestion {
+  id              String   @id @default(uuid())
+  formId          String
+  form            AppForm  @relation(fields: [formId], references: [id], onDelete: Cascade)
+  label           String
+  type            String   @default("SHORT_TEXT") // SHORT_TEXT, PARAGRAPH, MULTIPLE_CHOICE, DROPDOWN, YES_NO, NUMBER, DATE
+  placeholder     String?
+  required        Boolean  @default(true)
+  options         String   @default("[]") // JSON array of options
+  minLength       Int?
+  maxLength       Int?
+  validationRegex String?
+  helpText        String?
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Application {
+  id              String             @id @default(uuid())
+  appNumber       Int
+  guildId         String
+  formId          String?
+  form            AppForm?           @relation(fields: [formId], references: [id], onDelete: SetNull)
+  channelId       String?            @unique
+  userId          String
+  userTag         String
+  userAvatar      String?
+  accountAge      String?
+  joinDate        String?
+  currentRoles    String             @default("[]") // JSON array of role names/IDs
+  attachments     String             @default("[]") // JSON array of attachment URLs
+  status          String             @default("PENDING") // PENDING, UNDER_REVIEW, CLAIMED, ACCEPTED, DENIED, WAITLISTED, CLOSED
+  claimedByUserId String?
+  claimedByTag    String?
+  claimedByAvatar String?
+  decisionReason  String?
+  submittedAt     DateTime           @default(now())
+  reviewedAt      DateTime?
+  closedAt        DateTime?
+  transcriptUrl   String?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  answers         AppAnswer[]
+  notes           AppNote[]
+  history         AppStatusHistory[]
+}
+
+model AppAnswer {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  questionId    String?
+  questionLabel String
+  questionType  String
+  value         String
+}
+
+model AppNote {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  authorId      String
+  authorTag     String
+  authorAvatar  String?
+  content       String
+  createdAt     DateTime    @default(now())
+}
+
+model AppStatusHistory {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  status        String
+  actorId       String
+  actorTag      String
+  details       String?
+  timestamp     DateTime    @default(now())
+}
+
+model AppSettings {
+  id                   String   @id @default(uuid())
+  guildId              String   @unique
+  defaultReviewerRoles String   @default("[]") // JSON array of role IDs
+  defaultCategoryId    String?
+  archiveCategoryId    String?
+  logChannelId         String?
+  transcriptStorage    String   @default("local") // local, none
+  defaultCooldownHours Int      @default(24)
+  maxAppsPerUser       Int      @default(1)
+  autoCloseHours       Int      @default(0) // 0 = disabled
+  autoArchive          Boolean  @default(false)
+  timezone             String   @default("UTC")
+  updatedAt            DateTime @updatedAt
+}
+
+model AppLog {
+  id            String   @id @default(uuid())
+  guildId       String
+  applicationId String?
+  action        String   // SUBMITTED, CLAIMED, UNCLAIMED, ACCEPTED, DENIED, WAITLISTED, REOPENED, NOTE_ADDED, CLOSED
+  executorId    String
+  executorTag   String
+  details       String?
+  timestamp     DateTime @default(now())
+}
+
