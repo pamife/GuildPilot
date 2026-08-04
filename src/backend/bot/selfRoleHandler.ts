@@ -37,16 +37,19 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   const bStart = Date.now();
   console.log(`[SelfRole Debug] 1. Starting buildSelfRoleEmbedAndComponents for panel ${panel.id}...`);
 
-  // Fetch guild roles (quick cached fetch)
+  // Fetch guild roles & members with a 1-second Promise.race timeout to avoid API timeouts
   try {
     await guild.roles.fetch();
+    const fetchPromise = guild.members.fetch().catch(() => null);
+    const timeoutPromise = new Promise((res) => setTimeout(res, 1000));
+    await Promise.race([fetchPromise, timeoutPromise]);
   } catch (e) {
-    // Continue even if role fetch fails
+    // Continue even if member fetch fails
   }
 
   // Calculate role counts
   const cStart = Date.now();
-  console.log(`[SelfRole Debug] 2. Calculating role member counts from cache...`);
+  console.log(`[SelfRole Debug] 2. Calculating role member counts...`);
 
   const rawActionRows: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
   const options = panel.options || [];
@@ -60,12 +63,8 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
         .setMaxValues(panel.multiSelect ? Math.min(options.length, 25) : 1);
 
       const selectOptions = options.slice(0, 25).map((opt: any) => {
-        const role = guild.roles.cache.get(opt.roleId);
-        const countFromRoleMembers = role ? role.members.size : 0;
-        const countFromGuildCache = guild.members.cache.filter((m) => m.roles.cache.has(opt.roleId)).size;
-        const realMemberCount = Math.max(countFromRoleMembers, countFromGuildCache);
-
-        const roleName = opt.roleName || role?.name || "Unknown Role";
+        const realMemberCount = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
+        const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
         const finalLabel = opt.showMemberCount !== false ? `${baseLabel} (${realMemberCount})` : baseLabel;
 
@@ -83,7 +82,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
       selectMenu.addOptions(selectOptions);
       rawActionRows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
     } else {
-      // Button display mode: Max 5 buttons per ActionRow
+      // Button display mode: Max 5 buttons per ActionRow (separate ActionRowBuilders)
       let currentRow = new ActionRowBuilder<ButtonBuilder>();
 
       options.slice(0, 25).forEach((opt: any, idx: number) => {
@@ -92,12 +91,8 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           currentRow = new ActionRowBuilder<ButtonBuilder>();
         }
 
-        const role = guild.roles.cache.get(opt.roleId);
-        const countFromRoleMembers = role ? role.members.size : 0;
-        const countFromGuildCache = guild.members.cache.filter((m) => m.roles.cache.has(opt.roleId)).size;
-        const realMemberCount = Math.max(countFromRoleMembers, countFromGuildCache);
-
-        const roleName = opt.roleName || role?.name || "Unknown Role";
+        const realMemberCount = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
+        const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
         const finalLabel = opt.showMemberCount !== false ? `${baseLabel} (${realMemberCount})` : baseLabel;
 
