@@ -16,6 +16,7 @@ import {
   MediaGalleryItemBuilder,
   SeparatorBuilder,
   SectionBuilder,
+  ContainerBuilder,
 } from "discord.js";
 import { getSelfRolePanelById, updateSelfRolePanel } from "../services/selfRoleService";
 import { parseAndValidateEmoji } from "../utils/emojiValidator";
@@ -117,19 +118,22 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     }
   }
 
-  // BUILD DISCORD COMPONENTS V2
-  // Using official discord.js Component Builders:
-  // MediaGalleryBuilder, SeparatorBuilder, TextDisplayBuilder, ActionRowBuilder
-  const v2Components: any[] = [];
+  // BUILD DISCORD COMPONENTS V2 ROOT CONTAINER
+  // Root: ContainerBuilder
+  // ├── MediaGalleryBuilder (Large Image at top)
+  // ├── SeparatorBuilder
+  // ├── TextDisplayBuilder (Title & Description)
+  // └── ActionRowBuilder (Buttons)
+  const containerInnerComponents: any[] = [];
 
   // 1. Media Gallery Component (if image URL is provided)
   if (isValidUrl(panel.image)) {
     const mediaItem = new MediaGalleryItemBuilder().setURL(panel.image.trim());
     const mediaGallery = new MediaGalleryBuilder().addItems(mediaItem);
-    v2Components.push(mediaGallery);
+    containerInnerComponents.push(mediaGallery);
 
     // 2. Separator Component
-    v2Components.push(new SeparatorBuilder());
+    containerInnerComponents.push(new SeparatorBuilder());
   }
 
   // 3. Text Display Component
@@ -149,15 +153,18 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   }
 
   const textDisplay = new TextDisplayBuilder().setContent(textContent.trim());
-  v2Components.push(textDisplay);
+  containerInnerComponents.push(textDisplay);
 
-  // 4. Action Row Components
+  // 4. Action Row Components inside Container
   rawActionRows.forEach((row) => {
-    v2Components.push(row);
+    containerInnerComponents.push(row);
   });
 
+  const container = new ContainerBuilder();
+  (container as any).components = containerInnerComponents;
+
   return {
-    components: v2Components,
+    components: [container],
     flags: MessageFlags.IsComponentsV2 as any,
   };
 }
