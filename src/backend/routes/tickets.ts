@@ -187,11 +187,17 @@ router.post("/:guildId/tickets/:ticketId/action", async (req, res) => {
     } else if (action === "transcript") {
       const channel = (await discordClient.channels.fetch(ticket.channelId).catch(() => null)) as TextChannel;
       if (channel && channel.isTextBased()) {
-        const filePath = await generateHtmlTranscript(channel, {
-          number: ticket.ticketNumber,
-          creatorTag: ticket.userTag,
+        const filePath = await generateHtmlTranscript(
+          channel,
+          {
+            number: ticket.ticketNumber,
+            creatorTag: ticket.userTag,
+          },
+          ticket.id
+        );
+        await updateTicketStatus(ticket.id, ticket.status as any, {
+          transcriptUrl: `/api/guilds/${ticket.guildId}/tickets/transcripts/${ticket.id}/download`,
         });
-        await updateTicketStatus(ticket.id, ticket.status as any, { transcriptUrl: `/api/guilds/${ticket.guildId}/tickets/transcripts/${ticket.id}/download` });
       }
     }
 
@@ -201,14 +207,56 @@ router.post("/:guildId/tickets/:ticketId/action", async (req, res) => {
   }
 });
 
-// Transcript Download
-router.get("/:guildId/tickets/transcripts/:ticketId/download", (req, res) => {
-  const filePath = getTranscriptFilePath(req.params.ticketId);
-  if (!fs.existsSync(filePath)) {
-    return res.status(404).send("Transcript file not found.");
+// Transcript Download / Display
+router.get("/:guildId/tickets/transcripts/:ticketId/download", async (req, res) => {
+  try {
+    const { guildId, ticketId } = req.params;
+    const ticket = await getTicketById(ticketId);
+
+    let filePath = getTranscriptFilePath(ticketId, ticket?.channelId);
+
+    // If file does not exist on disk, attempt live generation if Discord channel still exists
+    if (!fs.existsSync(filePath) && ticket && ticket.channelId) {
+      const channel = (await discordClient.channels.fetch(ticket.channelId).catch(() => null)) as TextChannel;
+      if (channel && channel.isTextBased()) {
+        filePath = await generateHtmlTranscript(
+          channel,
+          {
+            number: ticket.ticketNumber,
+            creatorTag: ticket.userTag,
+          },
+          ticket.id
+        );
+        await updateTicketStatus(ticket.id, ticket.status as any, {
+          transcriptUrl: `/api/guilds/${guildId}/tickets/transcripts/${ticket.id}/download`,
+        });
+      }
+    }
+
+    if (!fs.existsSync(filePath)) {
+      return res.status(404).send(`
+        <!DOCTYPE html>
+        <html>
+        <head><title>Transcript Not Found</title></head>
+        <body style="font-family: system-ui, sans-serif; background: #090a0f; color: #fff; display: flex; items-center: center; justify-content: center; height: 100vh; margin: 0;">
+          <div style="text-align: center; padding: 40px; background: #12131a; border: 1px solid #18181b; border-radius: 24px; max-width: 450px;">
+            <h2 style="color: #f43f5e; margin-top: 0;">📄 Transcript Not Found</h2>
+            <p style="color: #a1a1aa; font-size: 14px; line-height: 1.5;">No transcript file recorded for Ticket #${ticket?.ticketNumber || ticketId}. The channel may have been deleted before a transcript was generated.</p>
+          </div>
+        </body>
+        </html>
+      `);
+    }
+
+    if (req.query.download === "true") {
+      return res.download(filePath, `transcript-ticket-${ticket?.ticketNumber || ticketId}.html`);
+    }
+
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.sendFile(filePath);
+  } catch (err: any) {
+    res.status(500).send("Error serving transcript.");
   }
-  res.setHeader("Content-Type", "text/html");
-  res.download(filePath, `transcript-ticket-${req.params.ticketId}.html`);
 });
 
 // Logs & Settings

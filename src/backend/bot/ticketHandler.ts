@@ -646,10 +646,14 @@ async function sendTicketCloseLogEmbed(
     if (ticket.channelId) {
       const channel = (await logChannel.guild.channels.fetch(ticket.channelId).catch(() => null)) as TextChannel;
       if (channel) {
-        const filePath = await generateHtmlTranscript(channel, {
-          number: ticket.ticketNumber,
-          creatorTag: ticket.userTag,
-        }).catch(() => null);
+        const filePath = await generateHtmlTranscript(
+          channel,
+          {
+            number: ticket.ticketNumber,
+            creatorTag: ticket.userTag,
+          },
+          ticket.id
+        ).catch(() => null);
 
         if (filePath) {
           const downloadUrl = `${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/guilds/${ticket.guildId}/tickets/transcripts/${ticket.id}/download`;
@@ -759,10 +763,14 @@ async function handleTicketDelete(interaction: ButtonInteraction, ticketId: stri
 
   if (ticket && channel) {
     try {
-      const filePath = await generateHtmlTranscript(channel, {
-        number: ticket.ticketNumber,
-        creatorTag: ticket.userTag,
-      });
+      const filePath = await generateHtmlTranscript(
+        channel,
+        {
+          number: ticket.ticketNumber,
+          creatorTag: ticket.userTag,
+        },
+        ticket.id
+      );
 
       if (settings.logChannelId && interaction.guild) {
         const logChannel = (await interaction.guild.channels.fetch(settings.logChannelId).catch(() => null)) as TextChannel;
@@ -846,10 +854,14 @@ async function handleTicketTranscript(interaction: ButtonInteraction, ticketId: 
     return interaction.editReply({ content: "❌ Ticket or channel not found." });
   }
 
-  const filePath = await generateHtmlTranscript(channel, {
-    number: ticket.ticketNumber,
-    creatorTag: ticket.userTag,
-  });
+  const filePath = await generateHtmlTranscript(
+    channel,
+    {
+      number: ticket.ticketNumber,
+      creatorTag: ticket.userTag,
+    },
+    ticket.id
+  );
 
   const attachment = new AttachmentBuilder(filePath, { name: `transcript-ticket-${ticket.ticketNumber}.html` });
 

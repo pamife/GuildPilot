@@ -10,14 +10,36 @@ function ensureTranscriptsDir() {
   }
 }
 
-export function getTranscriptFilePath(ticketId: string): string {
+export function getTranscriptFilePath(identifier: string, secondaryIdentifier?: string): string {
   ensureTranscriptsDir();
-  return path.join(TRANSCRIPTS_DIR, `ticket-${ticketId}.html`);
+  const pathById = path.join(TRANSCRIPTS_DIR, `ticket-${identifier}.html`);
+  if (fs.existsSync(pathById)) return pathById;
+
+  if (secondaryIdentifier) {
+    const pathBySec = path.join(TRANSCRIPTS_DIR, `ticket-${secondaryIdentifier}.html`);
+    if (fs.existsSync(pathBySec)) return pathBySec;
+  }
+
+  // Fallback wildcard search in TRANSCRIPTS_DIR
+  try {
+    const files = fs.readdirSync(TRANSCRIPTS_DIR);
+    const match = files.find(
+      (f) =>
+        f.endsWith(".html") &&
+        (f.includes(identifier) || (secondaryIdentifier && f.includes(secondaryIdentifier)))
+    );
+    if (match) {
+      return path.join(TRANSCRIPTS_DIR, match);
+    }
+  } catch (e) {}
+
+  return pathById;
 }
 
 export async function generateHtmlTranscript(
   channel: TextChannel,
-  ticketInfo: { number: number; creatorTag: string; category?: string }
+  ticketInfo: { number: number; creatorTag: string; category?: string },
+  customId?: string
 ): Promise<string> {
   ensureTranscriptsDir();
 
@@ -262,7 +284,17 @@ export async function generateHtmlTranscript(
 </body>
 </html>`;
 
-  const filePath = getTranscriptFilePath(channel.id);
+  const primaryId = customId || channel.id;
+  const filePath = path.join(TRANSCRIPTS_DIR, `ticket-${primaryId}.html`);
   fs.writeFileSync(filePath, htmlDocument, "utf-8");
+
+  // Save copy under channel.id if customId was provided and different
+  if (customId && customId !== channel.id) {
+    const channelPath = path.join(TRANSCRIPTS_DIR, `ticket-${channel.id}.html`);
+    try {
+      fs.writeFileSync(channelPath, htmlDocument, "utf-8");
+    } catch (e) {}
+  }
+
   return filePath;
 }
