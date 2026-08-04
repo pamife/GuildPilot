@@ -172,26 +172,71 @@ export async function deployApplicationFormEmbed(client: Client, formId: string)
 export function setupApplicationInteractions(client: Client) {
   client.on("interactionCreate", async (interaction: Interaction) => {
     try {
-      // 1. Handle Dropdown Select Menu Selection (like Ticket System dropdown)
+      // 1. Handle Dropdown Select Menu Selection on Server -> Send Direct Message (DM) to User
       if (interaction.isStringSelectMenu() && interaction.customId.startsWith("app_select_form:")) {
         const selectedFormId = interaction.values[0];
-        await triggerApplicationModal(interaction, selectedFormId);
+        await handleApplicationStartViaDM(interaction, selectedFormId);
       }
 
-      // 2. Handle Apply Button Click
+      // 2. Handle Apply Button Click on Server -> Send Direct Message (DM) to User
       if (interaction.isButton() && interaction.customId.startsWith("app_apply:")) {
         const formId = interaction.customId.split(":")[1];
-        await triggerApplicationModal(interaction, formId);
+        await handleApplicationStartViaDM(interaction, formId);
       }
 
-      // 3. Handle Modal Submission
+      // 3. Handle DM Start Button Click inside User's DM Window
+      if (interaction.isButton() && interaction.customId.startsWith("app_dm_fill:")) {
+        const parts = interaction.customId.split(":");
+        const formId = parts[1];
+        const targetGuildId = parts[2];
+        const form = await getAppFormById(formId);
+        if (!form) return interaction.reply({ content: "❌ Application form not found.", ephemeral: true });
+
+        const modal = new ModalBuilder()
+          .setCustomId(`app_modal_submit:${form.id}:${targetGuildId}`)
+          .setTitle(form.name.substring(0, 45));
+
+        const questionsToPresent = form.questions.slice(0, 5);
+        const rows: ActionRowBuilder<TextInputBuilder>[] = [];
+
+        questionsToPresent.forEach((q) => {
+          const style = q.type === "PARAGRAPH" ? TextInputStyle.Paragraph : TextInputStyle.Short;
+
+          const textInput = new TextInputBuilder()
+            .setCustomId(`q_${q.id}`)
+            .setLabel(q.label.substring(0, 45))
+            .setStyle(style)
+            .setRequired(q.required);
+
+          if (q.placeholder) textInput.setPlaceholder(q.placeholder.substring(0, 100));
+          if (q.minLength) textInput.setMinLength(q.minLength);
+          if (q.maxLength) textInput.setMaxLength(q.maxLength);
+
+          rows.push(new ActionRowBuilder<TextInputBuilder>().addComponents(textInput));
+        });
+
+        modal.addComponents(...rows);
+        await interaction.showModal(modal);
+      }
+
+      // 4. Handle Application Modal Submission (from DM)
       if (interaction.isModalSubmit() && interaction.customId.startsWith("app_modal_submit:")) {
         await interaction.deferReply({ ephemeral: true });
-        const formId = interaction.customId.split(":")[1];
+        const parts = interaction.customId.split(":");
+        const formId = parts[1];
+        const targetGuildId = parts[2] || interaction.guildId;
+
         const form = await getAppFormById(formId);
         if (!form) return interaction.editReply({ content: "❌ Application form not found." });
 
-        const member = interaction.member as GuildMember;
+        let guild: any = null;
+        if (targetGuildId) {
+          guild = await client.guilds.fetch(targetGuildId).catch(() => null);
+        } else if (interaction.guild) {
+          guild = interaction.guild;
+        }
+
+        const member = guild ? await guild.members.fetch(interaction.user.id).catch(() => null) : null;
         const accountAge = interaction.user.createdAt.toLocaleDateString("en-US", {
           year: "numeric",
           month: "short",
@@ -201,7 +246,7 @@ export function setupApplicationInteractions(client: Client) {
           ? member.joinedAt.toLocaleDateString("en-US", { year: "numeric", month: "short", day: "numeric" })
           : "Unknown";
 
-        const currentRoles = member?.roles?.cache?.map((r) => r.name).filter((n) => n !== "@everyone") || [];
+        const currentRoles = member?.roles?.cache?.map((r: any) => r.name).filter((n: string) => n !== "@everyone") || [];
 
         // Extract answers
         const answers: any[] = [];
@@ -217,7 +262,7 @@ export function setupApplicationInteractions(client: Client) {
 
         // Save to DB
         const app = await createApplicationSubmission({
-          guildId: interaction.guildId!,
+          guildId: targetGuildId || form.guildId,
           formId: form.id,
           userId: interaction.user.id,
           userTag: interaction.user.tag,
@@ -228,42 +273,41 @@ export function setupApplicationInteractions(client: Client) {
           answers,
         });
 
-        // Create Application Channel or send to Target Review Channel
+        // Create Application Channel or send to Target Review Channel on Guild
         let channelId: string | null = null;
-        const guild = interaction.guild!;
-        const settings = await getApplicationSettings(interaction.guildId!);
-        const targetCatId = form.categoryId || settings.defaultCategoryId;
+        if (guild) {
+          const settings = await getApplicationSettings(guild.id);
+          const targetCatId = form.categoryId || settings.defaultCategoryId;
 
-        if (targetCatId) {
-          try {
-            const chName = `app-${app.appNumber}-${interaction.user.username.substring(0, 10)}`;
-            const newChannel = await guild.channels.create({
-              name: chName,
-              type: ChannelType.GuildText,
-              parent: targetCatId,
-              permissionOverwrites: [
-                {
-                  id: guild.id,
-                  deny: [PermissionFlagsBits.ViewChannel],
-                },
-                {
-                  id: interaction.user.id,
-                  allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
-                },
-              ],
-            });
+          if (targetCatId) {
+            try {
+              const chName = `app-${app.appNumber}-${interaction.user.username.substring(0, 10)}`;
+              const newChannel = await guild.channels.create({
+                name: chName,
+                type: ChannelType.GuildText,
+                parent: targetCatId,
+                permissionOverwrites: [
+                  {
+                    id: guild.id,
+                    deny: [PermissionFlagsBits.ViewChannel],
+                  },
+                  {
+                    id: interaction.user.id,
+                    allow: [PermissionFlagsBits.ViewChannel, PermissionFlagsBits.SendMessages],
+                  },
+                ],
+              });
 
-            channelId = newChannel.id;
-
-            // Send Welcome Embed + Application Review Embed in Channel
-            await postApplicationChannelWelcome(newChannel, app, form);
-          } catch (chErr) {
-            console.warn("[App System] Application channel creation error:", chErr);
-          }
-        } else if (form.targetChannelId) {
-          const targetCh = (await guild.channels.fetch(form.targetChannelId).catch(() => null)) as TextChannel;
-          if (targetCh && targetCh.isTextBased()) {
-            await postApplicationChannelWelcome(targetCh, app, form);
+              channelId = newChannel.id;
+              await postApplicationChannelWelcome(newChannel, app, form);
+            } catch (chErr) {
+              console.warn("[App System] Application channel creation error:", chErr);
+            }
+          } else if (form.targetChannelId) {
+            const targetCh = (await guild.channels.fetch(form.targetChannelId).catch(() => null)) as TextChannel;
+            if (targetCh && targetCh.isTextBased()) {
+              await postApplicationChannelWelcome(targetCh, app, form);
+            }
           }
         }
 
@@ -274,19 +318,12 @@ export function setupApplicationInteractions(client: Client) {
         // Broadcast Socket.IO event for live dashboard update
         broadcastEvent("applicationSubmitted", { guildId: app.guildId, appId: app.id, appNumber: app.appNumber });
 
-        // DM Applicant confirmation
-        try {
-          await interaction.user.send(
-            `✅ **Application Submitted!** Your application for **${form.name}** has been received (App #${app.appNumber}). Staff will review it shortly.`
-          );
-        } catch (dmErr) {}
-
         await interaction.editReply({
-          content: `✅ **Application Submitted Successfully!** (App #${app.appNumber}). Staff have been notified.`,
+          content: `✅ **Bewerbung erfolgreich eingereicht!** (App #${app.appNumber}). Das Server-Team wurde benachrichtigt.`,
         });
       }
 
-      // 4. Handle In-Channel Reviewer Control Buttons
+      // 5. Handle In-Channel Reviewer Control Buttons
       if (interaction.isButton() && interaction.customId.startsWith("app_ctrl:")) {
         const parts = interaction.customId.split(":");
         const action = parts[1];
@@ -339,50 +376,57 @@ export function setupApplicationInteractions(client: Client) {
   });
 }
 
-async function triggerApplicationModal(interaction: any, formId: string) {
+async function handleApplicationStartViaDM(interaction: any, formId: string) {
   const form = await getAppFormById(formId);
   if (!form) {
-    return interaction.reply({ content: "❌ This application form no longer exists.", ephemeral: true });
+    return interaction.reply({ content: "❌ Diese Bewerbung existiert nicht mehr.", ephemeral: true });
   }
 
-  const canApplyResult = await checkUserCanApply(interaction.guildId!, formId, interaction.user.id);
+  const guildId = interaction.guildId;
+  const canApplyResult = await checkUserCanApply(guildId, formId, interaction.user.id);
   if (!canApplyResult.canApply) {
     return interaction.reply({ content: `❌ ${canApplyResult.reason}`, ephemeral: true });
   }
 
   if (!form.questions || form.questions.length === 0) {
     return interaction.reply({
-      content: "⚠️ No intake questions have been configured for this form yet.",
+      content: "⚠️ Für dieses Formular wurden noch keine Bewerbungsfragen konfiguriert.",
       ephemeral: true,
     });
   }
 
-  const questionsToPresent = form.questions.slice(0, 5);
+  const guildName = interaction.guild?.name || "Server";
 
-  const modal = new ModalBuilder()
-    .setCustomId(`app_modal_submit:${form.id}`)
-    .setTitle(form.name.substring(0, 45));
+  // Build DM Embed & Start Fill Button inside User DM
+  const dmEmbed = new EmbedBuilder()
+    .setTitle(`📝 Bewerbung: ${form.name}`)
+    .setDescription(
+      `Willkommen <@${interaction.user.id}>!\n\nDu hast eine Bewerbung für **${form.name}** auf dem Server **${guildName}** gestartet.\n\nKlicke unten auf den Button, um das Bewerbungsformular auszufüllen.`
+    )
+    .setColor((form.embedColor as any) || "#5865F2")
+    .setFooter({ text: `GuildPilot Bewerbungssystem • ${guildName}` })
+    .setTimestamp();
 
-  const rows: ActionRowBuilder<TextInputBuilder>[] = [];
+  const dmRow = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`app_dm_fill:${form.id}:${guildId}`)
+      .setLabel(`📝 Bewerbungsfragen beantworten (${form.questions.length} Fragen)`)
+      .setStyle(ButtonStyle.Primary)
+  );
 
-  questionsToPresent.forEach((q) => {
-    const style = q.type === "PARAGRAPH" ? TextInputStyle.Paragraph : TextInputStyle.Short;
+  try {
+    await interaction.user.send({ embeds: [dmEmbed], components: [dmRow] });
 
-    const textInput = new TextInputBuilder()
-      .setCustomId(`q_${q.id}`)
-      .setLabel(q.label.substring(0, 45))
-      .setStyle(style)
-      .setRequired(q.required);
-
-    if (q.placeholder) textInput.setPlaceholder(q.placeholder.substring(0, 100));
-    if (q.minLength) textInput.setMinLength(q.minLength);
-    if (q.maxLength) textInput.setMaxLength(q.maxLength);
-
-    rows.push(new ActionRowBuilder<TextInputBuilder>().addComponents(textInput));
-  });
-
-  modal.addComponents(...rows);
-  await interaction.showModal(modal);
+    await interaction.reply({
+      content: `📩 **Direktnachricht gesendet!** Wir haben dir eine DM für die Bewerbung **${form.name}** geschickt. Bitte schaue in deine Discord DMs, um die Fragen auszufüllen!`,
+      ephemeral: true,
+    });
+  } catch (dmErr) {
+    await interaction.reply({
+      content: `❌ **Direktnachrichten (DMs) sind blockiert!** Der Bot konnte dir keine DM senden. Bitte aktiviere *"Direktnachrichten von Servermitgliedern erlauben"* in deinen Discord-Datenschutzeinstellungen für diesen Server und versuche es erneut.`,
+      ephemeral: true,
+    });
+  }
 }
 
 async function postApplicationChannelWelcome(channel: TextChannel, app: any, form: any) {
