@@ -4,6 +4,8 @@ import {
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
+  StringSelectMenuBuilder,
+  StringSelectMenuOptionBuilder,
   ModalBuilder,
   TextInputBuilder,
   TextInputStyle,
@@ -15,6 +17,7 @@ import {
 } from "discord.js";
 import {
   getAppFormById,
+  getAppForms,
   checkUserCanApply,
   createApplicationSubmission,
   updateApplicationStatus,
@@ -33,99 +36,90 @@ export async function deployApplicationFormEmbed(client: Client, formId: string)
   const channel = (await client.channels.fetch(form.channelId).catch(() => null)) as TextChannel;
   if (!channel || !channel.isTextBased()) throw new Error("Could not access target channel on Discord");
 
+  // Fetch all forms associated with this channel to build dropdown menu
+  const allFormsInChannel = await getAppForms(form.guildId);
+  const channelForms = allFormsInChannel.filter((f) => f.channelId === form.channelId && f.isOpen);
+
   const embed = new EmbedBuilder()
     .setTitle(form.embedTitle || form.name)
-    .setDescription(form.embedDescription || "Click the button below to submit your application.")
+    .setDescription(form.embedDescription || "Select an application position from the dropdown menu below to submit your application.")
     .setColor((form.embedColor as any) || "#5865F2");
 
   if (form.thumbnail) embed.setThumbnail(form.thumbnail);
   if (form.image) embed.setImage(form.image);
   if (form.footer) embed.setFooter({ text: form.footer });
 
-  const btnStyle =
-    form.buttonColor === "Secondary"
-      ? ButtonStyle.Secondary
-      : form.buttonColor === "Success"
-      ? ButtonStyle.Success
-      : form.buttonColor === "Danger"
-      ? ButtonStyle.Danger
-      : ButtonStyle.Primary;
+  const components: any[] = [];
 
-  const button = new ButtonBuilder()
-    .setCustomId(`app_apply:${form.id}`)
-    .setLabel(form.buttonText || "Apply Now")
-    .setStyle(btnStyle)
-    .setDisabled(!form.isOpen);
+  // Dropdown Select Menu Mode (like Ticket System reasons/dropdown)
+  if (form.displayType === "dropdown" || channelForms.length > 1) {
+    const selectMenu = new StringSelectMenuBuilder()
+      .setCustomId(`app_select_form:${form.id}`)
+      .setPlaceholder("Select an application position...");
 
-  if (form.buttonEmoji) button.setEmoji(form.buttonEmoji);
+    const formsToInclude = channelForms.length > 0 ? channelForms : [form];
 
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
+    formsToInclude.forEach((f) => {
+      const option = new StringSelectMenuOptionBuilder()
+        .setLabel(f.name.substring(0, 100))
+        .setValue(f.id)
+        .setDescription((f.description || "Submit application for this position").substring(0, 100));
+
+      if (f.buttonEmoji) option.setEmoji(f.buttonEmoji);
+      selectMenu.addOptions(option);
+    });
+
+    components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
+  } else {
+    // Single Button Mode
+    const btnStyle =
+      form.buttonColor === "Secondary"
+        ? ButtonStyle.Secondary
+        : form.buttonColor === "Success"
+        ? ButtonStyle.Success
+        : form.buttonColor === "Danger"
+        ? ButtonStyle.Danger
+        : ButtonStyle.Primary;
+
+    const button = new ButtonBuilder()
+      .setCustomId(`app_apply:${form.id}`)
+      .setLabel(form.buttonText || "Apply Now")
+      .setStyle(btnStyle)
+      .setDisabled(!form.isOpen);
+
+    if (form.buttonEmoji) button.setEmoji(form.buttonEmoji);
+
+    components.push(new ActionRowBuilder<ButtonBuilder>().addComponents(button));
+  }
 
   if (form.messageId) {
     const existingMsg = await channel.messages.fetch(form.messageId).catch(() => null);
     if (existingMsg) {
-      await existingMsg.edit({ embeds: [embed], components: [row] });
+      await existingMsg.edit({ embeds: [embed], components });
       return existingMsg.id;
     }
   }
 
-  const newMsg = await channel.send({ embeds: [embed], components: [row] });
+  const newMsg = await channel.send({ embeds: [embed], components });
   return newMsg.id;
 }
 
 export function setupApplicationInteractions(client: Client) {
   client.on("interactionCreate", async (interaction: Interaction) => {
     try {
-      // 1. Handle Apply Button Click
-      if (interaction.isButton() && interaction.customId.startsWith("app_apply:")) {
-        const formId = interaction.customId.split(":")[1];
-        const form = await getAppFormById(formId);
-        if (!form) {
-          return interaction.reply({ content: "❌ This application form no longer exists.", ephemeral: true });
-        }
-
-        const canApplyResult = await checkUserCanApply(interaction.guildId!, formId, interaction.user.id);
-        if (!canApplyResult.canApply) {
-          return interaction.reply({ content: `❌ ${canApplyResult.reason}`, ephemeral: true });
-        }
-
-        if (!form.questions || form.questions.length === 0) {
-          return interaction.reply({
-            content: "⚠️ No intake questions have been configured for this form yet.",
-            ephemeral: true,
-          });
-        }
-
-        // Discord Modals support max 5 text inputs
-        const questionsToPresent = form.questions.slice(0, 5);
-
-        const modal = new ModalBuilder()
-          .setCustomId(`app_modal_submit:${form.id}`)
-          .setTitle(form.name.substring(0, 45));
-
-        const rows: ActionRowBuilder<TextInputBuilder>[] = [];
-
-        questionsToPresent.forEach((q) => {
-          const style = q.type === "PARAGRAPH" ? TextInputStyle.Paragraph : TextInputStyle.Short;
-
-          const textInput = new TextInputBuilder()
-            .setCustomId(`q_${q.id}`)
-            .setLabel(q.label.substring(0, 45))
-            .setStyle(style)
-            .setRequired(q.required);
-
-          if (q.placeholder) textInput.setPlaceholder(q.placeholder.substring(0, 100));
-          if (q.minLength) textInput.setMinLength(q.minLength);
-          if (q.maxLength) textInput.setMaxLength(q.maxLength);
-
-          rows.push(new ActionRowBuilder<TextInputBuilder>().addComponents(textInput));
-        });
-
-        modal.addComponents(...rows);
-        await interaction.showModal(modal);
+      // 1. Handle Dropdown Select Menu Selection (like Ticket System dropdown)
+      if (interaction.isStringSelectMenu() && interaction.customId.startsWith("app_select_form:")) {
+        const selectedFormId = interaction.values[0];
+        await triggerApplicationModal(interaction, selectedFormId);
       }
 
-      // 2. Handle Modal Submission
+      // 2. Handle Apply Button Click
+      if (interaction.isButton() && interaction.customId.startsWith("app_apply:")) {
+        const formId = interaction.customId.split(":")[1];
+        await triggerApplicationModal(interaction, formId);
+      }
+
+      // 3. Handle Modal Submission
       if (interaction.isModalSubmit() && interaction.customId.startsWith("app_modal_submit:")) {
         await interaction.deferReply({ ephemeral: true });
         const formId = interaction.customId.split(":")[1];
@@ -169,7 +163,7 @@ export function setupApplicationInteractions(client: Client) {
           answers,
         });
 
-        // Try creating dedicated Application Channel or send to Target Review Channel
+        // Create Application Channel or send to Target Review Channel
         let channelId: string | null = null;
         const guild = interaction.guild!;
         const settings = await getApplicationSettings(interaction.guildId!);
@@ -196,15 +190,15 @@ export function setupApplicationInteractions(client: Client) {
 
             channelId = newChannel.id;
 
-            // Send interactive review embed to newly created channel
-            await postApplicationReviewEmbed(newChannel, app, form);
+            // Send Welcome Embed + Application Review Embed in Channel
+            await postApplicationChannelWelcome(newChannel, app, form);
           } catch (chErr) {
-            console.warn("[App System] Dedicated application channel creation warning:", chErr);
+            console.warn("[App System] Application channel creation error:", chErr);
           }
         } else if (form.targetChannelId) {
           const targetCh = (await guild.channels.fetch(form.targetChannelId).catch(() => null)) as TextChannel;
           if (targetCh && targetCh.isTextBased()) {
-            await postApplicationReviewEmbed(targetCh, app, form);
+            await postApplicationChannelWelcome(targetCh, app, form);
           }
         }
 
@@ -223,18 +217,18 @@ export function setupApplicationInteractions(client: Client) {
         } catch (dmErr) {}
 
         await interaction.editReply({
-          content: `✅ **Application Submitted Successfully!** (Application #${app.appNumber}). Staff have been notified.`,
+          content: `✅ **Application Submitted Successfully!** (App #${app.appNumber}). Staff have been notified.`,
         });
       }
 
-      // 3. Handle Discord Control Buttons in Application Channels
+      // 4. Handle In-Channel Reviewer Control Buttons
       if (interaction.isButton() && interaction.customId.startsWith("app_ctrl:")) {
         const parts = interaction.customId.split(":");
         const action = parts[1];
         const appId = parts[2];
 
         const app = await getApplicationById(appId);
-        if (!app) return interaction.reply({ content: "❌ Application not found in database.", ephemeral: true });
+        if (!app) return interaction.reply({ content: "❌ Application not found.", ephemeral: true });
 
         const executor = {
           id: interaction.user.id,
@@ -248,13 +242,11 @@ export function setupApplicationInteractions(client: Client) {
         } else if (action === "accept") {
           await updateApplicationStatus(appId, "ACCEPTED", executor, { reason: "Approved via Discord Channel Controls" });
           await interaction.reply({ content: `✅ **Application #${app.appNumber} ACCEPTED** by ${interaction.user.tag}` });
-          // DM User
           const user = await client.users.fetch(app.userId).catch(() => null);
-          if (user) await user.send(`🎉 **Congratulations!** Your application #${app.appNumber} for **${app.form?.name || "Server"}** has been **ACCEPTED**!`).catch(() => null);
+          if (user) await user.send(`🎉 **Congratulations!** Your application #${app.appNumber} for **${app.form?.name || "Server"}** was **ACCEPTED**!`).catch(() => null);
         } else if (action === "deny") {
           await updateApplicationStatus(appId, "DENIED", executor, { reason: "Denied via Discord Channel Controls" });
           await interaction.reply({ content: `❌ **Application #${app.appNumber} DENIED** by ${interaction.user.tag}` });
-          // DM User
           const user = await client.users.fetch(app.userId).catch(() => null);
           if (user) await user.send(`❌ Your application #${app.appNumber} for **${app.form?.name || "Server"}** was **DENIED**.`).catch(() => null);
         } else if (action === "waitlist") {
@@ -266,12 +258,12 @@ export function setupApplicationInteractions(client: Client) {
           const transcriptUrl = `/api/guilds/${app.guildId}/applications/transcripts/${app.id}/download`;
           await updateApplicationStatus(appId, "CLOSED", executor, { transcriptUrl });
 
-          await interaction.reply({ content: `🔒 Application closed. HTML Transcript generated: [Download Transcript](${transcriptUrl})` });
+          await interaction.reply({ content: `🔒 Application closed. HTML Transcript: [Download](${transcriptUrl})` });
         } else if (action === "transcript") {
           const ch = interaction.channel as TextChannel;
           const filePath = await generateApplicationHtmlTranscript(app, ch);
           const transcriptUrl = `/api/guilds/${app.guildId}/applications/transcripts/${app.id}/download`;
-          await interaction.reply({ content: `📄 **HTML Transcript Ready**: [View/Download HTML Transcript](${transcriptUrl})`, ephemeral: true });
+          await interaction.reply({ content: `📄 **HTML Transcript Ready**: [View/Download](${transcriptUrl})`, ephemeral: true });
         }
 
         broadcastEvent("applicationUpdated", { guildId: app.guildId, appId: app.id });
@@ -282,14 +274,70 @@ export function setupApplicationInteractions(client: Client) {
   });
 }
 
-async function postApplicationReviewEmbed(channel: TextChannel, app: any, form: any) {
+async function triggerApplicationModal(interaction: any, formId: string) {
+  const form = await getAppFormById(formId);
+  if (!form) {
+    return interaction.reply({ content: "❌ This application form no longer exists.", ephemeral: true });
+  }
+
+  const canApplyResult = await checkUserCanApply(interaction.guildId!, formId, interaction.user.id);
+  if (!canApplyResult.canApply) {
+    return interaction.reply({ content: `❌ ${canApplyResult.reason}`, ephemeral: true });
+  }
+
+  if (!form.questions || form.questions.length === 0) {
+    return interaction.reply({
+      content: "⚠️ No intake questions have been configured for this form yet.",
+      ephemeral: true,
+    });
+  }
+
+  const questionsToPresent = form.questions.slice(0, 5);
+
+  const modal = new ModalBuilder()
+    .setCustomId(`app_modal_submit:${form.id}`)
+    .setTitle(form.name.substring(0, 45));
+
+  const rows: ActionRowBuilder<TextInputBuilder>[] = [];
+
+  questionsToPresent.forEach((q) => {
+    const style = q.type === "PARAGRAPH" ? TextInputStyle.Paragraph : TextInputStyle.Short;
+
+    const textInput = new TextInputBuilder()
+      .setCustomId(`q_${q.id}`)
+      .setLabel(q.label.substring(0, 45))
+      .setStyle(style)
+      .setRequired(q.required);
+
+    if (q.placeholder) textInput.setPlaceholder(q.placeholder.substring(0, 100));
+    if (q.minLength) textInput.setMinLength(q.minLength);
+    if (q.maxLength) textInput.setMaxLength(q.maxLength);
+
+    rows.push(new ActionRowBuilder<TextInputBuilder>().addComponents(textInput));
+  });
+
+  modal.addComponents(...rows);
+  await interaction.showModal(modal);
+}
+
+async function postApplicationChannelWelcome(channel: TextChannel, app: any, form: any) {
+  // Welcome Embed (like Ticket System Welcome Embed)
+  const welcomeEmbed = new EmbedBuilder()
+    .setTitle(form.welcomeTitle || `👋 Application #${app.appNumber} — ${form.name}`)
+    .setDescription(form.welcomeDescription || `Welcome <@${app.userId}>! Reviewers will inspect your answers shortly.`)
+    .setColor((form.welcomeColor as any) || "#5865F2");
+
+  if (form.welcomeThumbnail) welcomeEmbed.setThumbnail(form.welcomeThumbnail);
+  if (form.welcomeImage) welcomeEmbed.setImage(form.welcomeImage);
+  if (form.welcomeFooter) welcomeEmbed.setFooter({ text: form.welcomeFooter });
+
   const answersFields = app.answers.map((a: any) => ({
     name: `❓ ${a.questionLabel}`,
     value: a.value.substring(0, 1024),
   }));
 
-  const embed = new EmbedBuilder()
-    .setTitle(`📋 New Application #${app.appNumber} — ${form.name}`)
+  const detailsEmbed = new EmbedBuilder()
+    .setTitle(`📋 Applicant Information & Details`)
     .setDescription(`Submitted by **${app.userTag}** (<@${app.userId}>)`)
     .setColor("#5865F2")
     .addFields(
@@ -313,5 +361,5 @@ async function postApplicationReviewEmbed(channel: TextChannel, app: any, form: 
     new ButtonBuilder().setCustomId(`app_ctrl:transcript:${app.id}`).setLabel("Transcript").setStyle(ButtonStyle.Secondary).setEmoji("📄")
   );
 
-  await channel.send({ embeds: [embed], components: [row1, row2] });
+  await channel.send({ embeds: [welcomeEmbed, detailsEmbed], components: [row1, row2] });
 }

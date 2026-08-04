@@ -129,36 +129,43 @@ model TicketSetting {
 }
 
 model AppForm {
-  id               String        @id @default(uuid())
-  guildId          String
-  name             String
-  description      String?
-  category         String?       @default("General")
-  embedTitle       String?       @default("📝 Server Staff Application")
-  embedDescription String?       @default("Click the button below to submit your application!")
-  embedColor       String        @default("#5865F2")
-  thumbnail        String?
-  image            String?
-  footer           String?       @default("GuildPilot Applications System")
-  buttonText       String        @default("Apply Now")
-  buttonEmoji      String?       @default("📝")
-  buttonColor      String        @default("Primary") // Primary, Secondary, Success, Danger
-  targetChannelId  String?
-  categoryId       String?
-  reviewerRoles    String        @default("[]") // JSON array of role IDs
-  applicantRoles   String        @default("[]") // JSON array of allowed role IDs
-  acceptedRoles    String        @default("[]") // JSON array of role IDs to grant on Accept
-  deniedRoles      String        @default("[]") // JSON array of role IDs to grant/remove on Deny
-  cooldownHours    Int           @default(24)
-  maxActiveApps    Int           @default(1)
-  isOpen           Boolean       @default(true)
-  messageId        String?
-  channelId        String?
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  id                 String        @id @default(uuid())
+  guildId            String
+  name               String
+  description        String?
+  category           String?       @default("General")
+  displayType        String        @default("dropdown") // dropdown, button
+  embedTitle         String?       @default("📝 Server Applications")
+  embedDescription   String?       @default("Select an application position from the dropdown menu below to submit your application.")
+  embedColor         String        @default("#5865F2")
+  thumbnail          String?
+  image              String?
+  footer             String?       @default("GuildPilot Applications System")
+  welcomeTitle       String?       @default("👋 Application Submitted!")
+  welcomeDescription String?       @default("Your application has been received. Reviewers will inspect your answers shortly.")
+  welcomeColor       String        @default("#5865F2")
+  welcomeThumbnail   String?
+  welcomeImage       String?
+  welcomeFooter      String?       @default("GuildPilot Applications System")
+  buttonText         String        @default("Apply Now")
+  buttonEmoji        String?       @default("📝")
+  buttonColor        String        @default("Primary") // Primary, Secondary, Success, Danger
+  targetChannelId    String?
+  categoryId         String?
+  reviewerRoles      String        @default("[]") // JSON array of role IDs
+  applicantRoles     String        @default("[]") // JSON array of allowed role IDs
+  acceptedRoles      String        @default("[]") // JSON array of role IDs to grant on Accept
+  deniedRoles        String        @default("[]") // JSON array of role IDs to grant/remove on Deny
+  cooldownHours      Int           @default(24)
+  maxActiveApps      Int           @default(1)
+  isOpen             Boolean       @default(true)
+  messageId          String?
+  channelId          String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
 
-  questions        AppQuestion[]
-  applications     Application[]
+  questions          AppQuestion[]
+  applications       Application[]
 }
 
 model AppQuestion {
