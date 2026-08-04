@@ -26,6 +26,7 @@ import {
   Sliders,
 } from "lucide-react";
 import { useToast } from "../ToastContainer";
+import { api } from "@/lib/api";
 
 interface Channel {
   id: string;
@@ -156,15 +157,13 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
     if (!selectedGuildId) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/guilds/${selectedGuildId}/self-roles/panels`);
-      if (res.ok) {
-        const data = await res.json();
-        setPanels(data);
-        if (data.length > 0 && !selectedPanelId) {
-          loadPanelIntoForm(data[0]);
-        }
+      const res = await api.get(`/guilds/${selectedGuildId}/self-roles/panels`);
+      const data = res.data;
+      setPanels(data);
+      if (data.length > 0 && !selectedPanelId) {
+        loadPanelIntoForm(data[0]);
       }
-    } catch (e) {
+    } catch (e: any) {
       console.error("Failed to fetch panels", e);
       showToast("Fehler beim Laden der Self-Role-Panels", "error");
     } finally {
@@ -311,31 +310,17 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
 
       let res;
       if (selectedPanelId) {
-        res = await fetch(`/api/guilds/${selectedGuildId}/self-roles/panels/${selectedPanelId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        res = await api.put(`/guilds/${selectedGuildId}/self-roles/panels/${selectedPanelId}`, payload);
       } else {
-        res = await fetch(`/api/guilds/${selectedGuildId}/self-roles/panels`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-        });
+        res = await api.post(`/guilds/${selectedGuildId}/self-roles/panels`, payload);
       }
 
-      if (res.ok) {
-        const saved = await res.json();
-        showToast("Self-Role-Panel erfolgreich gespeichert!", "success");
-        await fetchPanels();
-        loadPanelIntoForm(saved);
-      } else {
-        const err = await res.json();
-        showToast(err.error || "Fehler beim Speichern", "error");
-      }
-    } catch (e) {
+      showToast("Self-Role-Panel erfolgreich gespeichert!", "success");
+      await fetchPanels();
+      loadPanelIntoForm(res.data);
+    } catch (e: any) {
       console.error(e);
-      showToast("Netzwerkfehler beim Speichern", "error");
+      showToast(e.response?.data?.error || "Fehler beim Speichern", "error");
     } finally {
       setIsSaving(false);
     }
@@ -351,20 +336,12 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
 
     setIsDeploying(true);
     try {
-      const res = await fetch(`/api/guilds/${selectedGuildId}/self-roles/panels/${targetId}/post`, {
-        method: "POST",
-      });
-
-      if (res.ok) {
-        showToast("🚀 Panel wurde erfolgreich auf Discord gepostet / aktualisiert!", "success");
-        fetchPanels();
-      } else {
-        const err = await res.json();
-        showToast(err.error || "Fehler beim Senden nach Discord", "error");
-      }
-    } catch (e) {
+      await api.post(`/guilds/${selectedGuildId}/self-roles/panels/${targetId}/post`);
+      showToast("🚀 Panel wurde erfolgreich auf Discord gepostet / aktualisiert!", "success");
+      fetchPanels();
+    } catch (e: any) {
       console.error(e);
-      showToast("Fehler beim Senden nach Discord", "error");
+      showToast(e.response?.data?.error || "Fehler beim Senden nach Discord", "error");
     } finally {
       setIsDeploying(false);
     }
@@ -374,15 +351,11 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
   const handleDuplicatePanel = async (id: string) => {
     if (!selectedGuildId) return;
     try {
-      const res = await fetch(`/api/guilds/${selectedGuildId}/self-roles/panels/${id}/duplicate`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        showToast("Panel dupliziert!", "success");
-        fetchPanels();
-      }
-    } catch (e) {
-      showToast("Fehler beim Duplizieren", "error");
+      await api.post(`/guilds/${selectedGuildId}/self-roles/panels/${id}/duplicate`);
+      showToast("Panel dupliziert!", "success");
+      fetchPanels();
+    } catch (e: any) {
+      showToast(e.response?.data?.error || "Fehler beim Duplizieren", "error");
     }
   };
 
@@ -390,18 +363,14 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
   const handleDeletePanel = async (id: string) => {
     if (!selectedGuildId || !confirm("Möchtest du dieses Self-Role Panel wirklich löschen?")) return;
     try {
-      const res = await fetch(`/api/guilds/${selectedGuildId}/self-roles/panels/${id}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        showToast("Panel gelöscht", "info");
-        if (selectedPanelId === id) {
-          setSelectedPanelId(null);
-        }
-        fetchPanels();
+      await api.delete(`/guilds/${selectedGuildId}/self-roles/panels/${id}`);
+      showToast("Panel gelöscht", "info");
+      if (selectedPanelId === id) {
+        setSelectedPanelId(null);
       }
-    } catch (e) {
-      showToast("Fehler beim Löschen", "error");
+      fetchPanels();
+    } catch (e: any) {
+      showToast(e.response?.data?.error || "Fehler beim Löschen", "error");
     }
   };
 
