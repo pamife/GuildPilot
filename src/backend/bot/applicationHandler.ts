@@ -95,6 +95,39 @@ function buildEmbedHelper(config: {
   return embed;
 }
 
+function safeSetEmoji(builder: any, emojiInput?: string | null): boolean {
+  if (!emojiInput || typeof emojiInput !== "string") return false;
+  const cleaned = emojiInput.trim();
+  if (!cleaned) return false;
+
+  try {
+    // 1. Custom Discord emoji format: <:name:123456789> or <a:name:123456789>
+    const customMatch = cleaned.match(/<a?:(\w+):(\d+)>/);
+    if (customMatch) {
+      builder.setEmoji({ name: customMatch[1], id: customMatch[2] });
+      return true;
+    }
+
+    // 2. Custom Discord emoji ID only: 123456789012345678
+    if (/^\d{17,20}$/.test(cleaned)) {
+      builder.setEmoji({ id: cleaned });
+      return true;
+    }
+
+    // 3. Reject unparsed text like ":emoji:" or plain text words without unicode characters
+    if (cleaned.startsWith(":") && cleaned.endsWith(":")) {
+      return false;
+    }
+
+    // 4. Standard Unicode Emoji
+    builder.setEmoji(cleaned);
+    return true;
+  } catch (err) {
+    console.warn(`[App System] Skipping invalid emoji input: "${emojiInput}"`);
+    return false;
+  }
+}
+
 export async function deployApplicationPanelEmbed(client: Client, panelId: string): Promise<string> {
   const panel = await getAppPanelById(panelId);
   if (!panel || !panel.channelId) throw new Error("Panel or target channel missing.");
@@ -137,8 +170,10 @@ export async function deployApplicationPanelEmbed(client: Client, panelId: strin
           .setValue(f.id)
           .setDescription((f.description || "Submit application for this position").substring(0, 100));
 
-        if (f.emoji) option.setEmoji(f.emoji);
-        else if (f.buttonEmoji) option.setEmoji(f.buttonEmoji);
+        const hasEmoji = safeSetEmoji(option, f.emoji) || safeSetEmoji(option, f.buttonEmoji);
+        if (!hasEmoji) {
+          safeSetEmoji(option, "📝");
+        }
 
         selectMenu.addOptions(option);
       });
@@ -162,8 +197,7 @@ export async function deployApplicationPanelEmbed(client: Client, panelId: strin
           .setStyle(btnStyle)
           .setDisabled(!f.isOpen);
 
-        if (f.emoji) button.setEmoji(f.emoji);
-        else if (f.buttonEmoji) button.setEmoji(f.buttonEmoji);
+        safeSetEmoji(button, f.emoji) || safeSetEmoji(button, f.buttonEmoji);
 
         row.addComponents(button);
       });
@@ -237,8 +271,7 @@ export async function deployApplicationFormEmbed(client: Client, formId: string)
     .setStyle(btnStyle)
     .setDisabled(!form.isOpen);
 
-  if (form.emoji) button.setEmoji(form.emoji);
-  else if (form.buttonEmoji) button.setEmoji(form.buttonEmoji);
+  safeSetEmoji(button, form.emoji) || safeSetEmoji(button, form.buttonEmoji);
 
   const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
 
