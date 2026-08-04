@@ -1,9 +1,6 @@
 import {
   Client,
   Interaction,
-  ButtonInteraction,
-  StringSelectMenuInteraction,
-  EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
@@ -14,6 +11,11 @@ import {
   Guild,
   MessageFlags,
   parseEmoji,
+  TextDisplayBuilder,
+  MediaGalleryBuilder,
+  MediaGalleryItemBuilder,
+  SeparatorBuilder,
+  SectionBuilder,
 } from "discord.js";
 import { getSelfRolePanelById, updateSelfRolePanel } from "../services/selfRoleService";
 
@@ -72,7 +74,7 @@ function parseAndValidateEmoji(emojiStr?: string | null) {
   }
 }
 
-// Helper to validate URLs for Discord embed images & icons
+// Helper to validate URLs for Discord media items
 function isValidUrl(str?: string | null): boolean {
   if (!str || !str.trim()) return false;
   try {
@@ -83,18 +85,7 @@ function isValidUrl(str?: string | null): boolean {
   }
 }
 
-export enum ComponentV2Type {
-  ActionRow = 1,
-  Button = 2,
-  StringSelect = 3,
-  Section = 9,
-  TextDisplay = 10,
-  MediaGallery = 11,
-  Separator = 12,
-  Container = 17,
-}
-
-// Helper function to build Discord Embed/Content and Components (Buttons or Dropdown)
+// Helper function to build Discord Components V2 payload using official discord.js builders
 export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) {
   // Fetch guild roles & members quickly with 2-second timeout
   try {
@@ -105,10 +96,6 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   } catch (e) {
     // Continue even if member fetch fails
   }
-
-  const isComponentsV2 = panel.layoutMode === "components_v2" || panel.layoutMode === "v2" || !panel.layoutMode;
-  let content = "";
-  const embeds: EmbedBuilder[] = [];
 
   const rawActionRows: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
   const options = panel.options || [];
@@ -202,136 +189,49 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     }
   }
 
-  let finalComponents: any[] = [];
+  // BUILD DISCORD COMPONENTS V2
+  // Using official discord.js Component Builders:
+  // MediaGalleryBuilder, SeparatorBuilder, TextDisplayBuilder, ActionRowBuilder
+  const v2Components: any[] = [];
 
-  if (isComponentsV2) {
-    // Build Discord Components V2 Container Hierarchy:
-    // Container (17) -> Media Gallery (11) -> Separator (12) -> Text Display (10) -> Action Rows (1)
-    const containerInnerComponents: any[] = [];
+  // 1. Media Gallery Component (if image URL is provided)
+  if (isValidUrl(panel.image)) {
+    const mediaItem = new MediaGalleryItemBuilder().setURL(panel.image.trim());
+    const mediaGallery = new MediaGalleryBuilder().addItems(mediaItem);
+    v2Components.push(mediaGallery);
 
-    // 1. Media Gallery Component (Type 11) - Large Image ABOVE text
-    if (isValidUrl(panel.image)) {
-      containerInnerComponents.push({
-        type: ComponentV2Type.MediaGallery,
-        items: [
-          {
-            media: {
-              url: panel.image.trim(),
-            },
-          },
-        ],
-      });
-
-      // 2. Separator Component (Type 12)
-      containerInnerComponents.push({
-        type: ComponentV2Type.Separator,
-        divider: true,
-        spacing: 1,
-      });
-    }
-
-    // 3. Text Display Component (Type 10)
-    let textContent = "";
-    if (panel.embedTitle && panel.embedTitle.trim()) {
-      textContent += `# ${panel.embedTitle.trim()}\n`;
-    }
-    if (panel.embedDescription && panel.embedDescription.trim()) {
-      textContent += `${panel.embedDescription.trim()}\n`;
-    }
-    if (panel.footer && panel.footer.trim()) {
-      textContent += `\n*${panel.footer.trim()}*`;
-    }
-
-    if (textContent.trim()) {
-      containerInnerComponents.push({
-        type: ComponentV2Type.TextDisplay,
-        content: textContent.trim(),
-      });
-    } else {
-      content = `# ${panel.name || "Self Roles"}`;
-    }
-
-    // 4. Action Rows inside the Container Component (Type 1)
-    rawActionRows.forEach((row) => {
-      containerInnerComponents.push(row.toJSON());
-    });
-
-    // Wrap in Container Component (Type 17)
-    finalComponents = [
-      {
-        type: ComponentV2Type.Container,
-        components: containerInnerComponents,
-      },
-    ];
-  } else {
-    // Classic Discord Embed Layout
-    const embed = new EmbedBuilder();
-
-    if (panel.embedTitle && panel.embedTitle.trim()) embed.setTitle(panel.embedTitle.trim());
-    if (panel.embedDescription && panel.embedDescription.trim()) embed.setDescription(panel.embedDescription.trim());
-
-    if (panel.embedColor && /^#[0-9A-Fa-f]{6}$/.test(panel.embedColor)) {
-      embed.setColor(panel.embedColor as any);
-    } else if (panel.embedColor === "none") {
-      embed.setColor("#2b2d31");
-    } else {
-      embed.setColor("#5865F2");
-    }
-
-    if (panel.embedAuthorName && panel.embedAuthorName.trim()) {
-      embed.setAuthor({
-        name: panel.embedAuthorName.trim(),
-        iconURL: isValidUrl(panel.embedAuthorIcon) ? panel.embedAuthorIcon!.trim() : undefined,
-        url: isValidUrl(panel.embedAuthorUrl) ? panel.embedAuthorUrl!.trim() : undefined,
-      });
-    }
-
-    if (isValidUrl(panel.thumbnail)) {
-      try {
-        embed.setThumbnail(panel.thumbnail.trim());
-      } catch (e) {}
-    }
-
-    if (isValidUrl(panel.image)) {
-      try {
-        embed.setImage(panel.image.trim());
-      } catch (e) {}
-    }
-
-    if (panel.footer && panel.footer.trim()) {
-      embed.setFooter({
-        text: panel.footer.trim(),
-        iconURL: isValidUrl(panel.footerIcon) ? panel.footerIcon!.trim() : undefined,
-      });
-    }
-
-    if (panel.showTimestamp) {
-      embed.setTimestamp();
-    }
-
-    // Parse embed fields
-    if (panel.embedFields) {
-      try {
-        const fields = typeof panel.embedFields === "string" ? JSON.parse(panel.embedFields) : panel.embedFields;
-        if (Array.isArray(fields) && fields.length > 0) {
-          embed.addFields(
-            fields.map((f: any) => ({
-              name: f.name || "\u200B",
-              value: f.value || "\u200B",
-              inline: Boolean(f.inline),
-            }))
-          );
-        }
-      } catch (e) {
-        console.error("Error parsing embed fields for panel:", panel.id, e);
-      }
-    }
-
-    embeds.push(embed);
-    finalComponents = rawActionRows.map((r) => r.toJSON());
+    // 2. Separator Component
+    v2Components.push(new SeparatorBuilder());
   }
 
-  return { content, embeds, components: finalComponents, rawActionRows };
+  // 3. Text Display Component
+  let textContent = "";
+  if (panel.embedTitle && panel.embedTitle.trim()) {
+    textContent += `# ${panel.embedTitle.trim()}\n`;
+  }
+  if (panel.embedDescription && panel.embedDescription.trim()) {
+    textContent += `${panel.embedDescription.trim()}\n`;
+  }
+  if (panel.footer && panel.footer.trim()) {
+    textContent += `\n*${panel.footer.trim()}*`;
+  }
+
+  if (!textContent.trim()) {
+    textContent = `🔔 **${panel.name || "Self Roles"}**`;
+  }
+
+  const textDisplay = new TextDisplayBuilder().setContent(textContent.trim());
+  v2Components.push(textDisplay);
+
+  // 4. Action Row Components
+  rawActionRows.forEach((row) => {
+    v2Components.push(row);
+  });
+
+  return {
+    components: v2Components,
+    flags: MessageFlags.IsComponentsV2 as any,
+  };
 }
 
 // Deploy or Update Live Discord Panel Message
@@ -346,12 +246,11 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
   const channel = (await guild.channels.fetch(panel.channelId).catch(() => null)) as TextChannel;
   if (!channel || !channel.isTextBased()) throw new Error("Der gewählte Discord-Kanal wurde nicht gefunden oder ist kein Textkanal.");
 
-  const { content, embeds, components, rawActionRows } = await buildSelfRoleEmbedAndComponents(guild, panel);
+  const { components, flags } = await buildSelfRoleEmbedAndComponents(guild, panel);
 
   const payload: any = {
-    content: content.trim() || undefined,
-    embeds: embeds,
     components: components as any,
+    flags: flags,
   };
 
   let message;
@@ -370,35 +269,8 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
     try {
       message = await channel.send(payload);
     } catch (sendErr: any) {
-      // Fallback 1: If raw V2 Container component is rejected by Discord API, fall back to native Markdown content + raw ActionRows!
-      if (sendErr.code === 50035 || sendErr.message?.includes("Invalid Component") || sendErr.rawError?.errors?.components) {
-        console.warn("[SelfRole] Discord V2 Container component rejected. Falling back to native markdown + ActionRows...");
-        let markdownContent = "";
-        if (panel.image && isValidUrl(panel.image)) markdownContent += `${panel.image.trim()}\n`;
-        if (panel.embedTitle) markdownContent += `# ${panel.embedTitle.trim()}\n`;
-        if (panel.embedDescription) markdownContent += `${panel.embedDescription.trim()}\n`;
-        if (panel.footer) markdownContent += `\n*${panel.footer.trim()}*`;
-
-        try {
-          message = await channel.send({
-            content: markdownContent.trim() || undefined,
-            components: rawActionRows as any,
-          });
-        } catch (fbErr: any) {
-          // Fallback 2: If emoji error occurred, strip emojis
-          const fallbackPanel = {
-            ...panel,
-            options: (panel.options || []).map((o: any) => ({ ...o, emoji: null })),
-          };
-          const fallback = await buildSelfRoleEmbedAndComponents(guild, fallbackPanel);
-          message = await channel.send({
-            content: fallback.content.trim() || undefined,
-            embeds: fallback.embeds,
-            components: fallback.components as any,
-          });
-        }
-      } else if (sendErr.code === 50013) {
-        throw new Error(`Der Bot hat keine Berechtigung 'Nachrichten senden' oder 'Links einbetten' im Kanal #${channel.name}.`);
+      if (sendErr.code === 50013) {
+        throw new Error(`Der Bot hat keine Berechtigung 'Nachrichten senden' im Kanal #${channel.name}.`);
       } else if (sendErr.code === 50001) {
         throw new Error(`Der Bot hat keinen Zugriff auf den Kanal #${channel.name}.`);
       } else {
@@ -431,11 +303,10 @@ export async function refreshSelfRolePanelMessage(client: Client, panelId: strin
     const existingMessage = await channel.messages.fetch(panel.messageId).catch(() => null);
     if (!existingMessage) return;
 
-    const { content, embeds, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
+    const { components, flags } = await buildSelfRoleEmbedAndComponents(guild, panel);
     await existingMessage.edit({
-      content: content.trim() || undefined,
-      embeds: embeds,
       components: components as any,
+      flags: flags,
     });
   } catch (e) {
     console.error("Error refreshing self role panel message:", e);
@@ -499,8 +370,6 @@ export async function handleSelfRoleInteraction(client: Client, interaction: Int
 
     const targetRoleId = option.roleId;
     const hasRole = member.roles.cache.has(targetRoleId);
-    const roleObj = interaction.guild.roles.cache.get(targetRoleId);
-    const roleName = option.label || option.roleName || roleObj?.name || "Role";
 
     if (hasRole) {
       // Remove role
@@ -608,4 +477,3 @@ export function setupSelfRoleInteractions(client: Client) {
     }
   });
 }
-
