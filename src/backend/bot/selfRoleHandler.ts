@@ -73,15 +73,6 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           selectOption.setDescription(opt.description.substring(0, 100));
         }
 
-        if (opt.emoji) {
-          const validEmoji = parseAndValidateEmoji(opt.emoji);
-          if (validEmoji) {
-            try {
-              selectOption.setEmoji(validEmoji);
-            } catch (e) {}
-          }
-        }
-
         return selectOption;
       });
 
@@ -116,12 +107,6 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           .setCustomId(`selfrole_toggle:${panel.id}:${opt.id}`)
           .setLabel(finalLabel.substring(0, 80))
           .setStyle(style);
-
-        if (opt.emoji) {
-          try {
-            button.setEmoji(parseAndValidateEmoji(opt.emoji));
-          } catch (e) {}
-        }
 
         currentRow.addComponents(button);
       });

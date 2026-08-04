@@ -95,16 +95,7 @@ function buildEmbedHelper(config: {
 }
 
 function safeSetEmoji(builder: any, emojiInput?: string | null): boolean {
-  const valid = parseAndValidateEmoji(emojiInput);
-  if (!valid) return false;
-
-  try {
-    builder.setEmoji(valid);
-    return true;
-  } catch (err) {
-    console.warn(`[App System] Skipping invalid emoji input: "${emojiInput}"`);
-    return false;
-  }
+  return false;
 }
 
 export async function deployApplicationPanelEmbed(client: Client, panelId: string): Promise<string> {
