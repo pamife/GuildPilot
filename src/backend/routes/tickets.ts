@@ -120,6 +120,34 @@ router.delete("/:guildId/tickets/categories/:categoryId", async (req, res) => {
   }
 });
 
+// Logs & Settings
+router.get("/:guildId/tickets/logs", async (req, res) => {
+  try {
+    const logs = await getTicketLogs(req.params.guildId);
+    res.json(logs);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch ticket logs" });
+  }
+});
+
+router.get("/:guildId/tickets/settings", async (req, res) => {
+  try {
+    const settings = await getTicketSettings(req.params.guildId);
+    res.json(settings);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch settings" });
+  }
+});
+
+router.patch("/:guildId/tickets/settings", async (req, res) => {
+  try {
+    const settings = await updateTicketSettings(req.params.guildId, req.body);
+    res.json(settings);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to update settings" });
+  }
+});
+
 // Tickets List & Actions
 router.get("/:guildId/tickets", async (req, res) => {
   try {
@@ -256,34 +284,6 @@ router.get("/:guildId/tickets/transcripts/:ticketId/download", async (req, res) 
     res.sendFile(filePath);
   } catch (err: any) {
     res.status(500).send("Error serving transcript.");
-  }
-});
-
-// Logs & Settings
-router.get("/:guildId/tickets/logs", async (req, res) => {
-  try {
-    const logs = await getTicketLogs(req.params.guildId);
-    res.json(logs);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch ticket logs" });
-  }
-});
-
-router.get("/:guildId/tickets/settings", async (req, res) => {
-  try {
-    const settings = await getTicketSettings(req.params.guildId);
-    res.json(settings);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to fetch settings" });
-  }
-});
-
-router.patch("/:guildId/tickets/settings", async (req, res) => {
-  try {
-    const settings = await updateTicketSettings(req.params.guildId, req.body);
-    res.json(settings);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || "Failed to update settings" });
   }
 });
 
