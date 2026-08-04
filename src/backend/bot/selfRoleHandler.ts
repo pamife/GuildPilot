@@ -102,6 +102,8 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
 
   if (panel.embedColor && /^#[0-9A-Fa-f]{6}$/.test(panel.embedColor)) {
     embed.setColor(panel.embedColor as any);
+  } else if (panel.embedColor === "none") {
+    embed.setColor("#2b2d31");
   } else {
     embed.setColor("#5865F2");
   }

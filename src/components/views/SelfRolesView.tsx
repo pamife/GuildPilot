@@ -95,6 +95,7 @@ interface SelfRolesViewProps {
 }
 
 const COLOR_PRESETS = [
+  "#2b2d31", // Neutral Dark (Components V2 / Seamless Look)
   "#5865F2", // Discord Blurple
   "#57F287", // Green
   "#FEE75C", // Yellow
@@ -104,7 +105,6 @@ const COLOR_PRESETS = [
   "#1ABC9C", // Turquoise
   "#9B59B6", // Purple
   "#E67E22", // Orange
-  "#000000", // Black
 ];
 
 export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesViewProps) {
@@ -1103,11 +1103,13 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
           <div className="flex-1 p-4 bg-[#313338] overflow-y-auto space-y-3">
             {/* Discord Live Embed Container */}
             <div className="bg-[#2b2d31] rounded-xl p-4 border border-[#1e1f22] shadow-2xl relative space-y-3 font-sans">
-              {/* Colored Left Border */}
-              <div
-                className="absolute top-0 bottom-0 left-0 w-1.5 rounded-l-xl"
-                style={{ backgroundColor: formData.embedColor || "#5865F2" }}
-              />
+              {/* Colored Left Border (Hidden if Neutral Dark #2b2d31) */}
+              {formData.embedColor && formData.embedColor.toLowerCase() !== "#2b2d31" && formData.embedColor !== "none" && (
+                <div
+                  className="absolute top-0 bottom-0 left-0 w-1.5 rounded-l-xl"
+                  style={{ backgroundColor: formData.embedColor }}
+                />
+              )}
 
               {/* Author Header */}
               {formData.embedAuthorName && (
