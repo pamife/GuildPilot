@@ -167,6 +167,21 @@ model AppPanel {
   welcomeFooter      String?       @default("GuildPilot Applications System")
   welcomeFooterIcon  String?
 
+  acceptMessage          String?       @default("🎉 Congratulations {user}! Your application for {form_name} (App #{app_number}) was ACCEPTED!")
+  acceptEmbedTitle       String?       @default("🎉 Application Accepted!")
+  acceptEmbedDescription String?       @default("Congratulations! Your application has been accepted by our staff team.")
+  acceptEmbedColor       String        @default("#23A55A")
+
+  denyMessage            String?       @default("❌ Hello {user}, your application for {form_name} (App #{app_number}) was DENIED.")
+  denyEmbedTitle         String?       @default("❌ Application Decision")
+  denyEmbedDescription   String?       @default("Thank you for applying. Unfortunately, your application was not accepted at this time.")
+  denyEmbedColor         String        @default("#F23F43")
+
+  waitlistMessage        String?       @default("⏳ Hello {user}, your application for {form_name} (App #{app_number}) was placed on WAITLIST.")
+  waitlistEmbedTitle     String?       @default("⏳ Application Waitlisted")
+  waitlistEmbedDescription String?     @default("Your application has been placed on our waitlist. We will contact you when a position opens up.")
+  waitlistEmbedColor     String        @default("#F0B232")
+
   channelId          String?
   messageId          String?
   createdAt          DateTime      @default(now())
@@ -217,6 +232,21 @@ model AppForm {
   welcomeImage       String?
   welcomeFooter      String?       @default("GuildPilot Applications System")
   welcomeFooterIcon  String?
+
+  acceptMessage          String?       @default("🎉 Congratulations {user}! Your application for {form_name} (App #{app_number}) was ACCEPTED!")
+  acceptEmbedTitle       String?       @default("🎉 Application Accepted!")
+  acceptEmbedDescription String?       @default("Congratulations! Your application has been accepted by our staff team.")
+  acceptEmbedColor       String        @default("#23A55A")
+
+  denyMessage            String?       @default("❌ Hello {user}, your application for {form_name} (App #{app_number}) was DENIED.")
+  denyEmbedTitle         String?       @default("❌ Application Decision")
+  denyEmbedDescription   String?       @default("Thank you for applying. Unfortunately, your application was not accepted at this time.")
+  denyEmbedColor         String        @default("#F23F43")
+
+  waitlistMessage        String?       @default("⏳ Hello {user}, your application for {form_name} (App #{app_number}) was placed on WAITLIST.")
+  waitlistEmbedTitle     String?       @default("⏳ Application Waitlisted")
+  waitlistEmbedDescription String?     @default("Your application has been placed on our waitlist. We will contact you when a position opens up.")
+  waitlistEmbedColor     String        @default("#F0B232")
 
   buttonText         String        @default("Apply Now")
   buttonEmoji        String?       @default("📝")

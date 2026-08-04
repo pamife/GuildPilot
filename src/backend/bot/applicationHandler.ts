@@ -31,6 +31,17 @@ import {
 import { generateApplicationHtmlTranscript } from "../services/transcriptService";
 import { broadcastEvent } from "../socket/socketManager";
 
+function replacePlaceholders(text: string, app: any, form: any, reason?: string): string {
+  if (!text) return "";
+  return text
+    .replace(/{user}/g, `<@${app.userId}>`)
+    .replace(/{user_id}/g, app.userId)
+    .replace(/{username}/g, app.userTag)
+    .replace(/{form_name}/g, form?.name || "Application")
+    .replace(/{app_number}/g, String(app.appNumber))
+    .replace(/{reason}/g, reason || "No reason specified.");
+}
+
 function buildEmbedHelper(config: {
   title?: string;
   description?: string;
@@ -398,7 +409,7 @@ export function setupApplicationInteractions(client: Client) {
         });
       }
 
-      // 5. Handle In-Channel Reviewer Control Buttons
+      // 5. Handle In-Channel Reviewer Control Buttons (Accept, Deny, Waitlist)
       if (interaction.isButton() && interaction.customId.startsWith("app_ctrl:")) {
         const parts = interaction.customId.split(":");
         const action = parts[1];
@@ -407,6 +418,7 @@ export function setupApplicationInteractions(client: Client) {
         const app = await getApplicationById(appId);
         if (!app) return interaction.reply({ content: "❌ Application not found.", ephemeral: true });
 
+        const form: any = (app as any).form || {};
         const executor = {
           id: interaction.user.id,
           tag: interaction.user.tag,
@@ -419,16 +431,63 @@ export function setupApplicationInteractions(client: Client) {
         } else if (action === "accept") {
           await updateApplicationStatus(appId, "ACCEPTED", executor, { reason: "Approved via Discord Channel Controls" });
           await interaction.reply({ content: `✅ **Application #${app.appNumber} ACCEPTED** by ${interaction.user.tag}` });
+
           const user = await client.users.fetch(app.userId).catch(() => null);
-          if (user) await user.send(`🎉 **Congratulations!** Your application #${app.appNumber} for **${app.form?.name || "Server"}** was **ACCEPTED**!`).catch(() => null);
+          if (user) {
+            const acceptMsgText = replacePlaceholders(
+              form.acceptMessage || "🎉 Congratulations {user}! Your application for {form_name} (App #{app_number}) was ACCEPTED!",
+              app,
+              form
+            );
+            const acceptEmbed = buildEmbedHelper({
+              title: replacePlaceholders(form.acceptEmbedTitle || "🎉 Application Accepted!", app, form),
+              description: replacePlaceholders(form.acceptEmbedDescription || "Congratulations! Your application has been accepted by our staff team.", app, form),
+              color: form.acceptEmbedColor || "#23A55A",
+              showTimestamp: true,
+            });
+
+            await user.send({ content: acceptMsgText, embeds: [acceptEmbed] }).catch(() => null);
+          }
         } else if (action === "deny") {
           await updateApplicationStatus(appId, "DENIED", executor, { reason: "Denied via Discord Channel Controls" });
           await interaction.reply({ content: `❌ **Application #${app.appNumber} DENIED** by ${interaction.user.tag}` });
+
           const user = await client.users.fetch(app.userId).catch(() => null);
-          if (user) await user.send(`❌ Your application #${app.appNumber} for **${app.form?.name || "Server"}** was **DENIED**.`).catch(() => null);
+          if (user) {
+            const denyMsgText = replacePlaceholders(
+              form.denyMessage || "❌ Hello {user}, your application for {form_name} (App #{app_number}) was DENIED.",
+              app,
+              form
+            );
+            const denyEmbed = buildEmbedHelper({
+              title: replacePlaceholders(form.denyEmbedTitle || "❌ Application Decision", app, form),
+              description: replacePlaceholders(form.denyEmbedDescription || "Thank you for applying. Unfortunately, your application was not accepted at this time.", app, form),
+              color: form.denyEmbedColor || "#F23F43",
+              showTimestamp: true,
+            });
+
+            await user.send({ content: denyMsgText, embeds: [denyEmbed] }).catch(() => null);
+          }
         } else if (action === "waitlist") {
           await updateApplicationStatus(appId, "WAITLISTED", executor);
           await interaction.reply({ content: `⏳ Application #${app.appNumber} placed on **WAITLIST** by ${interaction.user.tag}` });
+
+          const user = await client.users.fetch(app.userId).catch(() => null);
+          if (user) {
+            const waitlistMsgText = replacePlaceholders(
+              form.waitlistMessage || "⏳ Hello {user}, your application for {form_name} (App #{app_number}) was placed on WAITLIST.",
+              app,
+              form
+            );
+            const waitlistEmbed = buildEmbedHelper({
+              title: replacePlaceholders(form.waitlistEmbedTitle || "⏳ Application Waitlisted", app, form),
+              description: replacePlaceholders(form.waitlistEmbedDescription || "Your application has been placed on our waitlist. We will contact you when a position opens up.", app, form),
+              color: form.waitlistEmbedColor || "#F0B232",
+              showTimestamp: true,
+            });
+
+            await user.send({ content: waitlistMsgText, embeds: [waitlistEmbed] }).catch(() => null);
+          }
         } else if (action === "close") {
           const ch = interaction.channel as TextChannel;
           const filePath = await generateApplicationHtmlTranscript(app, ch);

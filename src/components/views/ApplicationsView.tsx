@@ -43,13 +43,12 @@ import {
   Award,
   Layers,
   Palette,
-  Image as ImageIcon,
-  User,
-  Link,
+  ImageIcon,
+  BellRing,
 } from "lucide-react";
 
 type SubPage = "dashboard" | "panels" | "forms" | "applications" | "questions" | "roles" | "review-queue" | "statistics" | "settings";
-type PanelTab = "embed" | "dm_embed" | "welcome" | "forms" | "channels";
+type PanelTab = "embed" | "dm_embed" | "welcome" | "decisions" | "forms" | "channels";
 
 interface ApplicationsViewProps {
   selectedGuildId: string | null;
@@ -91,15 +90,12 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
 
   // Filter & Search states
   const [loading, setLoading] = useState(false);
-  const [appSearch, setAppSearch] = useState("");
-  const [appStatusFilter, setAppStatusFilter] = useState("ALL");
-  const [appFormFilter, setAppFormFilter] = useState("ALL");
 
   // Panel Modal & Editor states
   const [isPanelModalOpen, setIsPanelModalOpen] = useState(false);
   const [editingPanel, setEditingPanel] = useState<any>(null);
   const [panelModalTab, setPanelModalTab] = useState<PanelTab>("embed");
-  const [previewTab, setPreviewTab] = useState<"panel" | "dm" | "welcome">("panel");
+  const [previewTab, setPreviewTab] = useState<"panel" | "dm" | "welcome" | "accepted" | "denied">("panel");
 
   const [panelPayload, setPanelPayload] = useState<any>({
     name: "Application Center",
@@ -136,6 +132,21 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
     welcomeImage: "",
     welcomeFooter: "GuildPilot Applications System",
     welcomeFooterIcon: "",
+
+    acceptMessage: "🎉 Congratulations {user}! Your application for {form_name} (App #{app_number}) was ACCEPTED!",
+    acceptEmbedTitle: "🎉 Application Accepted!",
+    acceptEmbedDescription: "Congratulations! Your application has been accepted by our staff team.",
+    acceptEmbedColor: "#23A55A",
+
+    denyMessage: "❌ Hello {user}, your application for {form_name} (App #{app_number}) was DENIED.",
+    denyEmbedTitle: "❌ Application Decision",
+    denyEmbedDescription: "Thank you for applying. Unfortunately, your application was not accepted at this time.",
+    denyEmbedColor: "#F23F43",
+
+    waitlistMessage: "⏳ Hello {user}, your application for {form_name} (App #{app_number}) was placed on WAITLIST.",
+    waitlistEmbedTitle: "⏳ Application Waitlisted",
+    waitlistEmbedDescription: "Your application has been placed on our waitlist. We will contact you when a position opens up.",
+    waitlistEmbedColor: "#F0B232",
 
     channelId: "",
   });
@@ -286,6 +297,21 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         welcomeFooter: panel.welcomeFooter || "",
         welcomeFooterIcon: panel.welcomeFooterIcon || "",
 
+        acceptMessage: panel.acceptMessage || "🎉 Congratulations {user}! Your application for {form_name} (App #{app_number}) was ACCEPTED!",
+        acceptEmbedTitle: panel.acceptEmbedTitle || "🎉 Application Accepted!",
+        acceptEmbedDescription: panel.acceptEmbedDescription || "Congratulations! Your application has been accepted by our staff team.",
+        acceptEmbedColor: panel.acceptEmbedColor || "#23A55A",
+
+        denyMessage: panel.denyMessage || "❌ Hello {user}, your application for {form_name} (App #{app_number}) was DENIED.",
+        denyEmbedTitle: panel.denyEmbedTitle || "❌ Application Decision",
+        denyEmbedDescription: panel.denyEmbedDescription || "Thank you for applying. Unfortunately, your application was not accepted at this time.",
+        denyEmbedColor: panel.denyEmbedColor || "#F23F43",
+
+        waitlistMessage: panel.waitlistMessage || "⏳ Hello {user}, your application for {form_name} (App #{app_number}) was placed on WAITLIST.",
+        waitlistEmbedTitle: panel.waitlistEmbedTitle || "⏳ Application Waitlisted",
+        waitlistEmbedDescription: panel.waitlistEmbedDescription || "Your application has been placed on our waitlist. We will contact you when a position opens up.",
+        waitlistEmbedColor: panel.waitlistEmbedColor || "#F0B232",
+
         channelId: panel.channelId || "",
       });
     } else {
@@ -325,6 +351,21 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         welcomeImage: "",
         welcomeFooter: "GuildPilot Applications System",
         welcomeFooterIcon: "",
+
+        acceptMessage: "🎉 Congratulations {user}! Your application for {form_name} (App #{app_number}) was ACCEPTED!",
+        acceptEmbedTitle: "🎉 Application Accepted!",
+        acceptEmbedDescription: "Congratulations! Your application has been accepted by our staff team.",
+        acceptEmbedColor: "#23A55A",
+
+        denyMessage: "❌ Hello {user}, your application for {form_name} (App #{app_number}) was DENIED.",
+        denyEmbedTitle: "❌ Application Decision",
+        denyEmbedDescription: "Thank you for applying. Unfortunately, your application was not accepted at this time.",
+        denyEmbedColor: "#F23F43",
+
+        waitlistMessage: "⏳ Hello {user}, your application for {form_name} (App #{app_number}) was placed on WAITLIST.",
+        waitlistEmbedTitle: "⏳ Application Waitlisted",
+        waitlistEmbedDescription: "Your application has been placed on our waitlist. We will contact you when a position opens up.",
+        waitlistEmbedColor: "#F0B232",
 
         channelId: "",
       });
@@ -564,11 +605,11 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
             <h1 className="text-lg font-bold text-white flex items-center gap-2">
               Applications Workflow Engine
               <span className="text-xs px-2.5 py-0.5 rounded-full bg-discord-brand/20 text-discord-brand font-semibold border border-discord-brand/30">
-                Full 100% Embed Customization
+                Custom DM & Decision Messages
               </span>
             </h1>
             <p className="text-xs text-zinc-400">
-              Customize title, description, color, author, thumbnail, image, footer, timestamp & DM embeds
+              Customize intake DM embeds, accepted/denied/waitlisted notification messages per form
             </p>
           </div>
         </div>
@@ -661,7 +702,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-xl font-bold text-white">Application Panels</h2>
-                <p className="text-xs text-zinc-400">Customize every detail of your Discord channel embed, DM embed & review embeds</p>
+                <p className="text-xs text-zinc-400">Configure Intake Messages & Decision Messages per Panel/Form</p>
               </div>
               <button
                 onClick={() => handleOpenPanelModal()}
@@ -692,7 +733,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                         onClick={() => handleOpenPanelModal(p)}
                         className="p-2 rounded-xl bg-[#1e1f22] text-zinc-300 hover:text-white"
                       >
-                        <Edit className="w-4 h-4" /> Edit Embeds
+                        <Edit className="w-4 h-4" /> Edit Embeds & Messages
                       </button>
                       <button
                         onClick={() => handleDeletePanel(p.id)}
@@ -850,7 +891,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         )}
       </main>
 
-      {/* FULL EMBED CUSTOMIZER PANEL MODAL */}
+      {/* FULL EMBED & DECISION MESSAGES PANEL MODAL */}
       {isPanelModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
           <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl max-w-6xl w-full h-[90vh] flex flex-col shadow-2xl overflow-hidden">
@@ -858,15 +899,16 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
             <div className="p-4 border-b border-[#35373c] bg-[#1e1f22] flex items-center justify-between">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Palette className="w-5 h-5 text-discord-brand" />
-                {editingPanel ? "Full Embed Customizer & Panel Editor" : "Create Application Panel"}
+                {editingPanel ? "Full Embed Customizer & Decision Messages" : "Create Application Panel"}
               </h3>
 
-              <div className="flex items-center gap-1.5 bg-[#2b2d31] p-1 rounded-xl border border-[#35373c]">
+              <div className="flex items-center gap-1 bg-[#2b2d31] p-1 rounded-xl border border-[#35373c]">
                 {[
                   { id: "embed", label: "1. Panel Embed", icon: Palette },
-                  { id: "dm_embed", label: "2. Applicant DM Embed", icon: MessageSquare },
-                  { id: "welcome", label: "3. Review Welcome Embed", icon: Sparkles },
-                  { id: "channels", label: "4. Target Channel", icon: Hash },
+                  { id: "dm_embed", label: "2. Intake DM Embed", icon: MessageSquare },
+                  { id: "welcome", label: "3. Review Embed", icon: Sparkles },
+                  { id: "decisions", label: "4. Decision Messages", icon: BellRing },
+                  { id: "channels", label: "5. Channels", icon: Hash },
                 ].map((t) => (
                   <button
                     key={t.id}
@@ -875,6 +917,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                       if (t.id === "embed") setPreviewTab("panel");
                       if (t.id === "dm_embed") setPreviewTab("dm");
                       if (t.id === "welcome") setPreviewTab("welcome");
+                      if (t.id === "decisions") setPreviewTab("accepted");
                     }}
                     className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                       panelModalTab === t.id ? "bg-discord-brand text-white shadow" : "text-zinc-400 hover:text-white"
@@ -886,9 +929,9 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
               </div>
             </div>
 
-            {/* Split Grid: Left Column (Full Embed Controls) | Right Column (Live Discord Preview) */}
+            {/* Split Grid: Left Column (Embed & Decision Controls) | Right Column (Live Discord Preview) */}
             <div className="flex-1 grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
-              {/* Left Column: Embed Controls */}
+              {/* Left Column: Controls */}
               <div className="p-6 overflow-y-auto space-y-4 text-xs border-r border-[#35373c]">
                 {panelModalTab === "embed" && (
                   <div className="space-y-4">
@@ -955,81 +998,13 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                         />
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-2 gap-3 pt-2">
-                      <div>
-                        <label className="font-bold text-zinc-300 block mb-1">Author Name:</label>
-                        <input
-                          type="text"
-                          placeholder="e.g. GuildPilot Systems"
-                          value={panelPayload.embedAuthorName}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, embedAuthorName: e.target.value })}
-                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="font-bold text-zinc-300 block mb-1">Author Icon URL:</label>
-                        <input
-                          type="text"
-                          placeholder="https://..."
-                          value={panelPayload.embedAuthorIcon}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, embedAuthorIcon: e.target.value })}
-                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="font-bold text-zinc-300 block mb-1">Thumbnail URL:</label>
-                        <input
-                          type="text"
-                          placeholder="https://..."
-                          value={panelPayload.thumbnail}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, thumbnail: e.target.value })}
-                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="font-bold text-zinc-300 block mb-1">Large Image URL:</label>
-                        <input
-                          type="text"
-                          placeholder="https://..."
-                          value={panelPayload.image}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, image: e.target.value })}
-                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="font-bold text-zinc-300 block mb-1">Footer Text:</label>
-                        <input
-                          type="text"
-                          value={panelPayload.footer}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, footer: e.target.value })}
-                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="font-bold text-zinc-300 block mb-1">Footer Icon URL:</label>
-                        <input
-                          type="text"
-                          placeholder="https://..."
-                          value={panelPayload.footerIcon}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, footerIcon: e.target.value })}
-                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                        />
-                      </div>
-                    </div>
                   </div>
                 )}
 
                 {panelModalTab === "dm_embed" && (
                   <div className="space-y-4">
                     <h4 className="font-bold text-white text-sm border-b border-[#35373c] pb-2 flex items-center gap-2">
-                      <MessageSquare className="w-4 h-4 text-discord-brand" /> Applicant Direct Message (DM) Embed
+                      <MessageSquare className="w-4 h-4 text-discord-brand" /> Applicant Intake Direct Message (DM) Embed
                     </h4>
 
                     <div>
@@ -1051,99 +1026,91 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                         className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
                       />
                     </div>
-
-                    <div>
-                      <label className="font-bold text-zinc-300 block mb-1">DM Embed Color (Hex):</label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="color"
-                          value={panelPayload.dmColor}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, dmColor: e.target.value })}
-                          className="w-12 h-10 bg-[#1e1f22] border border-[#35373c] rounded-xl cursor-pointer p-1"
-                        />
-                        <input
-                          type="text"
-                          value={panelPayload.dmColor}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, dmColor: e.target.value })}
-                          className="flex-1 bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-mono"
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="font-bold text-zinc-300 block mb-1">DM Thumbnail URL:</label>
-                        <input
-                          type="text"
-                          value={panelPayload.dmThumbnail}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, dmThumbnail: e.target.value })}
-                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                        />
-                      </div>
-                      <div>
-                        <label className="font-bold text-zinc-300 block mb-1">DM Large Image URL:</label>
-                        <input
-                          type="text"
-                          value={panelPayload.dmImage}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, dmImage: e.target.value })}
-                          className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                        />
-                      </div>
-                    </div>
-
-                    <div>
-                      <label className="font-bold text-zinc-300 block mb-1">DM Footer Text:</label>
-                      <input
-                        type="text"
-                        value={panelPayload.dmFooter}
-                        onChange={(e) => setPanelPayload({ ...panelPayload, dmFooter: e.target.value })}
-                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                      />
-                    </div>
                   </div>
                 )}
 
-                {panelModalTab === "welcome" && (
-                  <div className="space-y-4">
-                    <h4 className="font-bold text-white text-sm border-b border-[#35373c] pb-2 flex items-center gap-2">
-                      <Sparkles className="w-4 h-4 text-discord-brand" /> Review Channel Welcome Embed
-                    </h4>
-
-                    <div>
-                      <label className="font-bold text-zinc-300 block mb-1">Welcome Embed Title:</label>
-                      <input
-                        type="text"
-                        value={panelPayload.welcomeTitle}
-                        onChange={(e) => setPanelPayload({ ...panelPayload, welcomeTitle: e.target.value })}
-                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                      />
+                {panelModalTab === "decisions" && (
+                  <div className="space-y-6">
+                    <div className="border-b border-[#35373c] pb-3">
+                      <h4 className="font-bold text-white text-sm flex items-center gap-2">
+                        <BellRing className="w-4 h-4 text-emerald-400" /> Accept, Deny & Waitlist Decision Messages
+                      </h4>
+                      <p className="text-xs text-zinc-400 mt-1">
+                        Use placeholders: <code className="text-discord-brand font-mono">{`{user}`}</code>, <code className="text-discord-brand font-mono">{`{form_name}`}</code>, <code className="text-discord-brand font-mono">{`{app_number}`}</code>, <code className="text-discord-brand font-mono">{`{reason}`}</code>
+                      </p>
                     </div>
 
-                    <div>
-                      <label className="font-bold text-zinc-300 block mb-1">Welcome Embed Description:</label>
-                      <textarea
-                        rows={3}
-                        value={panelPayload.welcomeDescription}
-                        onChange={(e) => setPanelPayload({ ...panelPayload, welcomeDescription: e.target.value })}
-                        className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="font-bold text-zinc-300 block mb-1">Welcome Embed Color (Hex):</label>
-                      <div className="flex items-center gap-3">
-                        <input
-                          type="color"
-                          value={panelPayload.welcomeColor}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, welcomeColor: e.target.value })}
-                          className="w-12 h-10 bg-[#1e1f22] border border-[#35373c] rounded-xl cursor-pointer p-1"
-                        />
+                    {/* ACCEPT MESSAGE SETTINGS */}
+                    <div className="p-4 bg-[#1e1f22] rounded-xl border border-emerald-500/30 space-y-3">
+                      <h5 className="font-bold text-emerald-400 text-xs flex items-center gap-1.5">
+                        <CheckCircle2 className="w-4 h-4" /> Accepted Notification DM
+                      </h5>
+                      <div>
+                        <label className="font-bold text-zinc-300 block mb-1">Accept Message Content:</label>
                         <input
                           type="text"
-                          value={panelPayload.welcomeColor}
-                          onChange={(e) => setPanelPayload({ ...panelPayload, welcomeColor: e.target.value })}
-                          className="flex-1 bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-mono"
+                          value={panelPayload.acceptMessage}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, acceptMessage: e.target.value })}
+                          className="w-full bg-[#2b2d31] border border-[#35373c] rounded-xl p-2.5 text-white"
                         />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="font-bold text-zinc-300 block mb-1">Accept Embed Title:</label>
+                          <input
+                            type="text"
+                            value={panelPayload.acceptEmbedTitle}
+                            onChange={(e) => setPanelPayload({ ...panelPayload, acceptEmbedTitle: e.target.value })}
+                            className="w-full bg-[#2b2d31] border border-[#35373c] rounded-xl p-2.5 text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-bold text-zinc-300 block mb-1">Accept Embed Color:</label>
+                          <input
+                            type="color"
+                            value={panelPayload.acceptEmbedColor}
+                            onChange={(e) => setPanelPayload({ ...panelPayload, acceptEmbedColor: e.target.value })}
+                            className="w-full bg-[#2b2d31] border border-[#35373c] rounded-xl h-10 cursor-pointer p-1"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* DENY MESSAGE SETTINGS */}
+                    <div className="p-4 bg-[#1e1f22] rounded-xl border border-rose-500/30 space-y-3">
+                      <h5 className="font-bold text-rose-400 text-xs flex items-center gap-1.5">
+                        <XCircle className="w-4 h-4" /> Denied Notification DM
+                      </h5>
+                      <div>
+                        <label className="font-bold text-zinc-300 block mb-1">Deny Message Content:</label>
+                        <input
+                          type="text"
+                          value={panelPayload.denyMessage}
+                          onChange={(e) => setPanelPayload({ ...panelPayload, denyMessage: e.target.value })}
+                          className="w-full bg-[#2b2d31] border border-[#35373c] rounded-xl p-2.5 text-white"
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        <div>
+                          <label className="font-bold text-zinc-300 block mb-1">Deny Embed Title:</label>
+                          <input
+                            type="text"
+                            value={panelPayload.denyEmbedTitle}
+                            onChange={(e) => setPanelPayload({ ...panelPayload, denyEmbedTitle: e.target.value })}
+                            className="w-full bg-[#2b2d31] border border-[#35373c] rounded-xl p-2.5 text-white"
+                          />
+                        </div>
+                        <div>
+                          <label className="font-bold text-zinc-300 block mb-1">Deny Embed Color:</label>
+                          <input
+                            type="color"
+                            value={panelPayload.denyEmbedColor}
+                            onChange={(e) => setPanelPayload({ ...panelPayload, denyEmbedColor: e.target.value })}
+                            className="w-full bg-[#2b2d31] border border-[#35373c] rounded-xl h-10 cursor-pointer p-1"
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1183,7 +1150,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                     <div className="flex items-center gap-1 bg-[#1e1f22] p-1 rounded-xl border border-[#35373c]">
                       <button
                         onClick={() => setPreviewTab("panel")}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
                           previewTab === "panel" ? "bg-discord-brand text-white" : "text-zinc-400"
                         }`}
                       >
@@ -1191,19 +1158,27 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                       </button>
                       <button
                         onClick={() => setPreviewTab("dm")}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
                           previewTab === "dm" ? "bg-discord-brand text-white" : "text-zinc-400"
                         }`}
                       >
-                        DM Embed
+                        Intake DM
                       </button>
                       <button
-                        onClick={() => setPreviewTab("welcome")}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold ${
-                          previewTab === "welcome" ? "bg-discord-brand text-white" : "text-zinc-400"
+                        onClick={() => setPreviewTab("accepted")}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
+                          previewTab === "accepted" ? "bg-emerald-600 text-white" : "text-zinc-400"
                         }`}
                       >
-                        Welcome Embed
+                        Accepted DM
+                      </button>
+                      <button
+                        onClick={() => setPreviewTab("denied")}
+                        className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
+                          previewTab === "denied" ? "bg-rose-600 text-white" : "text-zinc-400"
+                        }`}
+                      >
+                        Denied DM
                       </button>
                     </div>
                   </div>
@@ -1212,38 +1187,10 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                   {previewTab === "panel" && (
                     <div
                       style={{ borderLeftColor: panelPayload.embedColor || "#5865F2" }}
-                      className="bg-[#2b2d31] border-l-4 rounded-r-xl p-4 shadow-2xl space-y-3 relative"
+                      className="bg-[#2b2d31] border-l-4 rounded-r-xl p-4 shadow-2xl space-y-3"
                     >
-                      {panelPayload.embedAuthorName && (
-                        <div className="flex items-center gap-2 text-xs font-bold text-white">
-                          {panelPayload.embedAuthorIcon && <img src={panelPayload.embedAuthorIcon} alt="" className="w-4 h-4 rounded-full" />}
-                          <span>{panelPayload.embedAuthorName}</span>
-                        </div>
-                      )}
-
                       <h4 className="font-bold text-white text-base">{panelPayload.embedTitle || "Panel Title"}</h4>
                       <p className="text-xs text-zinc-300 whitespace-pre-wrap">{panelPayload.embedDescription}</p>
-
-                      {panelPayload.image && <img src={panelPayload.image} alt="" className="w-full rounded-xl max-h-48 object-cover" />}
-
-                      {panelPayload.footer && (
-                        <p className="text-[10px] text-zinc-400 pt-2 border-t border-[#35373c]">{panelPayload.footer}</p>
-                      )}
-
-                      {/* Dropdown Select Menu or Button Preview */}
-                      {panelPayload.displayType === "dropdown" ? (
-                        <div className="mt-4 p-2.5 bg-[#1e1f22] border border-[#35373c] rounded-xl flex items-center justify-between text-xs text-zinc-400">
-                          <span>🔽 Select an application position...</span>
-                          <ChevronDown className="w-4 h-4" />
-                        </div>
-                      ) : (
-                        <div className="mt-4">
-                          <button className="px-4 py-2 bg-discord-brand text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-md">
-                            <span>📝</span>
-                            <span>Apply Now</span>
-                          </button>
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -1254,22 +1201,28 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                     >
                       <h4 className="font-bold text-white text-base">{panelPayload.dmTitle || "DM Title"}</h4>
                       <p className="text-xs text-zinc-300">{panelPayload.dmDescription}</p>
-                      <div className="mt-4">
-                        <button className="px-4 py-2 bg-discord-brand text-white font-bold text-xs rounded-xl flex items-center gap-2 shadow-md">
-                          <span>📝</span>
-                          <span>Answer Application Questions</span>
-                        </button>
-                      </div>
                     </div>
                   )}
 
-                  {previewTab === "welcome" && (
+                  {previewTab === "accepted" && (
                     <div
-                      style={{ borderLeftColor: panelPayload.welcomeColor || "#5865F2" }}
+                      style={{ borderLeftColor: panelPayload.acceptEmbedColor || "#23A55A" }}
                       className="bg-[#2b2d31] border-l-4 rounded-r-xl p-4 shadow-2xl space-y-3"
                     >
-                      <h4 className="font-bold text-white text-base">{panelPayload.welcomeTitle}</h4>
-                      <p className="text-xs text-zinc-300">{panelPayload.welcomeDescription}</p>
+                      <p className="text-xs font-bold text-emerald-400">{panelPayload.acceptMessage}</p>
+                      <h4 className="font-bold text-white text-base">{panelPayload.acceptEmbedTitle}</h4>
+                      <p className="text-xs text-zinc-300">{panelPayload.acceptEmbedDescription}</p>
+                    </div>
+                  )}
+
+                  {previewTab === "denied" && (
+                    <div
+                      style={{ borderLeftColor: panelPayload.denyEmbedColor || "#F23F43" }}
+                      className="bg-[#2b2d31] border-l-4 rounded-r-xl p-4 shadow-2xl space-y-3"
+                    >
+                      <p className="text-xs font-bold text-rose-400">{panelPayload.denyMessage}</p>
+                      <h4 className="font-bold text-white text-base">{panelPayload.denyEmbedTitle}</h4>
+                      <p className="text-xs text-zinc-300">{panelPayload.denyEmbedDescription}</p>
                     </div>
                   )}
                 </div>
@@ -1288,7 +1241,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                 onClick={handleSavePanel}
                 className="px-6 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl text-xs shadow-lg"
               >
-                Save All Embed Settings
+                Save All Embed & Decision Settings
               </button>
             </div>
           </div>
