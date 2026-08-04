@@ -85,26 +85,42 @@ function isValidUrl(str?: string | null): boolean {
 
 // Helper function to build Discord Embed and Components (Buttons or Dropdown)
 export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) {
-  // Fetch guild roles quickly (does not hang like members.fetch)
+  // Fetch guild roles & members quickly with 2-second timeout
   try {
     await guild.roles.fetch();
+    const fetchPromise = guild.members.fetch().catch(() => null);
+    const timeoutPromise = new Promise((res) => setTimeout(res, 2000));
+    await Promise.race([fetchPromise, timeoutPromise]);
   } catch (e) {
-    // Continue even if role fetch fails
+    // Continue even if member fetch fails
   }
 
-  const embed = new EmbedBuilder();
+  const embeds: EmbedBuilder[] = [];
 
-  if (panel.embedTitle && panel.embedTitle.trim()) embed.setTitle(panel.embedTitle.trim());
-  if (panel.embedDescription && panel.embedDescription.trim()) embed.setDescription(panel.embedDescription.trim());
+  // 1. If header banner graphic is set, create top Header Embed so the image renders ABOVE text!
+  if (isValidUrl(panel.image)) {
+    const headerEmbed = new EmbedBuilder();
+    try {
+      headerEmbed.setImage(panel.image.trim());
+      headerEmbed.setColor((panel.embedColor as any) || "#5865F2");
+      embeds.push(headerEmbed);
+    } catch (e) {}
+  }
+
+  // 2. Main Content Embed (Title, Description, Author, Fields, Footer, Thumbnail)
+  const textEmbed = new EmbedBuilder();
+
+  if (panel.embedTitle && panel.embedTitle.trim()) textEmbed.setTitle(panel.embedTitle.trim());
+  if (panel.embedDescription && panel.embedDescription.trim()) textEmbed.setDescription(panel.embedDescription.trim());
 
   if (panel.embedColor && /^#[0-9A-Fa-f]{6}$/.test(panel.embedColor)) {
-    embed.setColor(panel.embedColor as any);
+    textEmbed.setColor(panel.embedColor as any);
   } else {
-    embed.setColor("#5865F2");
+    textEmbed.setColor("#5865F2");
   }
 
   if (panel.embedAuthorName && panel.embedAuthorName.trim()) {
-    embed.setAuthor({
+    textEmbed.setAuthor({
       name: panel.embedAuthorName.trim(),
       iconURL: isValidUrl(panel.embedAuthorIcon) ? panel.embedAuthorIcon!.trim() : undefined,
       url: isValidUrl(panel.embedAuthorUrl) ? panel.embedAuthorUrl!.trim() : undefined,
@@ -113,25 +129,19 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
 
   if (isValidUrl(panel.thumbnail)) {
     try {
-      embed.setThumbnail(panel.thumbnail.trim());
-    } catch (e) {}
-  }
-
-  if (isValidUrl(panel.image)) {
-    try {
-      embed.setImage(panel.image.trim());
+      textEmbed.setThumbnail(panel.thumbnail.trim());
     } catch (e) {}
   }
 
   if (panel.footer && panel.footer.trim()) {
-    embed.setFooter({
+    textEmbed.setFooter({
       text: panel.footer.trim(),
       iconURL: isValidUrl(panel.footerIcon) ? panel.footerIcon!.trim() : undefined,
     });
   }
 
   if (panel.showTimestamp) {
-    embed.setTimestamp();
+    textEmbed.setTimestamp();
   }
 
   // Parse embed fields
@@ -139,7 +149,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     try {
       const fields = typeof panel.embedFields === "string" ? JSON.parse(panel.embedFields) : panel.embedFields;
       if (Array.isArray(fields) && fields.length > 0) {
-        embed.addFields(
+        textEmbed.addFields(
           fields.map((f: any) => ({
             name: f.name || "\u200B",
             value: f.value || "\u200B",
@@ -151,6 +161,8 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
       console.error("Error parsing embed fields for panel:", panel.id, e);
     }
   }
+
+  embeds.push(textEmbed);
 
   const components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
   const options = panel.options || [];
@@ -165,7 +177,11 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
 
       const selectOptions = options.slice(0, 25).map((opt: any) => {
         const role = guild.roles.cache.get(opt.roleId);
-        const memberCount = role ? role.members.size : 0;
+        let memberCount = role ? role.members.size : 0;
+        if (memberCount === 0 && role && guild.members.cache.size > 0) {
+          memberCount = guild.members.cache.filter((m) => m.roles.cache.has(role.id)).size;
+        }
+
         const roleName = opt.roleName || role?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
         const finalLabel = opt.showMemberCount ? `${baseLabel} (${memberCount})` : baseLabel;
@@ -203,7 +219,11 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
         }
 
         const role = guild.roles.cache.get(opt.roleId);
-        const memberCount = role ? role.members.size : 0;
+        let memberCount = role ? role.members.size : 0;
+        if (memberCount === 0 && role && guild.members.cache.size > 0) {
+          memberCount = guild.members.cache.filter((m) => m.roles.cache.has(role.id)).size;
+        }
+
         const roleName = opt.roleName || role?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
         const finalLabel = opt.showMemberCount ? `${baseLabel} (${memberCount})` : baseLabel;
@@ -236,7 +256,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     }
   }
 
-  return { embed, components };
+  return { embeds, components };
 }
 
 // Deploy or Update Live Discord Panel Message
@@ -251,7 +271,7 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
   const channel = (await guild.channels.fetch(panel.channelId).catch(() => null)) as TextChannel;
   if (!channel || !channel.isTextBased()) throw new Error("Der gewählte Discord-Kanal wurde nicht gefunden oder ist kein Textkanal.");
 
-  const { embed, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
+  const { embeds, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
 
   let message;
   if (panel.messageId) {
@@ -259,7 +279,7 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
       const existingMessage = await channel.messages.fetch(panel.messageId);
       if (existingMessage) {
         message = await existingMessage.edit({
-          embeds: [embed],
+          embeds: embeds,
           components: components as any,
         });
       }
@@ -271,7 +291,7 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
   if (!message) {
     try {
       message = await channel.send({
-        embeds: [embed],
+        embeds: embeds,
         components: components as any,
       });
     } catch (sendErr: any) {
@@ -284,7 +304,7 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
         };
         const fallback = await buildSelfRoleEmbedAndComponents(guild, fallbackPanel);
         message = await channel.send({
-          embeds: [fallback.embed],
+          embeds: fallback.embeds,
           components: fallback.components as any,
         });
       } else if (sendErr.code === 50013) {
@@ -312,18 +332,18 @@ export async function refreshSelfRolePanelMessage(client: Client, panelId: strin
   if (!panel || !panel.channelId || !panel.messageId) return;
 
   try {
-    const guild = client.guilds.cache.get(panel.guildId) || (await client.guilds.fetch(panel.guildId));
+    const guild = client.guilds.cache.get(panel.guildId) || (await client.guilds.fetch(panel.guildId).catch(() => null));
     if (!guild) return;
 
-    const channel = (await guild.channels.fetch(panel.channelId)) as TextChannel;
+    const channel = (await guild.channels.fetch(panel.channelId).catch(() => null)) as TextChannel;
     if (!channel) return;
 
-    const existingMessage = await channel.messages.fetch(panel.messageId);
+    const existingMessage = await channel.messages.fetch(panel.messageId).catch(() => null);
     if (!existingMessage) return;
 
-    const { embed, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
+    const { embeds, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
     await existingMessage.edit({
-      embeds: [embed],
+      embeds: embeds,
       components: components as any,
     });
   } catch (e) {
