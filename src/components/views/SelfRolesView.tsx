@@ -294,11 +294,15 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
   };
 
   // Save Panel
-  const handleSavePanel = async () => {
-    if (!selectedGuildId) return;
+  const handleSavePanel = async (): Promise<SelfRolePanelData | null> => {
+    if (!selectedGuildId) return null;
     if (!formData.name?.trim()) {
       showToast("Bitte gib dem Panel einen Namen", "error");
-      return;
+      return null;
+    }
+    if (!formData.channelId) {
+      showToast("Bitte wähle im Tab 'Allgemein & Kanal' einen Discord-Kanal aus", "error");
+      return null;
     }
 
     setIsSaving(true);
@@ -318,9 +322,11 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
       showToast("Self-Role-Panel erfolgreich gespeichert!", "success");
       await fetchPanels();
       loadPanelIntoForm(res.data);
+      return res.data;
     } catch (e: any) {
       console.error(e);
       showToast(e.response?.data?.error || "Fehler beim Speichern", "error");
+      return null;
     } finally {
       setIsSaving(false);
     }
@@ -328,17 +334,30 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
 
   // Deploy to Discord
   const handleDeployToDiscord = async (panelIdToDeploy?: string) => {
-    const targetId = panelIdToDeploy || selectedPanelId;
-    if (!targetId || !selectedGuildId) {
-      showToast("Bitte speichere das Panel erst, bevor du es auf Discord postest", "error");
-      return;
-    }
+    if (!selectedGuildId) return;
 
     setIsDeploying(true);
     try {
+      let targetId = panelIdToDeploy || selectedPanelId;
+
+      // Auto-save if new/unsaved panel
+      if (!targetId) {
+        const saved = await handleSavePanel();
+        if (saved && saved.id) {
+          targetId = saved.id;
+        } else {
+          setIsDeploying(false);
+          return;
+        }
+      } else if (!formData.channelId) {
+        showToast("Bitte wähle im Tab 'Allgemein & Kanal' einen Discord-Textkanal aus", "error");
+        setIsDeploying(false);
+        return;
+      }
+
       await api.post(`/guilds/${selectedGuildId}/self-roles/panels/${targetId}/post`);
       showToast("🚀 Panel wurde erfolgreich auf Discord gepostet / aktualisiert!", "success");
-      fetchPanels();
+      await fetchPanels();
     } catch (e: any) {
       console.error(e);
       showToast(e.response?.data?.error || "Fehler beim Senden nach Discord", "error");

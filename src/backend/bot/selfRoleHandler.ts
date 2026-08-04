@@ -44,6 +44,17 @@ function parseAndValidateEmoji(emojiStr?: string | null) {
   }
 }
 
+// Helper to validate URLs for Discord embed images & icons
+function isValidUrl(str?: string | null): boolean {
+  if (!str || !str.trim()) return false;
+  try {
+    const url = new URL(str.trim());
+    return url.protocol === "http:" || url.protocol === "https:";
+  } catch (e) {
+    return false;
+  }
+}
+
 // Helper function to build Discord Embed and Components (Buttons or Dropdown)
 export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) {
   // Fetch guild roles quickly (does not hang like members.fetch)
@@ -55,25 +66,39 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
 
   const embed = new EmbedBuilder();
 
-  if (panel.embedTitle) embed.setTitle(panel.embedTitle);
-  if (panel.embedDescription) embed.setDescription(panel.embedDescription);
-  embed.setColor((panel.embedColor as any) || "#5865F2");
+  if (panel.embedTitle && panel.embedTitle.trim()) embed.setTitle(panel.embedTitle.trim());
+  if (panel.embedDescription && panel.embedDescription.trim()) embed.setDescription(panel.embedDescription.trim());
 
-  if (panel.embedAuthorName) {
+  if (panel.embedColor && /^#[0-9A-Fa-f]{6}$/.test(panel.embedColor)) {
+    embed.setColor(panel.embedColor as any);
+  } else {
+    embed.setColor("#5865F2");
+  }
+
+  if (panel.embedAuthorName && panel.embedAuthorName.trim()) {
     embed.setAuthor({
-      name: panel.embedAuthorName,
-      iconURL: panel.embedAuthorIcon || undefined,
-      url: panel.embedAuthorUrl || undefined,
+      name: panel.embedAuthorName.trim(),
+      iconURL: isValidUrl(panel.embedAuthorIcon) ? panel.embedAuthorIcon!.trim() : undefined,
+      url: isValidUrl(panel.embedAuthorUrl) ? panel.embedAuthorUrl!.trim() : undefined,
     });
   }
 
-  if (panel.thumbnail) embed.setThumbnail(panel.thumbnail);
-  if (panel.image) embed.setImage(panel.image);
+  if (isValidUrl(panel.thumbnail)) {
+    try {
+      embed.setThumbnail(panel.thumbnail.trim());
+    } catch (e) {}
+  }
 
-  if (panel.footer) {
+  if (isValidUrl(panel.image)) {
+    try {
+      embed.setImage(panel.image.trim());
+    } catch (e) {}
+  }
+
+  if (panel.footer && panel.footer.trim()) {
     embed.setFooter({
-      text: panel.footer,
-      iconURL: panel.footerIcon || undefined,
+      text: panel.footer.trim(),
+      iconURL: isValidUrl(panel.footerIcon) ? panel.footerIcon!.trim() : undefined,
     });
   }
 
@@ -189,14 +214,14 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
 // Deploy or Update Live Discord Panel Message
 export async function deploySelfRolePanelEmbed(client: Client, guildId: string, panelId: string) {
   const panel = await getSelfRolePanelById(panelId);
-  if (!panel) throw new Error("Self role panel not found");
-  if (!panel.channelId) throw new Error("No target channel configured for panel");
+  if (!panel) throw new Error("Self-Role-Panel in der Datenbank nicht gefunden.");
+  if (!panel.channelId) throw new Error("Kein Discord-Textkanal ausgewählt! Bitte wähle im Tab 'Allgemein & Kanal' einen Kanal aus.");
 
-  const guild = client.guilds.cache.get(guildId) || (await client.guilds.fetch(guildId));
-  if (!guild) throw new Error("Guild not found on Discord client");
+  const guild = client.guilds.cache.get(guildId) || (await client.guilds.fetch(guildId).catch(() => null));
+  if (!guild) throw new Error("Discord-Server (Guild) vom Bot nicht gefunden. Ist der Bot online?");
 
-  const channel = (await guild.channels.fetch(panel.channelId)) as TextChannel;
-  if (!channel || !channel.isTextBased()) throw new Error("Target channel not found or not text-based");
+  const channel = (await guild.channels.fetch(panel.channelId).catch(() => null)) as TextChannel;
+  if (!channel || !channel.isTextBased()) throw new Error("Der gewählte Discord-Kanal wurde nicht gefunden oder ist kein Textkanal.");
 
   const { embed, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
 
@@ -211,15 +236,25 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
         });
       }
     } catch (e) {
-      console.warn("Could not fetch or edit existing message, posting a new message instead.");
+      console.warn("[SelfRole] Vorherige Nachricht konnte nicht bearbeitet werden, erstelle neue Nachricht.");
     }
   }
 
   if (!message) {
-    message = await channel.send({
-      embeds: [embed],
-      components: components as any,
-    });
+    try {
+      message = await channel.send({
+        embeds: [embed],
+        components: components as any,
+      });
+    } catch (sendErr: any) {
+      if (sendErr.code === 50013) {
+        throw new Error(`Der Bot hat keine Berechtigung 'Nachrichten senden' oder 'Links einbetten' im Kanal #${channel.name}.`);
+      }
+      if (sendErr.code === 50001) {
+        throw new Error(`Der Bot hat keinen Zugriff auf den Kanal #${channel.name}.`);
+      }
+      throw new Error(`Discord API Fehler: ${sendErr.message || sendErr}`);
+    }
   }
 
   // Update panel database record with messageId and channelId
