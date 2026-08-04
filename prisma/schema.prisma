@@ -401,6 +401,7 @@ model SelfRolePanel {
   name               String
   description        String?
   displayType        String           @default("button") // button, dropdown
+  layoutMode         String           @default("components_v2") // components_v2, embed
   multiSelect        Boolean          @default(true)
   placeholderText    String?          @default("Select roles...")
 

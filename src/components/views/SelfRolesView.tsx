@@ -62,6 +62,7 @@ interface SelfRolePanelData {
   name: string;
   description?: string;
   displayType: "button" | "dropdown";
+  layoutMode?: "components_v2" | "embed";
   multiSelect: boolean;
   placeholderText?: string;
 
@@ -666,6 +667,48 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
                         <span>Exklusiv (1 Rolle)</span>
                       </button>
                     </div>
+                  </div>
+                </div>
+
+                {/* Layout Mode Selector (Components V2 vs Embed) */}
+                <div className="pt-2 border-t border-[#383a40]">
+                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5 block">
+                    Layout / Design System
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, layoutMode: "components_v2" } as any)}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        (formData as any).layoutMode !== "embed"
+                          ? "bg-discord-brand/20 border-discord-brand text-white"
+                          : "bg-[#1e1f22] border-[#383a40] text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-amber-400" /> ⚡ Components V2 (Native Card)
+                      </div>
+                      <p className="text-[11px] text-zinc-400 mt-1 font-normal">
+                        Nahtloses Design ohne Embed-Rahmen (exakt wie im Beispiel-Screenshot).
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, layoutMode: "embed" } as any)}
+                      className={`p-3 rounded-xl border text-left transition-all ${
+                        (formData as any).layoutMode === "embed"
+                          ? "bg-discord-brand/20 border-discord-brand text-white"
+                          : "bg-[#1e1f22] border-[#383a40] text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      <div className="text-xs font-bold text-white flex items-center gap-1.5">
+                        <Layout className="w-4 h-4 text-discord-brand" /> 📦 Klassisches Embed
+                      </div>
+                      <p className="text-[11px] text-zinc-400 mt-1 font-normal">
+                        Standard Discord Embed-Box mit Farbleiste, Thumbnail und Feldern.
+                      </p>
+                    </button>
                   </div>
                 </div>
 

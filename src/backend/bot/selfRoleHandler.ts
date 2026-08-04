@@ -83,7 +83,7 @@ function isValidUrl(str?: string | null): boolean {
   }
 }
 
-// Helper function to build Discord Embed and Components (Buttons or Dropdown)
+// Helper function to build Discord Embed/Content and Components (Buttons or Dropdown)
 export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) {
   // Fetch guild roles & members quickly with 2-second timeout
   try {
@@ -95,66 +95,89 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     // Continue even if member fetch fails
   }
 
-  const embed = new EmbedBuilder();
+  const isComponentsV2 = panel.layoutMode === "components_v2" || panel.layoutMode === "v2";
+  let content = "";
+  const embeds: EmbedBuilder[] = [];
 
-  if (panel.embedTitle && panel.embedTitle.trim()) embed.setTitle(panel.embedTitle.trim());
-  if (panel.embedDescription && panel.embedDescription.trim()) embed.setDescription(panel.embedDescription.trim());
-
-  if (panel.embedColor && /^#[0-9A-Fa-f]{6}$/.test(panel.embedColor)) {
-    embed.setColor(panel.embedColor as any);
-  } else if (panel.embedColor === "none") {
-    embed.setColor("#2b2d31");
-  } else {
-    embed.setColor("#5865F2");
-  }
-
-  if (panel.embedAuthorName && panel.embedAuthorName.trim()) {
-    embed.setAuthor({
-      name: panel.embedAuthorName.trim(),
-      iconURL: isValidUrl(panel.embedAuthorIcon) ? panel.embedAuthorIcon!.trim() : undefined,
-      url: isValidUrl(panel.embedAuthorUrl) ? panel.embedAuthorUrl!.trim() : undefined,
-    });
-  }
-
-  if (isValidUrl(panel.thumbnail)) {
-    try {
-      embed.setThumbnail(panel.thumbnail.trim());
-    } catch (e) {}
-  }
-
-  if (isValidUrl(panel.image)) {
-    try {
-      embed.setImage(panel.image.trim());
-    } catch (e) {}
-  }
-
-  if (panel.footer && panel.footer.trim()) {
-    embed.setFooter({
-      text: panel.footer.trim(),
-      iconURL: isValidUrl(panel.footerIcon) ? panel.footerIcon!.trim() : undefined,
-    });
-  }
-
-  if (panel.showTimestamp) {
-    embed.setTimestamp();
-  }
-
-  // Parse embed fields
-  if (panel.embedFields) {
-    try {
-      const fields = typeof panel.embedFields === "string" ? JSON.parse(panel.embedFields) : panel.embedFields;
-      if (Array.isArray(fields) && fields.length > 0) {
-        embed.addFields(
-          fields.map((f: any) => ({
-            name: f.name || "\u200B",
-            value: f.value || "\u200B",
-            inline: Boolean(f.inline),
-          }))
-        );
-      }
-    } catch (e) {
-      console.error("Error parsing embed fields for panel:", panel.id, e);
+  if (isComponentsV2) {
+    // Discord Components V2 / Native Container Layout (No Embed Box Border)
+    if (isValidUrl(panel.image)) {
+      content += `${panel.image.trim()}\n`;
     }
+    if (panel.embedTitle && panel.embedTitle.trim()) {
+      content += `# ${panel.embedTitle.trim()}\n`;
+    }
+    if (panel.embedDescription && panel.embedDescription.trim()) {
+      content += `${panel.embedDescription.trim()}\n`;
+    }
+    if (panel.footer && panel.footer.trim()) {
+      content += `\n*${panel.footer.trim()}*`;
+    }
+  } else {
+    // Classic Discord Embed Layout
+    const embed = new EmbedBuilder();
+
+    if (panel.embedTitle && panel.embedTitle.trim()) embed.setTitle(panel.embedTitle.trim());
+    if (panel.embedDescription && panel.embedDescription.trim()) embed.setDescription(panel.embedDescription.trim());
+
+    if (panel.embedColor && /^#[0-9A-Fa-f]{6}$/.test(panel.embedColor)) {
+      embed.setColor(panel.embedColor as any);
+    } else if (panel.embedColor === "none") {
+      embed.setColor("#2b2d31");
+    } else {
+      embed.setColor("#5865F2");
+    }
+
+    if (panel.embedAuthorName && panel.embedAuthorName.trim()) {
+      embed.setAuthor({
+        name: panel.embedAuthorName.trim(),
+        iconURL: isValidUrl(panel.embedAuthorIcon) ? panel.embedAuthorIcon!.trim() : undefined,
+        url: isValidUrl(panel.embedAuthorUrl) ? panel.embedAuthorUrl!.trim() : undefined,
+      });
+    }
+
+    if (isValidUrl(panel.thumbnail)) {
+      try {
+        embed.setThumbnail(panel.thumbnail.trim());
+      } catch (e) {}
+    }
+
+    if (isValidUrl(panel.image)) {
+      try {
+        embed.setImage(panel.image.trim());
+      } catch (e) {}
+    }
+
+    if (panel.footer && panel.footer.trim()) {
+      embed.setFooter({
+        text: panel.footer.trim(),
+        iconURL: isValidUrl(panel.footerIcon) ? panel.footerIcon!.trim() : undefined,
+      });
+    }
+
+    if (panel.showTimestamp) {
+      embed.setTimestamp();
+    }
+
+    // Parse embed fields
+    if (panel.embedFields) {
+      try {
+        const fields = typeof panel.embedFields === "string" ? JSON.parse(panel.embedFields) : panel.embedFields;
+        if (Array.isArray(fields) && fields.length > 0) {
+          embed.addFields(
+            fields.map((f: any) => ({
+              name: f.name || "\u200B",
+              value: f.value || "\u200B",
+              inline: Boolean(f.inline),
+            }))
+          );
+        }
+      } catch (e) {
+        console.error("Error parsing embed fields for panel:", panel.id, e);
+      }
+    }
+
+    embeds.push(embed);
   }
 
   const components: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
@@ -249,7 +272,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     }
   }
 
-  return { embed, components };
+  return { content, embeds, components };
 }
 
 // Deploy or Update Live Discord Panel Message
@@ -264,17 +287,20 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
   const channel = (await guild.channels.fetch(panel.channelId).catch(() => null)) as TextChannel;
   if (!channel || !channel.isTextBased()) throw new Error("Der gewählte Discord-Kanal wurde nicht gefunden oder ist kein Textkanal.");
 
-  const { embed, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
+  const { content, embeds, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
+
+  const payload: any = {
+    content: content.trim() || undefined,
+    embeds: embeds,
+    components: components as any,
+  };
 
   let message;
   if (panel.messageId) {
     try {
       const existingMessage = await channel.messages.fetch(panel.messageId);
       if (existingMessage) {
-        message = await existingMessage.edit({
-          embeds: [embed],
-          components: components as any,
-        });
+        message = await existingMessage.edit(payload);
       }
     } catch (e) {
       console.warn("[SelfRole] Vorherige Nachricht konnte nicht bearbeitet werden, erstelle neue Nachricht.");
@@ -283,10 +309,7 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
 
   if (!message) {
     try {
-      message = await channel.send({
-        embeds: [embed],
-        components: components as any,
-      });
+      message = await channel.send(payload);
     } catch (sendErr: any) {
       // Fallback: If Discord API rejects an emoji with COMPONENT_INVALID_EMOJI (code 50035), strip emojis and retry!
       if (sendErr.code === 50035 || sendErr.message?.includes("INVALID_EMOJI") || sendErr.rawError?.errors?.components) {
@@ -297,7 +320,8 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
         };
         const fallback = await buildSelfRoleEmbedAndComponents(guild, fallbackPanel);
         message = await channel.send({
-          embeds: [fallback.embed],
+          content: fallback.content.trim() || undefined,
+          embeds: fallback.embeds,
           components: fallback.components as any,
         });
       } else if (sendErr.code === 50013) {
@@ -334,9 +358,10 @@ export async function refreshSelfRolePanelMessage(client: Client, panelId: strin
     const existingMessage = await channel.messages.fetch(panel.messageId).catch(() => null);
     if (!existingMessage) return;
 
-    const { embed, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
+    const { content, embeds, components } = await buildSelfRoleEmbedAndComponents(guild, panel);
     await existingMessage.edit({
-      embeds: [embed],
+      content: content.trim() || undefined,
+      embeds: embeds,
       components: components as any,
     });
   } catch (e) {
