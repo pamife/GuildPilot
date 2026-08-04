@@ -395,3 +395,61 @@ model AppLog {
   timestamp     DateTime @default(now())
 }
 
+model SelfRolePanel {
+  id                 String           @id @default(uuid())
+  guildId            String
+  name               String
+  description        String?
+  displayType        String           @default("button") // button, dropdown
+  multiSelect        Boolean          @default(true)
+  placeholderText    String?          @default("Select roles...")
+
+  // Embed Customization
+  embedTitle         String?          @default("🔔 Choose your Ping Roles")
+  embedDescription   String?          @default("Click a button below to receive or remove a role.")
+  embedColor         String           @default("#5865F2")
+  embedAuthorName    String?
+  embedAuthorIcon    String?
+  embedAuthorUrl     String?
+  thumbnail          String?
+  image              String?
+  footer             String?          @default("GuildPilot Self Roles")
+  footerIcon         String?
+  showTimestamp      Boolean          @default(false)
+  embedFields        String           @default("[]") // JSON string of [{ name, value, inline }]
+
+  // Notification Messages
+  addRoleMessage     String?          @default("✅ Added role {role}!")
+  removeRoleMessage  String?          @default("❌ Removed role {role}!")
+  ephemeralResponse  Boolean          @default(true)
+
+  // Discord Message Details
+  channelId          String?
+  messageId          String?
+
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  options            SelfRoleOption[]
+}
+
+model SelfRoleOption {
+  id              String        @id @default(uuid())
+  panelId         String
+  panel           SelfRolePanel @relation(fields: [panelId], references: [id], onDelete: Cascade)
+  roleId          String
+  roleName        String?
+  roleColor       String?
+  label           String?       // Override label or null to use roleName
+  emoji           String?       // Unicode or custom emoji string e.g. 📩 or <:custom:1234>
+  buttonColor     String        @default("Secondary") // Primary (Blue), Secondary (Gray), Success (Green), Danger (Red)
+  description     String?       // Description for dropdown menu item
+  showMemberCount Boolean       @default(true) // Appends count like "News (117)"
+  requiredRoles   String        @default("[]") // JSON string of role IDs required to pick this
+  exclusiveGroup  String?       // Subgroup name for mutually exclusive roles within this panel
+  order           Int           @default(0)
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+}
+
+

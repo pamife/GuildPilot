@@ -15,6 +15,7 @@ import { UtilitiesView } from "@/components/views/UtilitiesView";
 import { HostServerView } from "@/components/views/HostServerView";
 import { TicketsView } from "@/components/views/TicketsView";
 import { ApplicationsView } from "@/components/views/ApplicationsView";
+import { SelfRolesView } from "@/components/views/SelfRolesView";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { ShieldAlert, LogIn, Radio, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
@@ -414,6 +415,9 @@ function DashboardContent() {
         )}
         {currentView === "tickets" && (
           <TicketsView selectedGuildId={selectedGuildId} channels={channels} roles={roles} />
+        )}
+        {currentView === "self-roles" && (
+          <SelfRolesView selectedGuildId={selectedGuildId} channels={channels} roles={roles} />
         )}
         {currentView === "overview" && (
           <OverviewView

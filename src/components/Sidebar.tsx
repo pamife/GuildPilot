@@ -22,12 +22,14 @@ import {
   Check,
   RefreshCw,
   ClipboardList,
+  Tag,
 } from "lucide-react";
 
 export type ViewType =
   | "overview"
   | "applications"
   | "tickets"
+  | "self-roles"
   | "channels"
   | "categories"
   | "roles"
@@ -76,6 +78,7 @@ export function Sidebar({
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "applications", label: "Applications", icon: ClipboardList },
     { id: "tickets", label: "Ticket System", icon: Ticket },
+    { id: "self-roles", label: "Self Roles", icon: Tag },
     { id: "channels", label: "Channel Manager", icon: Hash },
     { id: "categories", label: "Category Manager", icon: FolderTree },
     { id: "roles", label: "Role Manager", icon: Shield },
