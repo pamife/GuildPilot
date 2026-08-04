@@ -37,14 +37,12 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   const bStart = Date.now();
   console.log(`[SelfRole Debug] 1. Starting buildSelfRoleEmbedAndComponents for panel ${panel.id}...`);
 
-  // Fetch guild roles & members with a 1-second Promise.race timeout to avoid API timeouts
+  // Fetch guild roles & members using actual Discord Guild cache/member list
   try {
     await guild.roles.fetch();
-    const fetchPromise = guild.members.fetch().catch(() => null);
-    const timeoutPromise = new Promise((res) => setTimeout(res, 1000));
-    await Promise.race([fetchPromise, timeoutPromise]);
+    await guild.members.fetch();
   } catch (e) {
-    // Continue even if member fetch fails
+    console.warn("[SelfRole Debug] Failed to fetch guild members/roles:", e);
   }
 
   // Calculate role counts
@@ -66,11 +64,27 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
         const realMemberCount = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
         const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
-        const finalLabel = opt.showMemberCount !== false ? `${baseLabel} (${realMemberCount})` : baseLabel;
+        
+        let cleanBaseLabel = baseLabel.trim();
+        if (opt.emoji && opt.emoji.trim()) {
+          const emojiStr = opt.emoji.trim();
+          if (cleanBaseLabel.startsWith(emojiStr)) {
+            cleanBaseLabel = cleanBaseLabel.slice(emojiStr.length).trim();
+          }
+        }
+
+        const finalLabel = opt.showMemberCount !== false ? `${cleanBaseLabel} (${realMemberCount})` : cleanBaseLabel;
 
         const selectOption = new StringSelectMenuOptionBuilder()
           .setLabel(finalLabel.substring(0, 100))
           .setValue(opt.id);
+
+        if (opt.emoji && opt.emoji.trim()) {
+          const emojiObj = parseAndValidateEmoji(opt.emoji);
+          if (emojiObj.id || emojiObj.name) {
+            selectOption.setEmoji(emojiObj);
+          }
+        }
 
         if (opt.description) {
           selectOption.setDescription(opt.description.substring(0, 100));
@@ -82,19 +96,29 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
       selectMenu.addOptions(selectOptions);
       rawActionRows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
     } else {
-      // Button display mode: Max 5 buttons per ActionRow (separate ActionRowBuilders)
+      // Button display mode: Separate ActionRowBuilders, max 5 buttons per ActionRow
+      const actionRows: ActionRowBuilder<ButtonBuilder>[] = [];
       let currentRow = new ActionRowBuilder<ButtonBuilder>();
 
       options.slice(0, 25).forEach((opt: any, idx: number) => {
         if (idx > 0 && idx % 5 === 0) {
-          rawActionRows.push(currentRow);
+          actionRows.push(currentRow);
           currentRow = new ActionRowBuilder<ButtonBuilder>();
         }
 
         const realMemberCount = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
         const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
-        const finalLabel = opt.showMemberCount !== false ? `${baseLabel} (${realMemberCount})` : baseLabel;
+
+        let cleanBaseLabel = baseLabel.trim();
+        if (opt.emoji && opt.emoji.trim()) {
+          const emojiStr = opt.emoji.trim();
+          if (cleanBaseLabel.startsWith(emojiStr)) {
+            cleanBaseLabel = cleanBaseLabel.slice(emojiStr.length).trim();
+          }
+        }
+
+        const finalLabel = opt.showMemberCount !== false ? `${cleanBaseLabel} (${realMemberCount})` : cleanBaseLabel;
 
         let style = ButtonStyle.Secondary;
         if (opt.buttonColor === "Primary") style = ButtonStyle.Primary;
@@ -106,12 +130,21 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           .setLabel(finalLabel.substring(0, 80))
           .setStyle(style);
 
+        if (opt.emoji && opt.emoji.trim()) {
+          const emojiObj = parseAndValidateEmoji(opt.emoji);
+          if (emojiObj.id || emojiObj.name) {
+            button.setEmoji(emojiObj);
+          }
+        }
+
         currentRow.addComponents(button);
       });
 
       if (currentRow.components.length > 0) {
-        rawActionRows.push(currentRow);
+        actionRows.push(currentRow);
       }
+
+      rawActionRows.push(...actionRows);
     }
   }
 
