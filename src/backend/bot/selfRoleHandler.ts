@@ -34,13 +34,19 @@ function isValidUrl(str?: string | null): boolean {
 
 // Helper function to build Discord Components V2 payload using official discord.js builders
 export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) {
-  // Fetch guild roles & members to ensure actual Discord member counts
+  const bStart = Date.now();
+  console.log(`[SelfRole Debug] 1. Starting buildSelfRoleEmbedAndComponents for panel ${panel.id}...`);
+
+  // Fetch guild roles (quick cached fetch)
   try {
     await guild.roles.fetch();
-    await guild.members.fetch().catch(() => null);
   } catch (e) {
-    // Continue even if member fetch fails
+    // Continue even if role fetch fails
   }
+
+  // Calculate role counts
+  const cStart = Date.now();
+  console.log(`[SelfRole Debug] 2. Calculating role member counts from cache...`);
 
   const rawActionRows: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
   const options = panel.options || [];
@@ -54,8 +60,12 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
         .setMaxValues(panel.multiSelect ? Math.min(options.length, 25) : 1);
 
       const selectOptions = options.slice(0, 25).map((opt: any) => {
-        const realMemberCount = guild.members.cache.filter((m) => m.roles.cache.has(opt.roleId)).size;
-        const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
+        const role = guild.roles.cache.get(opt.roleId);
+        const countFromRoleMembers = role ? role.members.size : 0;
+        const countFromGuildCache = guild.members.cache.filter((m) => m.roles.cache.has(opt.roleId)).size;
+        const realMemberCount = Math.max(countFromRoleMembers, countFromGuildCache);
+
+        const roleName = opt.roleName || role?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
         const finalLabel = opt.showMemberCount !== false ? `${baseLabel} (${realMemberCount})` : baseLabel;
 
@@ -82,8 +92,12 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           currentRow = new ActionRowBuilder<ButtonBuilder>();
         }
 
-        const realMemberCount = guild.members.cache.filter((m) => m.roles.cache.has(opt.roleId)).size;
-        const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
+        const role = guild.roles.cache.get(opt.roleId);
+        const countFromRoleMembers = role ? role.members.size : 0;
+        const countFromGuildCache = guild.members.cache.filter((m) => m.roles.cache.has(opt.roleId)).size;
+        const realMemberCount = Math.max(countFromRoleMembers, countFromGuildCache);
+
+        const roleName = opt.roleName || role?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
         const finalLabel = opt.showMemberCount !== false ? `${baseLabel} (${realMemberCount})` : baseLabel;
 
@@ -105,6 +119,8 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
       }
     }
   }
+
+  console.log(`[SelfRole Debug] Role member counts calculated in ${Date.now() - cStart}ms`);
 
   // BUILD DISCORD COMPONENTS V2 ROOT CONTAINER
   // Root: ContainerBuilder
@@ -151,6 +167,8 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   const container = new ContainerBuilder();
   (container as any).components = containerInnerComponents;
 
+  console.log(`[SelfRole Debug] Total buildSelfRoleEmbedAndComponents completed in ${Date.now() - bStart}ms`);
+
   return {
     components: [container],
     flags: MessageFlags.IsComponentsV2 as any,
@@ -159,16 +177,28 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
 
 // Deploy or Update Live Discord Panel Message
 export async function deploySelfRolePanelEmbed(client: Client, guildId: string, panelId: string) {
+  const tStart = Date.now();
+  console.log(`[SelfRole Debug] --- Starting deploySelfRolePanelEmbed for panel ${panelId} ---`);
+
   const panel = await getSelfRolePanelById(panelId);
   if (!panel) throw new Error("Self-Role-Panel in der Datenbank nicht gefunden.");
   if (!panel.channelId) throw new Error("Kein Discord-Textkanal ausgewählt! Bitte wähle im Tab 'Allgemein & Kanal' einen Kanal aus.");
 
+  // Fetching Guild
+  const gStart = Date.now();
+  console.log(`[SelfRole Debug] Fetching guild ${guildId}...`);
   const guild = client.guilds.cache.get(guildId) || (await client.guilds.fetch(guildId).catch(() => null));
   if (!guild) throw new Error("Discord-Server (Guild) vom Bot nicht gefunden. Ist der Bot online?");
+  console.log(`[SelfRole Debug] Guild fetched in ${Date.now() - gStart}ms`);
 
+  // Fetching Channel
+  const chStart = Date.now();
+  console.log(`[SelfRole Debug] Fetching channel ${panel.channelId}...`);
   const channel = (await guild.channels.fetch(panel.channelId).catch(() => null)) as TextChannel;
   if (!channel || !channel.isTextBased()) throw new Error("Der gewählte Discord-Kanal wurde nicht gefunden oder ist kein Textkanal.");
+  console.log(`[SelfRole Debug] Channel fetched in ${Date.now() - chStart}ms`);
 
+  // Building Components V2
   const { components, flags } = await buildSelfRoleEmbedAndComponents(guild, panel);
 
   const payload: any = {
@@ -177,18 +207,21 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
   };
 
   let message;
+  const sendStart = Date.now();
   if (panel.messageId) {
     try {
+      console.log(`[SelfRole Debug] Editing existing message ${panel.messageId}...`);
       const existingMessage = await channel.messages.fetch(panel.messageId);
       if (existingMessage) {
         message = await existingMessage.edit(payload);
       }
     } catch (e) {
-      console.warn("[SelfRole] Vorherige Nachricht konnte nicht bearbeitet werden, erstelle neue Nachricht.");
+      console.warn("[SelfRole Debug] Vorherige Nachricht konnte nicht bearbeitet werden, erstelle neue Nachricht.");
     }
   }
 
   if (!message) {
+    console.log(`[SelfRole Debug] Sending new message to channel ${channel.name}...`);
     try {
       message = await channel.send(payload);
     } catch (sendErr: any) {
@@ -201,12 +234,16 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
       }
     }
   }
+  console.log(`[SelfRole Debug] channel.send / edit completed in ${Date.now() - sendStart}ms`);
 
   // Update panel database record with messageId and channelId
+  const dbStart = Date.now();
   const updated = await updateSelfRolePanel(panel.id, {
     channelId: channel.id,
     messageId: message.id,
   });
+  console.log(`[SelfRole Debug] DB record updated in ${Date.now() - dbStart}ms`);
+  console.log(`[SelfRole Debug] --- Total deploySelfRolePanelEmbed completed in ${Date.now() - tStart}ms ---`);
 
   return { messageId: message.id, channelId: channel.id, panel: updated };
 }
