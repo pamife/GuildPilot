@@ -34,12 +34,10 @@ function isValidUrl(str?: string | null): boolean {
 
 // Helper function to build Discord Components V2 payload using official discord.js builders
 export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) {
-  // Fetch guild roles & members quickly with 2-second timeout
+  // Fetch guild roles & members to ensure actual Discord member counts
   try {
     await guild.roles.fetch();
-    const fetchPromise = guild.members.fetch().catch(() => null);
-    const timeoutPromise = new Promise((res) => setTimeout(res, 2000));
-    await Promise.race([fetchPromise, timeoutPromise]);
+    await guild.members.fetch().catch(() => null);
   } catch (e) {
     // Continue even if member fetch fails
   }
@@ -56,15 +54,10 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
         .setMaxValues(panel.multiSelect ? Math.min(options.length, 25) : 1);
 
       const selectOptions = options.slice(0, 25).map((opt: any) => {
-        const role = guild.roles.cache.get(opt.roleId);
-        let memberCount = role ? role.members.size : 0;
-        if (memberCount === 0 && role && guild.members.cache.size > 0) {
-          memberCount = guild.members.cache.filter((m) => m.roles.cache.has(role.id)).size;
-        }
-
-        const roleName = opt.roleName || role?.name || "Unknown Role";
+        const realMemberCount = guild.members.cache.filter((m) => m.roles.cache.has(opt.roleId)).size;
+        const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
-        const finalLabel = opt.showMemberCount ? `${baseLabel} (${memberCount})` : baseLabel;
+        const finalLabel = opt.showMemberCount !== false ? `${baseLabel} (${realMemberCount})` : baseLabel;
 
         const selectOption = new StringSelectMenuOptionBuilder()
           .setLabel(finalLabel.substring(0, 100))
@@ -80,7 +73,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
       selectMenu.addOptions(selectOptions);
       rawActionRows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
     } else {
-      // Button display mode (max 5 buttons per ActionRow, max 5 rows = 25 buttons total)
+      // Button display mode: Max 5 buttons per ActionRow
       let currentRow = new ActionRowBuilder<ButtonBuilder>();
 
       options.slice(0, 25).forEach((opt: any, idx: number) => {
@@ -89,15 +82,10 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           currentRow = new ActionRowBuilder<ButtonBuilder>();
         }
 
-        const role = guild.roles.cache.get(opt.roleId);
-        let memberCount = role ? role.members.size : 0;
-        if (memberCount === 0 && role && guild.members.cache.size > 0) {
-          memberCount = guild.members.cache.filter((m) => m.roles.cache.has(role.id)).size;
-        }
-
-        const roleName = opt.roleName || role?.name || "Unknown Role";
+        const realMemberCount = guild.members.cache.filter((m) => m.roles.cache.has(opt.roleId)).size;
+        const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
-        const finalLabel = opt.showMemberCount ? `${baseLabel} (${memberCount})` : baseLabel;
+        const finalLabel = opt.showMemberCount !== false ? `${baseLabel} (${realMemberCount})` : baseLabel;
 
         let style = ButtonStyle.Secondary;
         if (opt.buttonColor === "Primary") style = ButtonStyle.Primary;
@@ -121,9 +109,9 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   // BUILD DISCORD COMPONENTS V2 ROOT CONTAINER
   // Root: ContainerBuilder
   // ├── MediaGalleryBuilder (Large Image at top)
-  // ├── SeparatorBuilder
+  // ├── SeparatorBuilder (Only after image)
   // ├── TextDisplayBuilder (Title & Description)
-  // └── ActionRowBuilder (Buttons)
+  // └── ActionRowBuilder (Buttons - directly following text without separator)
   const containerInnerComponents: any[] = [];
 
   // 1. Media Gallery Component (if image URL is provided)
@@ -132,7 +120,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     const mediaGallery = new MediaGalleryBuilder().addItems(mediaItem);
     containerInnerComponents.push(mediaGallery);
 
-    // 2. Separator Component
+    // 2. Separator Component (between image and text display only)
     containerInnerComponents.push(new SeparatorBuilder());
   }
 
@@ -155,7 +143,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   const textDisplay = new TextDisplayBuilder().setContent(textContent.trim());
   containerInnerComponents.push(textDisplay);
 
-  // 4. Action Row Components inside Container
+  // 4. Action Row Components inside Container (Directly following text without separator)
   rawActionRows.forEach((row) => {
     containerInnerComponents.push(row);
   });
