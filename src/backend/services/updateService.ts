@@ -84,9 +84,15 @@ export function resetUpdateProgress(): UpdateProgressState {
     percent: 0,
     currentAction: "Bereit für Update-Prüfung",
     status: "idle",
-    logs: [],
+    logs: [`[${new Date().toLocaleTimeString()}] 🔧 Update-Engine & Status wurden zurückgesetzt.`],
     timestamp: new Date().toISOString(),
   };
+
+  try {
+    ensureLogsDir();
+    fs.writeFileSync(PROGRESS_FILE, JSON.stringify(activeProgressState, null, 2), "utf-8");
+  } catch (e) {}
+
   broadcastEvent("updateProgress", activeProgressState);
   return activeProgressState;
 }

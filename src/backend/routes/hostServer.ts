@@ -7,6 +7,7 @@ import {
   checkOrTriggerUpdate,
   getUpdateProgress,
   updateProgressState,
+  resetUpdateProgress,
 } from "../services/updateService";
 
 const router = Router();
@@ -36,6 +37,12 @@ router.get("/update-progress", (req, res) => {
 router.post("/update-progress", (req, res) => {
   const updated = updateProgressState(req.body);
   res.json({ success: true, progress: updated });
+});
+
+// POST endpoint to force reset update state (Fix / Repair Button)
+router.post("/reset-update-state", (req, res) => {
+  const resetState = resetUpdateProgress();
+  res.json({ success: true, progress: resetState });
 });
 
 // POST endpoint to trigger immediate update check & install

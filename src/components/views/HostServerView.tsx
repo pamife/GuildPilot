@@ -21,6 +21,8 @@ import {
   ChevronUp,
   Terminal,
   Circle,
+  Wrench,
+  RotateCcw,
 } from "lucide-react";
 
 export function HostServerView() {
@@ -172,6 +174,25 @@ export function HostServerView() {
         })
         .catch(() => {});
       setCheckingUpdate(false);
+    }
+  };
+
+  const [resettingState, setResettingState] = useState(false);
+
+  const handleResetUpdateState = async () => {
+    setResettingState(true);
+    try {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+      const res = await fetch(`${apiUrl}/api/host-server/reset-update-state`, { method: "POST" });
+      const data = await res.json();
+      if (data && data.progress) {
+        setUpdateProgress(data.progress);
+      }
+    } catch (err) {
+      console.error("Reset update state failed:", err);
+    } finally {
+      setCheckingUpdate(false);
+      setResettingState(false);
     }
   };
   const formatBytes = (bytes: number) => {
@@ -434,6 +455,16 @@ export function HostServerView() {
                 {showLogs ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
               </button>
             )}
+
+            <button
+              onClick={handleResetUpdateState}
+              disabled={resettingState}
+              title="Falls der Status hängenbleibt: Engine & Cache zurücksetzen"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg bg-[#18191c] hover:bg-amber-500/20 border border-[#35373c] hover:border-amber-500/40 text-discord-muted hover:text-amber-300 font-semibold text-xs transition-all shadow-sm disabled:opacity-50"
+            >
+              <RotateCcw className={`w-3.5 h-3.5 ${resettingState ? "animate-spin text-amber-400" : ""}`} />
+              <span>Status reparieren</span>
+            </button>
 
             <button
               onClick={handleCheckUpdate}
