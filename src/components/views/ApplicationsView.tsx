@@ -47,7 +47,7 @@ import {
 } from "lucide-react";
 
 type SubPage = "dashboard" | "forms" | "applications" | "questions" | "roles" | "review-queue" | "statistics" | "settings";
-type FormTab = "embed" | "welcome" | "channels" | "roles";
+type FormTab = "embed" | "welcome" | "questions" | "channels" | "roles";
 
 interface ApplicationsViewProps {
   selectedGuildId: string | null;
@@ -227,6 +227,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
   const handleOpenFormModal = (form?: any) => {
     if (form) {
       setEditingForm(form);
+      setSelectedFormId(form.id);
       setFormPayload({
         name: form.name,
         description: form.description || "",
@@ -337,6 +338,17 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
 
   // Question Builder Handlers
   const handleOpenQuestionModal = (q?: any) => {
+    let targetFormId = selectedFormId;
+    if (!targetFormId && forms.length > 0) {
+      targetFormId = forms[0].id;
+      setSelectedFormId(targetFormId);
+    }
+
+    if (!targetFormId) {
+      showToast("Please create an Application Form first before adding questions!", "error");
+      return;
+    }
+
     if (q) {
       setEditingQuestion(q);
       setQuestionPayload({
@@ -368,9 +380,24 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
   };
 
   const handleSaveQuestion = async () => {
-    if (!selectedGuildId || !selectedFormId) return;
+    let targetFormId = selectedFormId;
+    if (!targetFormId && forms.length > 0) {
+      targetFormId = forms[0].id;
+      setSelectedFormId(targetFormId);
+    }
+
+    if (!selectedGuildId || !targetFormId) {
+      showToast("Please select or create an Application Form first!", "error");
+      return;
+    }
+
+    if (!questionPayload.label.trim()) {
+      showToast("Question label/title is required!", "error");
+      return;
+    }
+
     try {
-      const optionsArray = questionPayload.options
+      const optionsArray = (questionPayload.options || "")
         .split("\n")
         .map((s: string) => s.trim())
         .filter(Boolean);
@@ -382,10 +409,10 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
 
       if (editingQuestion) {
         await api.patch(`/guilds/${selectedGuildId}/applications/questions/${editingQuestion.id}`, payload);
-        showToast("Question updated", "success");
+        showToast("Question updated successfully!", "success");
       } else {
-        await api.post(`/guilds/${selectedGuildId}/applications/forms/${selectedFormId}/questions`, payload);
-        showToast("Question added", "success");
+        await api.post(`/guilds/${selectedGuildId}/applications/forms/${targetFormId}/questions`, payload);
+        showToast("Question added successfully!", "success");
       }
       setIsQuestionModalOpen(false);
       fetchQuestions();
@@ -500,7 +527,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
     return true;
   });
 
-  const selectedForm = forms.find((f) => f.id === selectedFormId);
+  const selectedForm = forms.find((f) => f.id === selectedFormId) || forms[0];
 
   return (
     <div className="flex-1 flex flex-col h-screen bg-[#313338] text-zinc-100 overflow-hidden select-none">
@@ -820,31 +847,39 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
         {/* ========================================== */}
         {activeSubPage === "questions" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between bg-[#2b2d31] p-4 rounded-2xl border border-[#35373c]">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#2b2d31] p-4 rounded-2xl border border-[#35373c]">
               <div>
                 <h2 className="text-xl font-bold text-white">Question Builder</h2>
                 <p className="text-xs text-zinc-400">
-                  Target Form: <span className="font-bold text-discord-brand">{selectedForm?.name || "Select a form"}</span>
+                  Target Form: <span className="font-bold text-discord-brand">{selectedForm?.name || "No form created"}</span>
                 </p>
               </div>
 
               <div className="flex items-center gap-3">
-                <select
-                  value={selectedFormId || ""}
-                  onChange={(e) => setSelectedFormId(e.target.value)}
-                  className="bg-[#1e1f22] border border-[#35373c] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-discord-brand"
-                >
-                  {forms.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.name}
-                    </option>
-                  ))}
-                </select>
+                {forms.length > 0 ? (
+                  <select
+                    value={selectedFormId || ""}
+                    onChange={(e) => setSelectedFormId(e.target.value)}
+                    className="bg-[#1e1f22] border border-[#35373c] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-discord-brand font-bold"
+                  >
+                    {forms.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.name}
+                      </option>
+                    ))}
+                  </select>
+                ) : (
+                  <button
+                    onClick={() => handleOpenFormModal()}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl text-xs"
+                  >
+                    + Create Form First
+                  </button>
+                )}
 
                 <button
                   onClick={() => handleOpenQuestionModal()}
-                  disabled={!selectedFormId}
-                  className="flex items-center gap-2 px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl shadow-lg transition-all disabled:opacity-50"
+                  className="flex items-center gap-2 px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl shadow-lg transition-all"
                 >
                   <Plus className="w-4 h-4" /> Add Question
                 </button>
@@ -852,36 +887,54 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
             </div>
 
             <div className="space-y-3">
-              {questions.map((q, idx) => (
-                <div key={q.id} className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-4 flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="flex flex-col gap-1">
-                      <button onClick={() => handleMoveQuestion(idx, "up")} disabled={idx === 0} className="p-1 rounded bg-[#1e1f22] text-zinc-400">
-                        <ChevronUp className="w-3.5 h-3.5" />
-                      </button>
-                      <button onClick={() => handleMoveQuestion(idx, "down")} disabled={idx === questions.length - 1} className="p-1 rounded bg-[#1e1f22] text-zinc-400">
-                        <ChevronDown className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+              {questions.length === 0 ? (
+                <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-8 text-center space-y-3">
+                  <HelpCircle className="w-10 h-10 text-discord-brand mx-auto" />
+                  <h3 className="text-base font-bold text-white">No Intake Questions Added Yet</h3>
+                  <p className="text-xs text-zinc-400 max-w-md mx-auto">
+                    Add questions to <strong>{selectedForm?.name || "this application form"}</strong> for applicants to answer when applying.
+                  </p>
+                  <button
+                    onClick={() => handleOpenQuestionModal()}
+                    className="px-4 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl text-xs inline-flex items-center gap-2"
+                  >
+                    <Plus className="w-4 h-4" /> Create First Question
+                  </button>
+                </div>
+              ) : (
+                questions.map((q, idx) => (
+                  <div key={q.id} className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-4 flex items-center justify-between shadow-md">
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col gap-1">
+                        <button onClick={() => handleMoveQuestion(idx, "up")} disabled={idx === 0} className="p-1 rounded bg-[#1e1f22] text-zinc-400">
+                          <ChevronUp className="w-3.5 h-3.5" />
+                        </button>
+                        <button onClick={() => handleMoveQuestion(idx, "down")} disabled={idx === questions.length - 1} className="p-1 rounded bg-[#1e1f22] text-zinc-400">
+                          <ChevronDown className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
 
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs text-zinc-400 font-bold">Q{idx + 1}.</span>
-                        <h4 className="font-bold text-white text-sm">{q.label}</h4>
-                        <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-discord-brand/20 text-discord-brand">
-                          {q.type}
-                        </span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs text-zinc-400 font-bold">Q{idx + 1}.</span>
+                          <h4 className="font-bold text-white text-sm">{q.label}</h4>
+                          <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-discord-brand/20 text-discord-brand">
+                            {q.type}
+                          </span>
+                          {q.required && <span className="text-[10px] font-bold text-rose-400 bg-rose-500/10 px-2 py-0.5 rounded">Required</span>}
+                        </div>
+                        {q.placeholder && <p className="text-xs text-zinc-400 mt-1">Placeholder: "{q.placeholder}"</p>}
                       </div>
                     </div>
-                  </div>
 
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => handleDuplicateQuestion(q.id)} className="p-2 rounded-xl bg-[#1e1f22] text-zinc-300"><Copy className="w-4 h-4" /></button>
-                    <button onClick={() => handleOpenQuestionModal(q)} className="p-2 rounded-xl bg-[#1e1f22] text-zinc-300"><Edit className="w-4 h-4" /></button>
-                    <button onClick={() => handleDeleteQuestion(q.id)} className="p-2 rounded-xl bg-rose-500/10 text-rose-400"><Trash2 className="w-4 h-4" /></button>
+                    <div className="flex items-center gap-2">
+                      <button onClick={() => handleDuplicateQuestion(q.id)} title="Duplicate Question" className="p-2 rounded-xl bg-[#1e1f22] text-zinc-300"><Copy className="w-4 h-4" /></button>
+                      <button onClick={() => handleOpenQuestionModal(q)} title="Edit Question" className="p-2 rounded-xl bg-[#1e1f22] text-zinc-300"><Edit className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteQuestion(q.id)} title="Delete Question" className="p-2 rounded-xl bg-rose-500/10 text-rose-400"><Trash2 className="w-4 h-4" /></button>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </div>
         )}
@@ -940,6 +993,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                 {[
                   { id: "embed", label: "Embed Panel", icon: Palette },
                   { id: "welcome", label: "Welcome Embed", icon: Sparkles },
+                  { id: "questions", label: "Questions", icon: HelpCircle },
                   { id: "channels", label: "Channels", icon: Hash },
                   { id: "roles", label: "Roles", icon: Shield },
                 ].map((t) => (
@@ -1036,6 +1090,39 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                         onChange={(e) => setFormPayload({ ...formPayload, welcomeDescription: e.target.value })}
                         className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
                       />
+                    </div>
+                  </div>
+                )}
+
+                {formModalTab === "questions" && (
+                  <div className="space-y-4">
+                    <div className="flex items-center justify-between border-b border-[#35373c] pb-2">
+                      <h4 className="font-bold text-white text-sm">Form Intake Questions</h4>
+                      <button
+                        onClick={() => handleOpenQuestionModal()}
+                        className="px-3 py-1.5 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl text-xs flex items-center gap-1.5"
+                      >
+                        <Plus className="w-3.5 h-3.5" /> Add Question
+                      </button>
+                    </div>
+
+                    <div className="space-y-2">
+                      {questions.length === 0 ? (
+                        <p className="text-zinc-400 text-center py-6">No questions added to this form yet.</p>
+                      ) : (
+                        questions.map((q, idx) => (
+                          <div key={q.id} className="p-3 bg-[#1e1f22] rounded-xl border border-[#35373c] flex items-center justify-between">
+                            <div>
+                              <p className="font-bold text-white text-xs">{idx + 1}. {q.label}</p>
+                              <span className="text-[10px] text-discord-brand font-mono">{q.type}</span>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button onClick={() => handleOpenQuestionModal(q)} className="p-1 rounded text-zinc-400 hover:text-white"><Edit className="w-3.5 h-3.5" /></button>
+                              <button onClick={() => handleDeleteQuestion(q.id)} className="p-1 rounded text-rose-400 hover:text-rose-300"><Trash2 className="w-3.5 h-3.5" /></button>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 )}
@@ -1159,6 +1246,134 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                 className="px-6 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl text-xs shadow-lg"
               >
                 Save Panel & Form
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Question Editor Modal */}
+      {isQuestionModalOpen && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
+          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl max-w-md w-full p-6 space-y-4 shadow-2xl">
+            <div className="flex items-center justify-between border-b border-[#35373c] pb-3">
+              <h3 className="text-base font-bold text-white flex items-center gap-2">
+                <HelpCircle className="w-5 h-5 text-discord-brand" />
+                {editingQuestion ? "Edit Intake Question" : "Add Intake Question"}
+              </h3>
+              <button
+                onClick={() => setIsQuestionModalOpen(false)}
+                className="p-1 rounded-lg bg-[#1e1f22] text-zinc-400 hover:text-white"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs">
+              <div>
+                <label className="font-bold text-zinc-300 block mb-1">Target Form / Panel:</label>
+                <select
+                  value={selectedFormId || ""}
+                  onChange={(e) => setSelectedFormId(e.target.value)}
+                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-semibold"
+                >
+                  {forms.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="font-bold text-zinc-300 block mb-1">Question Label / Title:</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Why do you want to join our staff team?"
+                  value={questionPayload.label}
+                  onChange={(e) => setQuestionPayload({ ...questionPayload, label: e.target.value })}
+                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-zinc-300 block mb-1">Question Type:</label>
+                <select
+                  value={questionPayload.type}
+                  onChange={(e) => setQuestionPayload({ ...questionPayload, type: e.target.value })}
+                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-bold"
+                >
+                  <option value="SHORT_TEXT">Short Text (Single line)</option>
+                  <option value="PARAGRAPH">Paragraph (Multi-line text)</option>
+                  <option value="MULTIPLE_CHOICE">Multiple Choice</option>
+                  <option value="DROPDOWN">Dropdown Menu Select</option>
+                  <option value="YES_NO">Yes / No</option>
+                  <option value="NUMBER">Number Input</option>
+                  <option value="DATE">Date Input</option>
+                </select>
+              </div>
+
+              {["MULTIPLE_CHOICE", "DROPDOWN"].includes(questionPayload.type) && (
+                <div>
+                  <label className="font-bold text-zinc-300 block mb-1">Options (One option per line):</label>
+                  <textarea
+                    rows={4}
+                    placeholder={`Option 1\nOption 2\nOption 3`}
+                    value={questionPayload.options}
+                    onChange={(e) => setQuestionPayload({ ...questionPayload, options: e.target.value })}
+                    className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="font-bold text-zinc-300 block mb-1">Placeholder (Optional):</label>
+                <input
+                  type="text"
+                  placeholder="Type answer here..."
+                  value={questionPayload.placeholder}
+                  onChange={(e) => setQuestionPayload({ ...questionPayload, placeholder: e.target.value })}
+                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                />
+              </div>
+
+              <div>
+                <label className="font-bold text-zinc-300 block mb-1">Help Text / Guidance (Optional):</label>
+                <input
+                  type="text"
+                  placeholder="Provide guidance for the applicant..."
+                  value={questionPayload.helpText}
+                  onChange={(e) => setQuestionPayload({ ...questionPayload, helpText: e.target.value })}
+                  className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 pt-1">
+                <input
+                  type="checkbox"
+                  id="q_req"
+                  checked={questionPayload.required}
+                  onChange={(e) => setQuestionPayload({ ...questionPayload, required: e.target.checked })}
+                  className="w-4 h-4 rounded text-discord-brand focus:ring-0"
+                />
+                <label htmlFor="q_req" className="font-bold text-white cursor-pointer">
+                  Required Question
+                </label>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#35373c]">
+              <button
+                onClick={() => setIsQuestionModalOpen(false)}
+                className="px-4 py-2 bg-[#1e1f22] hover:bg-[#35373c] text-zinc-300 rounded-xl font-bold text-xs"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveQuestion}
+                className="px-5 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl text-xs shadow-lg"
+              >
+                Save Question
               </button>
             </div>
           </div>
