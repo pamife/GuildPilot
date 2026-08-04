@@ -83,14 +83,18 @@ router.post("/:guildId/self-roles/panels/:panelId/duplicate", async (req, res) =
 
 // POST deploy panel to Discord channel
 router.post("/:guildId/self-roles/panels/:panelId/post", async (req, res) => {
+  console.log("[SEND] request received");
   try {
     if (!discordClient.isReady()) {
+      console.log("[SEND] Discord bot is not ready");
       return res.status(400).json({ error: "Discord bot is not online or ready." });
     }
 
     const result = await deploySelfRolePanelEmbed(discordClient, req.params.guildId, req.params.panelId);
+    console.log("[SEND] API response sent");
     res.json({ success: true, ...result });
   } catch (err: any) {
+    console.error("[SEND] Error posting panel:", err);
     res.status(500).json({ error: err.message || "Failed to post panel to Discord" });
   }
 });
