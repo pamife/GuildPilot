@@ -13,8 +13,36 @@ import {
   GuildMember,
   Guild,
   MessageFlags,
+  parseEmoji,
 } from "discord.js";
 import { getSelfRolePanelById, updateSelfRolePanel } from "../services/selfRoleService";
+
+// Helper to safely parse and validate emojis to avoid Discord API COMPONENT_INVALID_EMOJI error
+function parseAndValidateEmoji(emojiStr?: string | null) {
+  if (!emojiStr || typeof emojiStr !== "string") return null;
+  const trimmed = emojiStr.trim();
+  if (!trimmed) return null;
+
+  try {
+    const parsed = parseEmoji(trimmed);
+    if (!parsed || !parsed.name) return null;
+
+    // Custom emoji with ID (e.g. <:name:1234567890>)
+    if (parsed.id) {
+      return { id: parsed.id, name: parsed.name, animated: Boolean(parsed.animated) };
+    }
+
+    // Unicode emoji: Check that name is NOT plain ASCII (e.g. "updates" or ":updates:")
+    const isPlainAscii = /^[\x00-\x7F]+$/.test(parsed.name);
+    if (isPlainAscii) {
+      return null; // Reject plain text names which are invalid unicode emojis
+    }
+
+    return { name: parsed.name };
+  } catch (e) {
+    return null;
+  }
+}
 
 // Helper function to build Discord Embed and Components (Buttons or Dropdown)
 export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) {
@@ -98,9 +126,12 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
         }
 
         if (opt.emoji) {
-          try {
-            selectOption.setEmoji(opt.emoji);
-          } catch (e) {}
+          const validEmoji = parseAndValidateEmoji(opt.emoji);
+          if (validEmoji) {
+            try {
+              selectOption.setEmoji(validEmoji);
+            } catch (e) {}
+          }
         }
 
         return selectOption;
@@ -135,10 +166,11 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           .setStyle(style);
 
         if (opt.emoji) {
-          try {
-            button.setEmoji(opt.emoji);
-          } catch (e) {
-            console.error("Invalid emoji format:", opt.emoji);
+          const validEmoji = parseAndValidateEmoji(opt.emoji);
+          if (validEmoji) {
+            try {
+              button.setEmoji(validEmoji);
+            } catch (e) {}
           }
         }
 
