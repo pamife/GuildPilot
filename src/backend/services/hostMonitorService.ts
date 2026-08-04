@@ -96,11 +96,13 @@ export async function fetchHostStaticInfo(): Promise<HostStaticInfo> {
 const MONITORED_SERVICES = [
   "keep-awake",
   "guildpilot-update",
-  "plasma-powerdevil",
+  "guildpilot-update.timer",
   "ssh",
   "sshd",
   "NetworkManager",
+  "networkmanager",
   "docker",
+  "dockerd",
   "pm2",
 ];
 
@@ -144,6 +146,58 @@ export async function collectHostMetrics(): Promise<HostMetrics> {
         user: p.user,
       }));
 
+    const procList = processes?.list || [];
+    const rawServices = services || [];
+
+    const isServiceOrProcRunning = (serviceNames: string[], procRegex: RegExp) => {
+      const svcRunning = rawServices.some((s: any) =>
+        serviceNames.some((n) => s.name?.toLowerCase() === n.toLowerCase()) && s.running
+      );
+      if (svcRunning) return true;
+
+      return procList.some((p: any) => {
+        const name = (p.name || "").toLowerCase();
+        const cmd = (p.cmd || "").toLowerCase();
+        return procRegex.test(name) || procRegex.test(cmd);
+      });
+    };
+
+    const aggregatedServices = [
+      {
+        name: "keep-awake",
+        running: isServiceOrProcRunning(
+          ["keep-awake"],
+          /keep-awake|systemd-inhibit|caffeine|nosleep/i
+        ),
+      },
+      {
+        name: "guildpilot-update",
+        running: isServiceOrProcRunning(
+          ["guildpilot-update", "guildpilot-update.service", "guildpilot-update.timer"],
+          /auto-update|guildpilot-update/i
+        ),
+      },
+      {
+        name: "ssh",
+        running: isServiceOrProcRunning(["ssh", "sshd"], /\bsshd?\b/i),
+      },
+      {
+        name: "networkmanager",
+        running: isServiceOrProcRunning(
+          ["NetworkManager", "networkmanager", "systemd-networkd"],
+          /networkmanager|networkd/i
+        ),
+      },
+      {
+        name: "docker",
+        running: isServiceOrProcRunning(["docker", "dockerd"], /\bdockerd?\b/i),
+      },
+      {
+        name: "pm2",
+        running: isServiceOrProcRunning(["pm2"], /\bpm2\b|PM2 God Daemon/i),
+      },
+    ];
+
     return {
       timestamp: Date.now(),
       uptime: time.uptime,
@@ -180,30 +234,7 @@ export async function collectHostMetrics(): Promise<HostMetrics> {
       processes: {
         top: topProcesses,
       },
-      services: (services || []).map((s: any) => {
-        let isRunning = s.running;
-        if (s.name === "keep-awake" && !isRunning) {
-          const procList = processes?.list || [];
-          const matchesKeepAwake = procList.some((p: any) => {
-            const name = (p.name || "").toLowerCase();
-            const cmd = (p.cmd || "").toLowerCase();
-            return (
-              name.includes("keep-awake") ||
-              name.includes("systemd-inhibit") ||
-              name.includes("caffeine") ||
-              name.includes("nosleep") ||
-              cmd.includes("keep-awake") ||
-              cmd.includes("systemd-inhibit") ||
-              cmd.includes("caffeine")
-            );
-          });
-          if (matchesKeepAwake) isRunning = true;
-        }
-        return {
-          name: s.name,
-          running: isRunning,
-        };
-      }),
+      services: aggregatedServices,
     };
   } catch (err) {
     console.error("[HostMonitor] Error collecting telemetry:", err);
