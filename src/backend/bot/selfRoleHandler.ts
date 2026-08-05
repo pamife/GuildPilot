@@ -37,7 +37,14 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   const bStart = Date.now();
   console.log("[SEND] calculating roles");
 
-  // TEMPORARILY REMOVED guild.members.fetch() & role counter calculation for timeout isolation
+  // Fetch guild roles & members using actual Discord Guild cache/member list
+  try {
+    await guild.roles.fetch();
+    await guild.members.fetch();
+  } catch (e) {
+    console.warn("[SelfRole Debug] Failed to fetch guild members/roles:", e);
+  }
+
   const rawActionRows: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
   const options = panel.options || [];
 
@@ -50,6 +57,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
         .setMaxValues(panel.multiSelect ? Math.min(options.length, 25) : 1);
 
       const selectOptions = options.slice(0, 25).map((opt: any) => {
+        const realMemberCount = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
         const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
         
@@ -61,7 +69,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           }
         }
 
-        const finalLabel = cleanBaseLabel;
+        const finalLabel = opt.showMemberCount !== false ? `${cleanBaseLabel} (${realMemberCount})` : cleanBaseLabel;
 
         const selectOption = new StringSelectMenuOptionBuilder()
           .setLabel(finalLabel.substring(0, 100))
@@ -94,6 +102,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           currentRow = new ActionRowBuilder<ButtonBuilder>();
         }
 
+        const realMemberCount = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
         const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
 
@@ -105,7 +114,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           }
         }
 
-        const finalLabel = cleanBaseLabel;
+        const finalLabel = opt.showMemberCount !== false ? `${cleanBaseLabel} (${realMemberCount})` : cleanBaseLabel;
 
         let style = ButtonStyle.Secondary;
         if (opt.buttonColor === "Primary") style = ButtonStyle.Primary;
