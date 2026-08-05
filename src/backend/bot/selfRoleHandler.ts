@@ -57,10 +57,13 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
         .setMaxValues(panel.multiSelect ? Math.min(options.length, 25) : 1);
 
       const selectOptions = options.slice(0, 25).map((opt: any) => {
-        const realMemberCount = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
+        const countFromMembersCache = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
+        const countFromRole = guild.roles.cache.get(opt.roleId)?.members?.size || 0;
+        const realMemberCount = Math.max(countFromMembersCache, countFromRole);
+
         const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
-        
+
         let cleanBaseLabel = baseLabel.trim();
         if (opt.emoji && opt.emoji.trim()) {
           const emojiStr = opt.emoji.trim();
@@ -68,6 +71,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
             cleanBaseLabel = cleanBaseLabel.slice(emojiStr.length).trim();
           }
         }
+        cleanBaseLabel = cleanBaseLabel.replace(/\s*\(\d+\)$/, "").trim();
 
         const finalLabel = opt.showMemberCount !== false ? `${cleanBaseLabel} (${realMemberCount})` : cleanBaseLabel;
 
@@ -92,17 +96,19 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
       selectMenu.addOptions(selectOptions);
       rawActionRows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
     } else {
-      // Button display mode: Separate ActionRowBuilders, max 5 buttons per ActionRow
-      const actionRows: ActionRowBuilder<ButtonBuilder>[] = [];
-      let currentRow = new ActionRowBuilder<ButtonBuilder>();
+      // Button display mode: 2 separate ActionRowBuilders if >= 2 options (max 5 per ActionRow)
+      const maxOptions = options.slice(0, 25);
+      const row1 = new ActionRowBuilder<ButtonBuilder>();
+      const row2 = new ActionRowBuilder<ButtonBuilder>();
 
-      options.slice(0, 25).forEach((opt: any, idx: number) => {
-        if (idx > 0 && idx % 5 === 0) {
-          actionRows.push(currentRow);
-          currentRow = new ActionRowBuilder<ButtonBuilder>();
-        }
+      const totalOpts = maxOptions.length;
+      const splitIndex = totalOpts >= 2 ? Math.min(5, Math.ceil(totalOpts / 2)) : 5;
 
-        const realMemberCount = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
+      maxOptions.forEach((opt: any, idx: number) => {
+        const countFromMembersCache = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
+        const countFromRole = guild.roles.cache.get(opt.roleId)?.members?.size || 0;
+        const realMemberCount = Math.max(countFromMembersCache, countFromRole);
+
         const roleName = opt.roleName || guild.roles.cache.get(opt.roleId)?.name || "Unknown Role";
         const baseLabel = opt.label || roleName;
 
@@ -113,6 +119,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
             cleanBaseLabel = cleanBaseLabel.slice(emojiStr.length).trim();
           }
         }
+        cleanBaseLabel = cleanBaseLabel.replace(/\s*\(\d+\)$/, "").trim();
 
         const finalLabel = opt.showMemberCount !== false ? `${cleanBaseLabel} (${realMemberCount})` : cleanBaseLabel;
 
@@ -133,25 +140,27 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
           }
         }
 
-        currentRow.addComponents(button);
+        if (idx < splitIndex) {
+          row1.addComponents(button);
+        } else {
+          row2.addComponents(button);
+        }
       });
 
-      if (currentRow.components.length > 0) {
-        actionRows.push(currentRow);
-      }
-
-      rawActionRows.push(...actionRows);
+      if (row1.components.length > 0) rawActionRows.push(row1);
+      if (row2.components.length > 0) rawActionRows.push(row2);
     }
   }
 
-  console.log(`[SelfRole Debug] Role member counts calculated in ${Date.now() - bStart}ms (bypassed)`);
+  console.log(`[SelfRole Debug] Role member counts calculated in ${Date.now() - bStart}ms`);
 
   // BUILD DISCORD COMPONENTS V2 ROOT CONTAINER
   // Root: ContainerBuilder
   // ├── MediaGalleryBuilder (Large Image at top)
   // ├── SeparatorBuilder (Only after image)
   // ├── TextDisplayBuilder (Title & Description)
-  // └── ActionRowBuilder (Buttons - directly following text without separator)
+  // ├── SeparatorBuilder (Between text and buttons)
+  // └── ActionRowBuilder (Buttons)
   const containerInnerComponents: any[] = [];
 
   // 1. Media Gallery Component (if image URL is provided)
@@ -160,7 +169,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     const mediaGallery = new MediaGalleryBuilder().addItems(mediaItem);
     containerInnerComponents.push(mediaGallery);
 
-    // 2. Separator Component (between image and text display only)
+    // 2. Separator Component (between image and text display)
     containerInnerComponents.push(new SeparatorBuilder());
   }
 
@@ -183,7 +192,12 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   const textDisplay = new TextDisplayBuilder().setContent(textContent.trim());
   containerInnerComponents.push(textDisplay);
 
-  // 4. Action Row Components inside Container (Directly following text without separator)
+  // 4. Separator Component (between text display and button rows)
+  if (rawActionRows.length > 0) {
+    containerInnerComponents.push(new SeparatorBuilder());
+  }
+
+  // 5. Action Row Components inside Container
   rawActionRows.forEach((row) => {
     containerInnerComponents.push(row);
   });
