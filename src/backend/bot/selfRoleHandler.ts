@@ -37,12 +37,10 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   const bStart = Date.now();
   console.log("[SEND] calculating roles");
 
-  // Fetch guild roles & members with a 2-second timeout to prevent API hangs
+  // Fetch guild roles & members with a 3-second timeout limit
   try {
     await guild.roles.fetch();
-    const fetchPromise = guild.members.fetch({ time: 2000 }).catch(() => null);
-    const timeoutPromise = new Promise((res) => setTimeout(res, 2000));
-    await Promise.race([fetchPromise, timeoutPromise]);
+    await guild.members.fetch({ time: 3000 }).catch(() => null);
   } catch (e) {
     console.warn("[SelfRole Debug] Non-fatal error during member fetch:", e);
   }
