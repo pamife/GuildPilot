@@ -69,7 +69,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
 
         if (opt.emoji && opt.emoji.trim()) {
           const emojiObj = parseAndValidateEmoji(opt.emoji);
-          if (emojiObj.id || emojiObj.name) {
+          if (emojiObj && (emojiObj.id || emojiObj.name)) {
             selectOption.setEmoji(emojiObj);
           }
         }
@@ -119,7 +119,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
 
         if (opt.emoji && opt.emoji.trim()) {
           const emojiObj = parseAndValidateEmoji(opt.emoji);
-          if (emojiObj.id || emojiObj.name) {
+          if (emojiObj && (emojiObj.id || emojiObj.name)) {
             button.setEmoji(emojiObj);
           }
         }

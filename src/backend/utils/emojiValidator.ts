@@ -9,26 +9,49 @@ const ALLOWED_UNICODE_EMOJIS = [
 
 const EMOJI_SHORTCODES: Record<string, string> = {
   ":envelope:": "📩",
-  ":news:": "📩",
+  "envelope": "📩",
+  ":news:": "📢",
+  "news": "📢",
   ":tools:": "🛠️",
-  ":updates:": "🛠️",
+  "tools": "🛠️",
+  ":updates:": "🔄",
+  "updates": "🔄",
   ":eyes:": "👀",
+  "eyes": "👀",
   ":leaks:": "👀",
+  "leaks": "👀",
   ":scroll:": "📜",
+  "scroll": "📜",
   ":polls:": "📜",
+  "polls": "📜",
   ":star:": "⭐️",
-  ":events:": "⭐️",
+  "star": "⭐️",
+  ":events:": "🎉",
+  "events": "🎉",
   ":gift:": "🎁",
+  "gift": "🎁",
   ":giveaways:": "🎁",
+  "giveaways": "🎁",
   ":bell:": "🔔",
+  "bell": "🔔",
   ":ping:": "🔔",
+  "ping": "🔔",
   ":pings:": "🔔",
+  "pings": "🔔",
   ":announcement:": "📢",
   ":announcements:": "📢",
+  "announcement": "📢",
+  "announcements": "📢",
   ":party:": "🎉",
+  "party": "🎉",
   ":world:": "🌐",
+  "world": "🌐",
+  ":social:": "🌐",
+  "social": "🌐",
   ":refresh:": "🔄",
+  "refresh": "🔄",
   ":reload:": "🔄",
+  "reload": "🔄",
   ":arrow_up:": "⬆️",
   ":up:": "⬆️",
   ":check:": "✅",
@@ -52,21 +75,22 @@ const EMOJI_SHORTCODES: Record<string, string> = {
 
 /**
  * Validates and converts emoji input into a guaranteed valid Discord emoji object or Unicode emoji string.
- * Completely replaces any invalid text strings, markdown shortcodes, or unparsed values with a guaranteed valid Unicode emoji (e.g. "🔄" or "📢").
+ * Strictly returns ONLY a valid single Unicode emoji (e.g. "🌐", "🎉", "🎁") or valid custom emoji ID.
+ * Returns null if the emoji is invalid, string name, or unparseable text.
  */
 export function parseAndValidateEmoji(
   emojiInput?: string | null
-): { name?: string; id?: string; animated?: boolean } {
+): { name?: string; id?: string; animated?: boolean } | null {
   if (!emojiInput || typeof emojiInput !== "string") {
-    return { name: "📢" };
+    return null;
   }
   let trimmed = emojiInput.trim();
   if (!trimmed) {
-    return { name: "📢" };
+    return null;
   }
 
   // 1. Custom Emoji check: <:name:123456789012345678> or <a:name:123456789012345678>
-  const customMatch = /^<a?:([a-zA-Z0-9_]+):(\d+)>$/.exec(trimmed);
+  const customMatch = /^<a?:([a-zA-Z0-9_]+):(\d{17,20})>$/.exec(trimmed);
   if (customMatch) {
     return {
       name: customMatch[1],
@@ -80,31 +104,23 @@ export function parseAndValidateEmoji(
     return { id: trimmed };
   }
 
-  // 3. Shortcode lookup (e.g. :ping: -> 🔔)
+  // 3. Shortcode / keyword lookup (e.g. :giveaways: -> 🎁, giveaways -> 🎁, :events: -> 🎉, social -> 🌐)
   const lower = trimmed.toLowerCase();
   if (EMOJI_SHORTCODES[lower]) {
-    trimmed = EMOJI_SHORTCODES[lower];
+    return { name: EMOJI_SHORTCODES[lower] };
   }
 
-  // 4. Check if trimmed string is in guaranteed Unicode emoji list or Extended Pictographic regex
-  if (ALLOWED_UNICODE_EMOJIS.includes(trimmed) || /\p{Extended_Pictographic}/u.test(trimmed)) {
+  // 4. Try matching single Unicode emoji character inside the input string
+  const unicodeMatch = trimmed.match(/\p{Extended_Pictographic}/u);
+  if (unicodeMatch && unicodeMatch[0]) {
+    return { name: unicodeMatch[0] };
+  }
+
+  // 5. Check if trimmed string is in ALLOWED_UNICODE_EMOJIS list
+  if (ALLOWED_UNICODE_EMOJIS.includes(trimmed)) {
     return { name: trimmed };
   }
 
-  // 5. Try parseEmoji from discord.js
-  try {
-    const parsed = parseEmoji(trimmed);
-    if (parsed && parsed.name) {
-      if (parsed.id) {
-        return { id: parsed.id, name: parsed.name, animated: Boolean(parsed.animated) };
-      }
-      const isPlainAscii = /^[:a-zA-Z0-9_\-\s]+$/.test(parsed.name);
-      if (!isPlainAscii) {
-        return { name: parsed.name };
-      }
-    }
-  } catch (e) {}
-
-  // Fallback: If invalid text string or unmapped markdown string, replace with guaranteed valid Unicode emoji
-  return { name: "🔄" };
+  // Fallback: If invalid text string or unmapped text, return null so setEmoji() is NOT called
+  return null;
 }
