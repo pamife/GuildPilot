@@ -37,12 +37,14 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   const bStart = Date.now();
   console.log("[SEND] calculating roles");
 
-  // Fetch guild roles & members using actual Discord Guild cache/member list
+  // Fetch guild roles & members with a 2-second timeout to prevent API hangs
   try {
     await guild.roles.fetch();
-    await guild.members.fetch();
+    const fetchPromise = guild.members.fetch({ time: 2000 }).catch(() => null);
+    const timeoutPromise = new Promise((res) => setTimeout(res, 2000));
+    await Promise.race([fetchPromise, timeoutPromise]);
   } catch (e) {
-    console.warn("[SelfRole Debug] Failed to fetch guild members/roles:", e);
+    console.warn("[SelfRole Debug] Non-fatal error during member fetch:", e);
   }
 
   const rawActionRows: ActionRowBuilder<ButtonBuilder | StringSelectMenuBuilder>[] = [];
@@ -50,12 +52,6 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
 
   if (options.length > 0) {
     if (panel.displayType === "dropdown") {
-      const selectMenu = new StringSelectMenuBuilder()
-        .setCustomId(`selfrole_select:${panel.id}`)
-        .setPlaceholder(panel.placeholderText || "Select roles...")
-        .setMinValues(0)
-        .setMaxValues(panel.multiSelect ? Math.min(options.length, 25) : 1);
-
       const selectOptions = options.slice(0, 25).map((opt: any) => {
         const countFromMembersCache = guild.members.cache.filter((member) => member.roles.cache.has(opt.roleId)).size;
         const countFromRole = guild.roles.cache.get(opt.roleId)?.members?.size || 0;
@@ -92,6 +88,12 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
 
         return selectOption;
       });
+
+      const selectMenu = new StringSelectMenuBuilder()
+        .setCustomId(`selfrole_select:${panel.id}`)
+        .setPlaceholder(panel.placeholderText || "Select roles...")
+        .setMinValues(0)
+        .setMaxValues(panel.multiSelect ? Math.min(options.length, 25) : 1);
 
       selectMenu.addOptions(selectOptions);
       rawActionRows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
@@ -159,8 +161,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   // ├── MediaGalleryBuilder (Large Image at top)
   // ├── SeparatorBuilder (Only after image)
   // ├── TextDisplayBuilder (Title & Description)
-  // ├── SeparatorBuilder (Between text and buttons)
-  // └── ActionRowBuilder (Buttons)
+  // └── ActionRowBuilder (Buttons - directly following text without separator)
   const containerInnerComponents: any[] = [];
 
   // 1. Media Gallery Component (if image URL is provided)
@@ -169,7 +170,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
     const mediaGallery = new MediaGalleryBuilder().addItems(mediaItem);
     containerInnerComponents.push(mediaGallery);
 
-    // 2. Separator Component (between image and text display)
+    // 2. Separator Component (between image and text display only)
     containerInnerComponents.push(new SeparatorBuilder());
   }
 
@@ -192,12 +193,7 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   const textDisplay = new TextDisplayBuilder().setContent(textContent.trim());
   containerInnerComponents.push(textDisplay);
 
-  // 4. Separator Component (between text display and button rows)
-  if (rawActionRows.length > 0) {
-    containerInnerComponents.push(new SeparatorBuilder());
-  }
-
-  // 5. Action Row Components inside Container
+  // 4. Action Row Components inside Container (Directly following text without separator)
   rawActionRows.forEach((row) => {
     containerInnerComponents.push(row);
   });
@@ -260,12 +256,13 @@ export async function deploySelfRolePanelEmbed(client: Client, guildId: string, 
     try {
       message = await channel.send(payload);
     } catch (sendErr: any) {
+      console.error("[SEND] Error sending message to Discord:", sendErr?.rawError || sendErr?.message || sendErr);
       if (sendErr.code === 50013) {
         throw new Error(`Der Bot hat keine Berechtigung 'Nachrichten senden' im Kanal #${channel.name}.`);
       } else if (sendErr.code === 50001) {
         throw new Error(`Der Bot hat keinen Zugriff auf den Kanal #${channel.name}.`);
       } else {
-        throw new Error(`Discord API Fehler: ${sendErr.message || sendErr}`);
+        throw new Error(`Discord API Fehler: ${sendErr.rawError?.message || sendErr.message || sendErr}`);
       }
     }
   }
