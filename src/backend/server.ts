@@ -20,6 +20,7 @@ import hostServerRoutes from "./routes/hostServer";
 import ticketRoutes from "./routes/tickets";
 import applicationRoutes from "./routes/applications";
 import selfRoleRoutes from "./routes/selfRoles";
+import customMessageRoutes from "./routes/customMessages";
 
 const app = express();
 const server = http.createServer(app);
@@ -60,6 +61,7 @@ app.use("/api/guilds", inviteRoutes);
 app.use("/api/guilds", ticketRoutes);
 app.use("/api/guilds", applicationRoutes);
 app.use("/api/guilds", selfRoleRoutes);
+app.use("/api/guilds", customMessageRoutes);
 app.use("/api/templates", templateRoutes);
 app.use("/api/utilities", utilityRoutes);
 app.use("/api/host-server", hostServerRoutes);

@@ -23,10 +23,12 @@ import {
   RefreshCw,
   ClipboardList,
   Tag,
+  MessageSquareText,
 } from "lucide-react";
 
 export type ViewType =
   | "overview"
+  | "custom-messages"
   | "applications"
   | "tickets"
   | "self-roles"
@@ -76,6 +78,7 @@ export function Sidebar({
 
   const navigationItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "custom-messages", label: "Custom Messages & V2", icon: MessageSquareText },
     { id: "applications", label: "Applications", icon: ClipboardList },
     { id: "tickets", label: "Ticket System", icon: Ticket },
     { id: "self-roles", label: "Self Roles", icon: Tag },

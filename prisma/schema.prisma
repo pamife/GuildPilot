@@ -453,4 +453,22 @@ model SelfRoleOption {
   updatedAt       DateTime      @updatedAt
 }
 
-
+model CustomMessage {
+  id              String    @id @default(uuid())
+  guildId         String
+  name            String
+  description     String?
+  mode            String    @default("components_v2") // components_v2, embed, plain
+  channelId       String?
+  messageId       String?
+  content         String?   // Plain text / fallback content (only used when not components_v2)
+  flags           Int?      @default(32768) // 32768 = MessageFlags.IsComponentsV2
+  accentColor     String?   @default("#5865F2")
+  spoiler         Boolean   @default(false)
+  containerConfig String?   @default("[]") // JSON array of Components V2 items (TextDisplay, Section, MediaGallery, Separator, ActionRow)
+  embedConfig     String?   @default("{}") // JSON object of legacy Embed config
+  componentsConfig String?  @default("[]") // JSON array of ActionRows (for embed mode)
+  lastSentAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+}
