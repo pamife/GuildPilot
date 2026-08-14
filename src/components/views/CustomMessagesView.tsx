@@ -629,6 +629,16 @@ export function CustomMessagesView({
           ],
         },
       };
+    } else if ((type as any) === "text_thumbnail" || type === "section") {
+      newBlock = {
+        id: newId,
+        type: "section",
+        content: "### Featured Section\nHighlight important information with a thumbnail image on the right.",
+        accessory: {
+          type: "thumbnail",
+          url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150",
+        },
+      };
     } else if (type === "separator") {
       newBlock = { id: newId, type: "separator", divider: true };
     } else if (type === "media_gallery") {
@@ -636,16 +646,6 @@ export function CustomMessagesView({
         id: newId,
         type: "media_gallery",
         items: [{ url: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=600", description: "" }],
-      };
-    } else if (type === "section") {
-      newBlock = {
-        id: newId,
-        type: "section",
-        content: "### Featured Section\nHighlight important information with an accessory on the right.",
-        accessory: {
-          type: "thumbnail",
-          url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150",
-        },
       };
     } else {
       newBlock = {
@@ -1152,6 +1152,14 @@ export function CustomMessagesView({
                           <span>Text + Right Button</span>
                         </button>
                         <button
+                          onClick={() => addComponentBlock("text_thumbnail" as any)}
+                          className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] flex items-center gap-1 transition-all"
+                          title="Add Row with Left Text and Right Thumbnail Image"
+                        >
+                          <Split className="w-3.5 h-3.5 text-violet-400" />
+                          <span>Text + Right Thumbnail</span>
+                        </button>
+                        <button
                           onClick={() => addComponentBlock("media_gallery")}
                           className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] flex items-center gap-1 transition-all"
                           title="Add Media Gallery Grid"
@@ -1266,94 +1274,184 @@ export function CustomMessagesView({
                                 />
                               </div>
 
-                              <div className="p-3 bg-[#14151b] rounded-lg border border-[#27272a] space-y-2.5">
+                              <div className="p-3 bg-[#14151b] rounded-lg border border-[#27272a] space-y-3">
                                 <div className="flex items-center justify-between">
-                                  <label className="text-[11px] font-bold text-zinc-300 flex items-center gap-1">
-                                    <MousePointerClick className="w-3.5 h-3.5 text-discord-brand" /> Right-Aligned Action Button
-                                  </label>
-                                  <span className="text-[10px] text-zinc-500 font-mono">Section Accessory</span>
-                                </div>
-
-                                <div className="space-y-2.5">
-                                  <div className="grid grid-cols-12 gap-2 items-center">
-                                    <div className="col-span-5">
-                                      <input
-                                        type="text"
-                                        value={block.accessory?.label || ""}
-                                        onChange={(e) =>
-                                          updateBlock(idx, {
-                                            accessory: { ...block.accessory, type: "button", label: e.target.value },
-                                          })
-                                        }
-                                        placeholder="Right Button Label"
-                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
-                                      />
-                                    </div>
-                                    <div className="col-span-4">
-                                      <select
-                                        value={block.accessory?.style || "Primary"}
-                                        onChange={(e) =>
-                                          updateBlock(idx, {
-                                            accessory: { ...block.accessory, type: "button", style: e.target.value as any },
-                                          })
-                                        }
-                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-white outline-none"
-                                      >
-                                        <option value="Primary">Primary (Blue)</option>
-                                        <option value="Secondary">Secondary (Gray)</option>
-                                        <option value="Success">Success (Green)</option>
-                                        <option value="Danger">Danger (Red)</option>
-                                        <option value="Link">Link (URL)</option>
-                                      </select>
-                                    </div>
-                                    <div className="col-span-3">
-                                      <input
-                                        type="text"
-                                        value={block.accessory?.emoji || ""}
-                                        onChange={(e) =>
-                                          updateBlock(idx, {
-                                            accessory: { ...block.accessory, type: "button", emoji: e.target.value },
-                                          })
-                                        }
-                                        placeholder="Emoji 😀"
-                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-center text-white outline-none"
-                                      />
-                                    </div>
-                                  </div>
-
-                                  {block.accessory?.style === "Link" && (
-                                    <input
-                                      type="text"
-                                      value={block.accessory?.url || ""}
-                                      onChange={(e) =>
+                                  <label className="text-[11px] font-bold text-zinc-300">Right Side Accessory</label>
+                                  <div className="flex items-center gap-2">
+                                    <button
+                                      onClick={() =>
                                         updateBlock(idx, {
-                                          accessory: { ...block.accessory, type: "button", url: e.target.value },
+                                          accessory: {
+                                            type: "button",
+                                            style: "Primary",
+                                            label: block.accessory?.label || "Action",
+                                            actions: [
+                                              {
+                                                id: "act-1",
+                                                actionType: "EPHEMERAL_REPLY",
+                                                ephemeralText: "✅ Button clicked by {user}!",
+                                              },
+                                            ],
+                                          },
                                         })
                                       }
-                                      placeholder="https://example.com (Link URL)"
-                                      className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
-                                    />
-                                  )}
-
-                                  <div className="flex items-center justify-between pt-1">
-                                    <span className="text-[11px] text-zinc-400">Aligned on the far right of this row</span>
-                                    <button
-                                      onClick={() => openButtonActionModal(idx, undefined, true, block.accessory)}
-                                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all ${
-                                        block.accessory?.actions && block.accessory.actions.length > 1
-                                          ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40"
-                                          : "bg-discord-brand/20 text-discord-brand border-discord-brand/40"
+                                      className={`px-2 py-0.5 text-[10px] font-bold rounded flex items-center gap-1 transition-all ${
+                                        block.accessory?.type === "button" || !block.accessory?.type
+                                          ? "bg-discord-brand text-white shadow-sm"
+                                          : "text-zinc-400 hover:text-white"
                                       }`}
                                     >
-                                      <Settings2 className="w-3.5 h-3.5" />
-                                      <span>
-                                        {block.accessory?.actions && block.accessory.actions.length > 1
-                                          ? `${block.accessory.actions.length} Actions Configured`
-                                          : "Configure Actions"}
-                                      </span>
+                                      <MousePointerClick className="w-3 h-3" />
+                                      <span>Right Action Button</span>
+                                    </button>
+                                    <button
+                                      onClick={() =>
+                                        updateBlock(idx, {
+                                          accessory: {
+                                            type: "thumbnail",
+                                            url: block.accessory?.url || "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150",
+                                          },
+                                        })
+                                      }
+                                      className={`px-2 py-0.5 text-[10px] font-bold rounded flex items-center gap-1 transition-all ${
+                                        block.accessory?.type === "thumbnail"
+                                          ? "bg-discord-brand text-white shadow-sm"
+                                          : "text-zinc-400 hover:text-white"
+                                      }`}
+                                    >
+                                      <Split className="w-3 h-3" />
+                                      <span>Right Thumbnail Image</span>
                                     </button>
                                   </div>
                                 </div>
+
+                                {block.accessory?.type === "thumbnail" ? (
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      {block.accessory.url && (
+                                        <img
+                                          src={block.accessory.url}
+                                          alt="Thumbnail"
+                                          className="w-10 h-10 rounded-lg object-cover border border-[#27272a] shrink-0"
+                                        />
+                                      )}
+                                      <input
+                                        type="text"
+                                        value={block.accessory.url || ""}
+                                        onChange={(e) =>
+                                          updateBlock(idx, {
+                                            accessory: { ...block.accessory, type: "thumbnail", url: e.target.value },
+                                          })
+                                        }
+                                        placeholder="Top-Right Thumbnail URL (https://...)"
+                                        className="flex-1 bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                                      />
+                                      {block.accessory.url && (
+                                        <button
+                                          onClick={() => updateBlock(idx, { accessory: { ...block.accessory, type: "thumbnail", url: "" } })}
+                                          className="p-1.5 text-zinc-400 hover:text-rose-400 rounded hover:bg-[#1f2028]"
+                                          title="Clear Thumbnail"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                    <label className="flex items-center gap-2 text-[11px] text-zinc-400 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={!!block.accessory.spoiler}
+                                        onChange={(e) =>
+                                          updateBlock(idx, {
+                                            accessory: { ...block.accessory, type: "thumbnail", spoiler: e.target.checked },
+                                          })
+                                        }
+                                        className="rounded bg-[#0e0f15] border-[#27272a] text-discord-brand"
+                                      />
+                                      <span>Mark thumbnail as spoiler (blur)</span>
+                                    </label>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-2.5">
+                                    <div className="grid grid-cols-12 gap-2 items-center">
+                                      <div className="col-span-5">
+                                        <input
+                                          type="text"
+                                          value={block.accessory?.label || ""}
+                                          onChange={(e) =>
+                                            updateBlock(idx, {
+                                              accessory: { ...block.accessory, type: "button", label: e.target.value },
+                                            })
+                                          }
+                                          placeholder="Right Button Label"
+                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
+                                        />
+                                      </div>
+                                      <div className="col-span-4">
+                                        <select
+                                          value={block.accessory?.style || "Primary"}
+                                          onChange={(e) =>
+                                            updateBlock(idx, {
+                                              accessory: { ...block.accessory, type: "button", style: e.target.value as any },
+                                            })
+                                          }
+                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                                        >
+                                          <option value="Primary">Primary (Blue)</option>
+                                          <option value="Secondary">Secondary (Gray)</option>
+                                          <option value="Success">Success (Green)</option>
+                                          <option value="Danger">Danger (Red)</option>
+                                          <option value="Link">Link (URL)</option>
+                                        </select>
+                                      </div>
+                                      <div className="col-span-3">
+                                        <input
+                                          type="text"
+                                          value={block.accessory?.emoji || ""}
+                                          onChange={(e) =>
+                                            updateBlock(idx, {
+                                              accessory: { ...block.accessory, type: "button", emoji: e.target.value },
+                                            })
+                                          }
+                                          placeholder="Emoji 😀"
+                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-center text-white outline-none"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {block.accessory?.style === "Link" && (
+                                      <input
+                                        type="text"
+                                        value={block.accessory?.url || ""}
+                                        onChange={(e) =>
+                                          updateBlock(idx, {
+                                            accessory: { ...block.accessory, type: "button", url: e.target.value },
+                                          })
+                                        }
+                                        placeholder="https://example.com (Link URL)"
+                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                                      />
+                                    )}
+
+                                    <div className="flex items-center justify-between pt-1">
+                                      <span className="text-[11px] text-zinc-400">Aligned on the far right of this row</span>
+                                      <button
+                                        onClick={() => openButtonActionModal(idx, undefined, true, block.accessory)}
+                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all ${
+                                          block.accessory?.actions && block.accessory.actions.length > 1
+                                            ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40"
+                                            : "bg-discord-brand/20 text-discord-brand border-discord-brand/40"
+                                        }`}
+                                      >
+                                        <Settings2 className="w-3.5 h-3.5" />
+                                        <span>
+                                          {block.accessory?.actions && block.accessory.actions.length > 1
+                                            ? `${block.accessory.actions.length} Actions Configured`
+                                            : "Configure Actions"}
+                                        </span>
+                                      </button>
+                                    </div>
+                                  </div>
+                                )}
                               </div>
                             </div>
                           )}
@@ -1739,33 +1837,36 @@ export function CustomMessagesView({
 
                               {/* Section Block (Left Text + Right Accessory) */}
                               {block.type === "section" && (
-                                <div className="flex items-center justify-between gap-4 bg-[#1e1f22]/50 p-2.5 rounded-lg border border-[#2b2d31]">
-                                  <div className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed flex-1">
+                                <div className="w-full flex items-center justify-between gap-4 bg-[#1e1f22]/50 p-2.5 rounded-lg border border-[#2b2d31]">
+                                  <div className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed flex-1 min-w-0 pr-2">
                                     {block.content}
                                   </div>
                                   {block.accessory && (
-                                    <div className="shrink-0">
+                                    <div className="ml-auto shrink-0 flex items-center justify-end">
                                       {block.accessory.type === "thumbnail" && block.accessory.url && (
                                         <img
                                           src={block.accessory.url}
-                                          alt=""
-                                          className="w-14 h-14 rounded-lg object-cover border border-[#2b2d31]"
+                                          alt="Top-Right Thumbnail"
+                                          className="w-14 h-14 rounded-lg object-cover border border-[#2b2d31] shadow-sm"
                                         />
                                       )}
                                       {block.accessory.type === "button" && (
                                         <button
-                                          className={`px-3 py-1.5 rounded text-xs font-semibold shadow flex items-center gap-1.5 ${
+                                          className={`px-3.5 py-1.5 rounded text-xs font-semibold shadow transition-all flex items-center gap-1.5 whitespace-nowrap ${
                                             block.accessory.style === "Success"
                                               ? "bg-[#23A55A] text-white"
                                               : block.accessory.style === "Danger"
                                               ? "bg-[#F23F43] text-white"
                                               : block.accessory.style === "Secondary"
                                               ? "bg-[#4e5058] text-white"
+                                              : block.accessory.style === "Link"
+                                              ? "bg-[#4e5058] text-white"
                                               : "bg-[#5865F2] text-white"
                                           }`}
                                         >
                                           {block.accessory.emoji && <span>{block.accessory.emoji}</span>}
                                           <span>{block.accessory.label || "Action"}</span>
+                                          {block.accessory.style === "Link" && <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />}
                                         </button>
                                       )}
                                     </div>
