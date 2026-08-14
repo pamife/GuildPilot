@@ -610,6 +610,24 @@ export function CustomMessagesView({
 
     if (type === "text") {
       newBlock = { id: newId, type: "text", content: "### New Text Section\nWrite your rich markdown text here." };
+    } else if ((type as any) === "text_button") {
+      newBlock = {
+        id: newId,
+        type: "section",
+        content: "### Special Announcement / Feature\nClick the button on the right to interact.",
+        accessory: {
+          type: "button",
+          style: "Primary",
+          label: "Click Here",
+          actions: [
+            {
+              id: "act-1",
+              actionType: "EPHEMERAL_REPLY",
+              ephemeralText: "✅ Button clicked by {user}!",
+            },
+          ],
+        },
+      };
     } else if (type === "separator") {
       newBlock = { id: newId, type: "separator", divider: true };
     } else if (type === "media_gallery") {
@@ -1125,12 +1143,20 @@ export function CustomMessagesView({
                           <span>Text</span>
                         </button>
                         <button
+                          onClick={() => addComponentBlock("text_button" as any)}
+                          className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-discord-brand/40 text-discord-brand hover:text-white flex items-center gap-1 transition-all shadow-sm"
+                          title="Add Row with Left Text and Right Action Button"
+                        >
+                          <MousePointerClick className="w-3.5 h-3.5 text-discord-brand" />
+                          <span>Text + Right Button</span>
+                        </button>
+                        <button
                           onClick={() => addComponentBlock("section")}
                           className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] flex items-center gap-1 transition-all"
-                          title="Add Section with side Thumbnail or Action Button"
+                          title="Add Section with Right Thumbnail"
                         >
                           <Split className="w-3.5 h-3.5 text-violet-400" />
-                          <span>Section</span>
+                          <span>Thumbnail Section</span>
                         </button>
                         <button
                           onClick={() => addComponentBlock("media_gallery")}
@@ -1154,7 +1180,7 @@ export function CustomMessagesView({
                           title="Add Interactive Button Row"
                         >
                           <MousePointerClick className="w-3.5 h-3.5 text-amber-400" />
-                          <span>Buttons</span>
+                          <span>Button Row</span>
                         </button>
                       </div>
                     </div>
@@ -1338,25 +1364,85 @@ export function CustomMessagesView({
                                     </label>
                                   </div>
                                 ) : (
-                                  <div className="flex items-center gap-2">
-                                    <input
-                                      type="text"
-                                      value={block.accessory?.label || ""}
-                                      onChange={(e) =>
-                                        updateBlock(idx, {
-                                          accessory: { ...block.accessory, type: "button", label: e.target.value },
-                                        })
-                                      }
-                                      placeholder="Button Label"
-                                      className="flex-1 bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
-                                    />
-                                    <button
-                                      onClick={() => openButtonActionModal(idx, undefined, true, block.accessory)}
-                                      className="px-3 py-1.5 rounded-lg bg-discord-brand/20 hover:bg-discord-brand/30 border border-discord-brand/40 text-discord-brand text-xs font-bold flex items-center gap-1.5 transition-all"
-                                    >
-                                      <Settings2 className="w-3.5 h-3.5" />
-                                      <span>Actions ({block.accessory?.actions?.length || 1})</span>
-                                    </button>
+                                  <div className="space-y-2.5">
+                                    <div className="grid grid-cols-12 gap-2 items-center">
+                                      <div className="col-span-5">
+                                        <input
+                                          type="text"
+                                          value={block.accessory?.label || ""}
+                                          onChange={(e) =>
+                                            updateBlock(idx, {
+                                              accessory: { ...block.accessory, type: "button", label: e.target.value },
+                                            })
+                                          }
+                                          placeholder="Right Button Label"
+                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
+                                        />
+                                      </div>
+                                      <div className="col-span-4">
+                                        <select
+                                          value={block.accessory?.style || "Primary"}
+                                          onChange={(e) =>
+                                            updateBlock(idx, {
+                                              accessory: { ...block.accessory, type: "button", style: e.target.value as any },
+                                            })
+                                          }
+                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                                        >
+                                          <option value="Primary">Primary (Blue)</option>
+                                          <option value="Secondary">Secondary (Gray)</option>
+                                          <option value="Success">Success (Green)</option>
+                                          <option value="Danger">Danger (Red)</option>
+                                          <option value="Link">Link (URL)</option>
+                                        </select>
+                                      </div>
+                                      <div className="col-span-3">
+                                        <input
+                                          type="text"
+                                          value={block.accessory?.emoji || ""}
+                                          onChange={(e) =>
+                                            updateBlock(idx, {
+                                              accessory: { ...block.accessory, type: "button", emoji: e.target.value },
+                                            })
+                                          }
+                                          placeholder="Emoji 😀"
+                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-center text-white outline-none"
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {block.accessory?.style === "Link" && (
+                                      <input
+                                        type="text"
+                                        value={block.accessory?.url || ""}
+                                        onChange={(e) =>
+                                          updateBlock(idx, {
+                                            accessory: { ...block.accessory, type: "button", url: e.target.value },
+                                          })
+                                        }
+                                        placeholder="https://example.com (Link URL)"
+                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                                      />
+                                    )}
+
+                                    <div className="flex items-center justify-between pt-1">
+                                      <span className="text-[11px] text-zinc-400">Positioned on the far right of this text block</span>
+                                      <button
+                                        onClick={() => openButtonActionModal(idx, undefined, true, block.accessory)}
+                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all ${
+                                          block.accessory?.actions && block.accessory.actions.length > 1
+                                            ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40"
+                                            : "bg-discord-brand/20 text-discord-brand border-discord-brand/40"
+                                        }`}
+                                      >
+                                        <Settings2 className="w-3.5 h-3.5" />
+                                        <span>
+                                          {block.accessory?.actions && block.accessory.actions.length > 1
+                                            ? `${block.accessory.actions.length} Actions Configured`
+                                            : "Configure Actions"}
+                                        </span>
+                                      </button>
+                                    </div>
                                   </div>
                                 )}
                               </div>
