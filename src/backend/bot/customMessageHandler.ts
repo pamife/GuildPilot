@@ -607,12 +607,13 @@ export async function handleCustomMessageInteraction(client: Client, interaction
     }
 
     const ephemeralMessages: string[] = [];
+    let linkedReplyPayload: any = null;
 
     for (const act of actionsList) {
       const type = act.actionType;
 
-      // 1. Role Toggle
-      if (type === "ROLE_TOGGLE" && act.roleId) {
+      // 1. Role Toggle & Role Add (auto-toggles if user already has the role)
+      if ((type === "ROLE_TOGGLE" || type === "ROLE_ADD") && act.roleId) {
         const role = interaction.guild.roles.cache.get(act.roleId) || (await interaction.guild.roles.fetch(act.roleId).catch(() => null));
         if (role) {
           const hasRole = member.roles.cache.has(act.roleId);
@@ -632,19 +633,7 @@ export async function handleCustomMessageInteraction(client: Client, interaction
         }
       }
 
-      // 2. Role Add
-      else if (type === "ROLE_ADD" && act.roleId) {
-        const role = interaction.guild.roles.cache.get(act.roleId) || (await interaction.guild.roles.fetch(act.roleId).catch(() => null));
-        if (role) {
-          await member.roles.add(act.roleId).catch(console.error);
-          const msg = (act.roleAddMessage || "✅ Role {role} added!")
-            .replace("{role}", `<@&${act.roleId}>`)
-            .replace("{user}", `<@${member.id}>`);
-          ephemeralMessages.push(msg);
-        }
-      }
-
-      // 3. Role Remove
+      // 2. Role Remove
       else if (type === "ROLE_REMOVE" && act.roleId) {
         const role = interaction.guild.roles.cache.get(act.roleId) || (await interaction.guild.roles.fetch(act.roleId).catch(() => null));
         if (role) {
@@ -656,28 +645,65 @@ export async function handleCustomMessageInteraction(client: Client, interaction
         }
       }
 
-      // 4. Send DM
-      else if (type === "SEND_DM" && act.dmText) {
-        const dmContent = act.dmText
-          .replace("{user}", `<@${interaction.user.id}>`)
-          .replace("{username}", interaction.user.username);
+      // 3. Send DM
+      else if (type === "SEND_DM" && (act.dmText || act.targetCustomMessageId)) {
+        if (act.targetCustomMessageId) {
+          const linkedMsg = await getCustomMessageById(act.targetCustomMessageId);
+          if (linkedMsg) {
+            const payload = linkedMsg.mode === "embed"
+              ? buildClassicEmbedPayload(linkedMsg)
+              : buildCustomMessagePayload(linkedMsg);
+            try {
+              await interaction.user.send(payload);
+              ephemeralMessages.push("📩 Sent you the requested message in your DMs!");
+            } catch {
+              ephemeralMessages.push("⚠️ Could not send DM. Please enable server DMs in Discord settings.");
+            }
+          }
+        } else if (act.dmText) {
+          const dmContent = act.dmText
+            .replace("{user}", `<@${interaction.user.id}>`)
+            .replace("{username}", interaction.user.username);
 
-        try {
-          await interaction.user.send({ content: dmContent });
-          ephemeralMessages.push("📩 Sent you a direct message (DM)!");
-        } catch (dmErr) {
-          ephemeralMessages.push("⚠️ Could not send DM. Please enable server direct messages in your Discord settings.");
+          try {
+            await interaction.user.send({ content: dmContent });
+            ephemeralMessages.push("📩 Sent you a direct message (DM)!");
+          } catch (dmErr) {
+            ephemeralMessages.push("⚠️ Could not send DM. Please enable server direct messages in your Discord settings.");
+          }
         }
       }
 
-      // 5. Ephemeral Reply
+      // 4. Ephemeral Reply (Custom text OR Linked Saved Custom Message!)
       else if (type === "EPHEMERAL_REPLY" || type === "REPLY") {
-        const text = (act.ephemeralText || act.content || "✅ Button action executed successfully!")
-          .replace("{user}", `<@${interaction.user.id}>`)
-          .replace("{username}", interaction.user.username)
-          .replace("{server}", interaction.guild.name);
-        ephemeralMessages.push(text);
+        if (act.targetCustomMessageId) {
+          const linkedMsg = await getCustomMessageById(act.targetCustomMessageId);
+          if (linkedMsg) {
+            const rawPayload = linkedMsg.mode === "embed"
+              ? buildClassicEmbedPayload(linkedMsg)
+              : buildCustomMessagePayload(linkedMsg);
+
+            linkedReplyPayload = {
+              ...rawPayload,
+              flags: (rawPayload.flags || 0) | MessageFlags.Ephemeral,
+            };
+          }
+        } else {
+          const text = (act.ephemeralText || act.content || "✅ Button action executed successfully!")
+            .replace("{user}", `<@${interaction.user.id}>`)
+            .replace("{username}", interaction.user.username)
+            .replace("{server}", interaction.guild.name);
+          ephemeralMessages.push(text);
+        }
       }
+    }
+
+    if (linkedReplyPayload) {
+      if (ephemeralMessages.length > 0 && linkedReplyPayload.components) {
+        // Optionally prepend role confirmation note in linked payload if possible
+      }
+      await interaction.reply(linkedReplyPayload);
+      return;
     }
 
     const finalResponse = ephemeralMessages.length > 0

@@ -65,6 +65,7 @@ export interface ButtonActionItem {
   id?: string;
   actionType: ActionType | string;
   ephemeralText?: string;
+  targetCustomMessageId?: string;
   roleId?: string;
   roleAddMessage?: string;
   roleRemoveMessage?: string;
@@ -1151,14 +1152,6 @@ export function CustomMessagesView({
                           <span>Text + Right Button</span>
                         </button>
                         <button
-                          onClick={() => addComponentBlock("section")}
-                          className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] flex items-center gap-1 transition-all"
-                          title="Add Section with Right Thumbnail"
-                        >
-                          <Split className="w-3.5 h-3.5 text-violet-400" />
-                          <span>Thumbnail Section</span>
-                        </button>
-                        <button
                           onClick={() => addComponentBlock("media_gallery")}
                           className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] flex items-center gap-1 transition-all"
                           title="Add Media Gallery Grid"
@@ -1275,176 +1268,92 @@ export function CustomMessagesView({
 
                               <div className="p-3 bg-[#14151b] rounded-lg border border-[#27272a] space-y-2.5">
                                 <div className="flex items-center justify-between">
-                                  <label className="text-[11px] font-bold text-zinc-300">Side Accessory (Right)</label>
-                                  <div className="flex items-center gap-2">
-                                    <button
-                                      onClick={() =>
+                                  <label className="text-[11px] font-bold text-zinc-300 flex items-center gap-1">
+                                    <MousePointerClick className="w-3.5 h-3.5 text-discord-brand" /> Right-Aligned Action Button
+                                  </label>
+                                  <span className="text-[10px] text-zinc-500 font-mono">Section Accessory</span>
+                                </div>
+
+                                <div className="space-y-2.5">
+                                  <div className="grid grid-cols-12 gap-2 items-center">
+                                    <div className="col-span-5">
+                                      <input
+                                        type="text"
+                                        value={block.accessory?.label || ""}
+                                        onChange={(e) =>
+                                          updateBlock(idx, {
+                                            accessory: { ...block.accessory, type: "button", label: e.target.value },
+                                          })
+                                        }
+                                        placeholder="Right Button Label"
+                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
+                                      />
+                                    </div>
+                                    <div className="col-span-4">
+                                      <select
+                                        value={block.accessory?.style || "Primary"}
+                                        onChange={(e) =>
+                                          updateBlock(idx, {
+                                            accessory: { ...block.accessory, type: "button", style: e.target.value as any },
+                                          })
+                                        }
+                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                                      >
+                                        <option value="Primary">Primary (Blue)</option>
+                                        <option value="Secondary">Secondary (Gray)</option>
+                                        <option value="Success">Success (Green)</option>
+                                        <option value="Danger">Danger (Red)</option>
+                                        <option value="Link">Link (URL)</option>
+                                      </select>
+                                    </div>
+                                    <div className="col-span-3">
+                                      <input
+                                        type="text"
+                                        value={block.accessory?.emoji || ""}
+                                        onChange={(e) =>
+                                          updateBlock(idx, {
+                                            accessory: { ...block.accessory, type: "button", emoji: e.target.value },
+                                          })
+                                        }
+                                        placeholder="Emoji 😀"
+                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-center text-white outline-none"
+                                      />
+                                    </div>
+                                  </div>
+
+                                  {block.accessory?.style === "Link" && (
+                                    <input
+                                      type="text"
+                                      value={block.accessory?.url || ""}
+                                      onChange={(e) =>
                                         updateBlock(idx, {
-                                          accessory: {
-                                            type: "thumbnail",
-                                            url: "https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=150",
-                                          },
+                                          accessory: { ...block.accessory, type: "button", url: e.target.value },
                                         })
                                       }
-                                      className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                                        block.accessory?.type === "thumbnail" ? "bg-discord-brand text-white" : "text-zinc-400 hover:text-white"
-                                      }`}
-                                    >
-                                      Thumbnail Image
-                                    </button>
+                                      placeholder="https://example.com (Link URL)"
+                                      className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                                    />
+                                  )}
+
+                                  <div className="flex items-center justify-between pt-1">
+                                    <span className="text-[11px] text-zinc-400">Aligned on the far right of this row</span>
                                     <button
-                                      onClick={() =>
-                                        updateBlock(idx, {
-                                          accessory: {
-                                            type: "button",
-                                            style: "Primary",
-                                            label: "Action",
-                                            actions: [
-                                              {
-                                                id: "act-1",
-                                                actionType: "EPHEMERAL_REPLY",
-                                                ephemeralText: "✅ Button clicked by {user}!",
-                                              },
-                                            ],
-                                          },
-                                        })
-                                      }
-                                      className={`px-2 py-0.5 text-[10px] font-bold rounded ${
-                                        block.accessory?.type === "button" ? "bg-discord-brand text-white" : "text-zinc-400 hover:text-white"
+                                      onClick={() => openButtonActionModal(idx, undefined, true, block.accessory)}
+                                      className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all ${
+                                        block.accessory?.actions && block.accessory.actions.length > 1
+                                          ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40"
+                                          : "bg-discord-brand/20 text-discord-brand border-discord-brand/40"
                                       }`}
                                     >
-                                      Action Button
+                                      <Settings2 className="w-3.5 h-3.5" />
+                                      <span>
+                                        {block.accessory?.actions && block.accessory.actions.length > 1
+                                          ? `${block.accessory.actions.length} Actions Configured`
+                                          : "Configure Actions"}
+                                      </span>
                                     </button>
                                   </div>
                                 </div>
-
-                                {block.accessory?.type === "thumbnail" ? (
-                                  <div className="space-y-2">
-                                    <div className="flex items-center gap-2">
-                                      {block.accessory.url && (
-                                        <img
-                                          src={block.accessory.url}
-                                          alt="Thumbnail"
-                                          className="w-10 h-10 rounded-lg object-cover border border-[#27272a] shrink-0"
-                                        />
-                                      )}
-                                      <input
-                                        type="text"
-                                        value={block.accessory.url || ""}
-                                        onChange={(e) =>
-                                          updateBlock(idx, {
-                                            accessory: { ...block.accessory, type: "thumbnail", url: e.target.value },
-                                          })
-                                        }
-                                        placeholder="Top-Right Thumbnail URL (https://...)"
-                                        className="flex-1 bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-1.5 rounded-lg text-xs text-white outline-none"
-                                      />
-                                      {block.accessory.url && (
-                                        <button
-                                          onClick={() => updateBlock(idx, { accessory: { ...block.accessory, type: "thumbnail", url: "" } })}
-                                          className="p-1.5 text-zinc-400 hover:text-rose-400 rounded hover:bg-[#1f2028]"
-                                          title="Clear Thumbnail"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      )}
-                                    </div>
-                                    <label className="flex items-center gap-2 text-[11px] text-zinc-400 cursor-pointer">
-                                      <input
-                                        type="checkbox"
-                                        checked={!!block.accessory.spoiler}
-                                        onChange={(e) =>
-                                          updateBlock(idx, {
-                                            accessory: { ...block.accessory, type: "thumbnail", spoiler: e.target.checked },
-                                          })
-                                        }
-                                        className="rounded bg-[#0e0f15] border-[#27272a] text-discord-brand"
-                                      />
-                                      <span>Mark thumbnail as spoiler (blur)</span>
-                                    </label>
-                                  </div>
-                                ) : (
-                                  <div className="space-y-2.5">
-                                    <div className="grid grid-cols-12 gap-2 items-center">
-                                      <div className="col-span-5">
-                                        <input
-                                          type="text"
-                                          value={block.accessory?.label || ""}
-                                          onChange={(e) =>
-                                            updateBlock(idx, {
-                                              accessory: { ...block.accessory, type: "button", label: e.target.value },
-                                            })
-                                          }
-                                          placeholder="Right Button Label"
-                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
-                                        />
-                                      </div>
-                                      <div className="col-span-4">
-                                        <select
-                                          value={block.accessory?.style || "Primary"}
-                                          onChange={(e) =>
-                                            updateBlock(idx, {
-                                              accessory: { ...block.accessory, type: "button", style: e.target.value as any },
-                                            })
-                                          }
-                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-white outline-none"
-                                        >
-                                          <option value="Primary">Primary (Blue)</option>
-                                          <option value="Secondary">Secondary (Gray)</option>
-                                          <option value="Success">Success (Green)</option>
-                                          <option value="Danger">Danger (Red)</option>
-                                          <option value="Link">Link (URL)</option>
-                                        </select>
-                                      </div>
-                                      <div className="col-span-3">
-                                        <input
-                                          type="text"
-                                          value={block.accessory?.emoji || ""}
-                                          onChange={(e) =>
-                                            updateBlock(idx, {
-                                              accessory: { ...block.accessory, type: "button", emoji: e.target.value },
-                                            })
-                                          }
-                                          placeholder="Emoji 😀"
-                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-center text-white outline-none"
-                                        />
-                                      </div>
-                                    </div>
-
-                                    {block.accessory?.style === "Link" && (
-                                      <input
-                                        type="text"
-                                        value={block.accessory?.url || ""}
-                                        onChange={(e) =>
-                                          updateBlock(idx, {
-                                            accessory: { ...block.accessory, type: "button", url: e.target.value },
-                                          })
-                                        }
-                                        placeholder="https://example.com (Link URL)"
-                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
-                                      />
-                                    )}
-
-                                    <div className="flex items-center justify-between pt-1">
-                                      <span className="text-[11px] text-zinc-400">Positioned on the far right of this text block</span>
-                                      <button
-                                        onClick={() => openButtonActionModal(idx, undefined, true, block.accessory)}
-                                        className={`px-3 py-1.5 rounded-lg border text-xs font-bold flex items-center gap-1.5 transition-all ${
-                                          block.accessory?.actions && block.accessory.actions.length > 1
-                                            ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40"
-                                            : "bg-discord-brand/20 text-discord-brand border-discord-brand/40"
-                                        }`}
-                                      >
-                                        <Settings2 className="w-3.5 h-3.5" />
-                                        <span>
-                                          {block.accessory?.actions && block.accessory.actions.length > 1
-                                            ? `${block.accessory.actions.length} Actions Configured`
-                                            : "Configure Actions"}
-                                        </span>
-                                      </button>
-                                    </div>
-                                  </div>
-                                )}
                               </div>
                             </div>
                           )}
@@ -2133,25 +2042,90 @@ export function CustomMessagesView({
 
                     {/* Action Type Specific Inputs */}
                     {(act.actionType === "EPHEMERAL_REPLY" || act.actionType === "REPLY") && (
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-zinc-400">Ephemeral Reply Message</label>
-                        <textarea
-                          rows={2}
-                          value={act.ephemeralText || ""}
-                          onChange={(e) => {
-                            const next = [...activeButtonTarget.actions];
-                            next[actIdx] = { ...next[actIdx], ephemeralText: e.target.value };
-                            setActiveButtonTarget({ ...activeButtonTarget, actions: next });
-                          }}
-                          placeholder="🎉 Thanks {user}! Action successful."
-                          className="w-full bg-[#0e0f15] border border-[#27272a] p-2 rounded-lg text-xs text-white outline-none"
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-zinc-400">Response Mode</label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const next = [...activeButtonTarget.actions];
+                                next[actIdx] = { ...next[actIdx], targetCustomMessageId: undefined };
+                                setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                              }}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                                !act.targetCustomMessageId ? "bg-discord-brand text-white" : "text-zinc-400 hover:text-white"
+                              }`}
+                            >
+                              Custom Text
+                            </button>
+                            <button
+                              onClick={() => {
+                                const next = [...activeButtonTarget.actions];
+                                next[actIdx] = {
+                                  ...next[actIdx],
+                                  targetCustomMessageId: savedMessages[0]?.id || "",
+                                };
+                                setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                              }}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                                act.targetCustomMessageId ? "bg-discord-brand text-white" : "text-zinc-400 hover:text-white"
+                              }`}
+                            >
+                              Link Saved Message ({savedMessages.length})
+                            </button>
+                          </div>
+                        </div>
+
+                        {act.targetCustomMessageId !== undefined ? (
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+                              <Bookmark className="w-3 h-3" /> Select Saved Message to Send Ephemerally
+                            </label>
+                            <select
+                              value={act.targetCustomMessageId || ""}
+                              onChange={(e) => {
+                                const next = [...activeButtonTarget.actions];
+                                next[actIdx] = { ...next[actIdx], targetCustomMessageId: e.target.value };
+                                setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                              }}
+                              className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-2 rounded-lg text-xs font-semibold text-white outline-none"
+                            >
+                              <option value="">-- Select Saved Custom Message --</option>
+                              {savedMessages.map((m) => (
+                                <option key={m.id} value={m.id}>
+                                  {m.name} ({m.mode === "components_v2" ? "V2" : "Embed"})
+                                </option>
+                              ))}
+                            </select>
+                            <p className="text-[10px] text-zinc-500">
+                              When clicked, the bot sends this full rich custom message (Components V2 or Embed) as a private ephemeral reply!
+                            </p>
+                          </div>
+                        ) : (
+                          <div className="space-y-1">
+                            <label className="text-[11px] font-bold text-zinc-400">Ephemeral Reply Message</label>
+                            <textarea
+                              rows={2}
+                              value={act.ephemeralText || ""}
+                              onChange={(e) => {
+                                const next = [...activeButtonTarget.actions];
+                                next[actIdx] = { ...next[actIdx], ephemeralText: e.target.value };
+                                setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                              }}
+                              placeholder="🎉 Thanks {user}! Action successful."
+                              className="w-full bg-[#0e0f15] border border-[#27272a] p-2 rounded-lg text-xs text-white outline-none"
+                            />
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {(act.actionType === "ROLE_TOGGLE" || act.actionType === "ROLE_ADD" || act.actionType === "ROLE_REMOVE") && (
                       <div className="space-y-2">
-                        <label className="text-[11px] font-bold text-zinc-400">Target Server Role</label>
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-zinc-400">Target Server Role</label>
+                          <span className="text-[10px] text-emerald-400 font-medium">Auto-removes if user already has it</span>
+                        </div>
                         <select
                           value={act.roleId || ""}
                           onChange={(e) => {
@@ -2172,19 +2146,70 @@ export function CustomMessagesView({
                     )}
 
                     {act.actionType === "SEND_DM" && (
-                      <div className="space-y-1">
-                        <label className="text-[11px] font-bold text-zinc-400">Direct Message Content (DM)</label>
-                        <textarea
-                          rows={2}
-                          value={act.dmText || ""}
-                          onChange={(e) => {
-                            const next = [...activeButtonTarget.actions];
-                            next[actIdx] = { ...next[actIdx], dmText: e.target.value };
-                            setActiveButtonTarget({ ...activeButtonTarget, actions: next });
-                          }}
-                          placeholder="Hello {user}, here is your private info..."
-                          className="w-full bg-[#0e0f15] border border-[#27272a] p-2 rounded-lg text-xs text-white outline-none"
-                        />
+                      <div className="space-y-2">
+                        <div className="flex items-center justify-between">
+                          <label className="text-[11px] font-bold text-zinc-400">DM Content</label>
+                          <div className="flex items-center gap-2">
+                            <button
+                              onClick={() => {
+                                const next = [...activeButtonTarget.actions];
+                                next[actIdx] = { ...next[actIdx], targetCustomMessageId: undefined };
+                                setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                              }}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                                !act.targetCustomMessageId ? "bg-discord-brand text-white" : "text-zinc-400 hover:text-white"
+                              }`}
+                            >
+                              Custom Text
+                            </button>
+                            <button
+                              onClick={() => {
+                                const next = [...activeButtonTarget.actions];
+                                next[actIdx] = {
+                                  ...next[actIdx],
+                                  targetCustomMessageId: savedMessages[0]?.id || "",
+                                };
+                                setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                              }}
+                              className={`px-2 py-0.5 rounded text-[10px] font-bold transition-all ${
+                                act.targetCustomMessageId ? "bg-discord-brand text-white" : "text-zinc-400 hover:text-white"
+                              }`}
+                            >
+                              Link Saved Message
+                            </button>
+                          </div>
+                        </div>
+
+                        {act.targetCustomMessageId !== undefined ? (
+                          <select
+                            value={act.targetCustomMessageId || ""}
+                            onChange={(e) => {
+                              const next = [...activeButtonTarget.actions];
+                              next[actIdx] = { ...next[actIdx], targetCustomMessageId: e.target.value };
+                              setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                            }}
+                            className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-2 rounded-lg text-xs font-semibold text-white outline-none"
+                          >
+                            <option value="">-- Select Saved Custom Message --</option>
+                            {savedMessages.map((m) => (
+                              <option key={m.id} value={m.id}>
+                                {m.name} ({m.mode === "components_v2" ? "V2" : "Embed"})
+                              </option>
+                            ))}
+                          </select>
+                        ) : (
+                          <textarea
+                            rows={2}
+                            value={act.dmText || ""}
+                            onChange={(e) => {
+                              const next = [...activeButtonTarget.actions];
+                              next[actIdx] = { ...next[actIdx], dmText: e.target.value };
+                              setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                            }}
+                            placeholder="Hello {user}, here is your private info..."
+                            className="w-full bg-[#0e0f15] border border-[#27272a] p-2 rounded-lg text-xs text-white outline-none"
+                          />
+                        )}
                       </div>
                     )}
 
