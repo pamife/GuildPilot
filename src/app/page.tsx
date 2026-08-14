@@ -414,6 +414,7 @@ function DashboardContent() {
         {currentView === "custom-messages" && (
           <CustomMessagesView
             channels={channels}
+            roles={roles}
             selectedGuildId={selectedGuildId}
             botStatus={botStatus}
           />

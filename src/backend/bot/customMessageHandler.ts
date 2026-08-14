@@ -2,6 +2,8 @@ import {
   Client,
   TextChannel,
   Guild,
+  GuildMember,
+  Interaction,
   MessageFlags,
   EmbedBuilder,
   ActionRowBuilder,
@@ -60,6 +62,7 @@ function getButtonStyleNumber(styleName?: string | number): number {
  */
 export function buildComponentsV2Payload(data: any) {
   const containerComponents: any[] = [];
+  const messageDbId = data.id || "temp";
 
   // Parse items from containerConfig
   let items: any[] = [];
@@ -164,7 +167,10 @@ export function buildComponentsV2Payload(data: any) {
             }
           } else if (item.accessory.type === "button" || item.accessory.type === 2) {
             const btnData = item.accessory;
-            const styleNum = getButtonStyleNumber(btnData.style);
+            const isLink = btnData.style === "Link" || btnData.style === 5 || btnData.actionType === "LINK";
+            const styleNum = isLink ? 5 : getButtonStyleNumber(btnData.style);
+            const btnId = btnData.id || `sec_btn_${item.id || Date.now()}`;
+
             const buttonPayload: any = {
               type: 2,
               style: styleNum,
@@ -172,10 +178,10 @@ export function buildComponentsV2Payload(data: any) {
               disabled: !!btnData.disabled,
             };
 
-            if (styleNum === 5 && btnData.url && isValidUrl(btnData.url)) {
+            if (isLink && btnData.url && isValidUrl(btnData.url)) {
               buttonPayload.url = btnData.url.trim();
             } else {
-              buttonPayload.custom_id = btnData.customId || `btn_section_${Date.now()}`;
+              buttonPayload.custom_id = `cmsg_btn:${messageDbId}:${btnId}`;
             }
 
             if (btnData.emoji) {
@@ -200,7 +206,10 @@ export function buildComponentsV2Payload(data: any) {
         const validButtons: any[] = [];
 
         for (const btnData of buttons.slice(0, 5)) {
-          const styleNum = getButtonStyleNumber(btnData.style);
+          const isLink = btnData.style === "Link" || btnData.style === 5 || btnData.actionType === "LINK";
+          const styleNum = isLink ? 5 : getButtonStyleNumber(btnData.style);
+          const btnId = btnData.id || `btn_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+
           const buttonPayload: any = {
             type: 2,
             style: styleNum,
@@ -208,10 +217,10 @@ export function buildComponentsV2Payload(data: any) {
             disabled: !!btnData.disabled,
           };
 
-          if (styleNum === 5 && btnData.url && isValidUrl(btnData.url)) {
+          if (isLink && btnData.url && isValidUrl(btnData.url)) {
             buttonPayload.url = btnData.url.trim();
           } else {
-            buttonPayload.custom_id = btnData.customId || `custom_btn_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+            buttonPayload.custom_id = `cmsg_btn:${messageDbId}:${btnId}`;
           }
 
           if (btnData.emoji) {
@@ -270,6 +279,8 @@ export function buildComponentsV2Payload(data: any) {
  */
 export function buildClassicEmbedPayload(data: any) {
   let embedConfig: any = {};
+  const messageDbId = data.id || "temp";
+
   try {
     if (typeof data.embedConfig === "string") {
       embedConfig = JSON.parse(data.embedConfig || "{}");
@@ -360,19 +371,21 @@ export function buildClassicEmbedPayload(data: any) {
       const row = new ActionRowBuilder<ButtonBuilder>();
       for (const btnData of buttons.slice(0, 5)) {
         const btn = new ButtonBuilder();
+        const isLink = btnData.style === "Link" || btnData.style === 5 || btnData.actionType === "LINK";
         let style = ButtonStyle.Primary;
         if (btnData.style === "Secondary" || btnData.style === 2) style = ButtonStyle.Secondary;
         if (btnData.style === "Success" || btnData.style === 3) style = ButtonStyle.Success;
         if (btnData.style === "Danger" || btnData.style === 4) style = ButtonStyle.Danger;
-        if (btnData.style === "Link" || btnData.style === 5) style = ButtonStyle.Link;
+        if (isLink) style = ButtonStyle.Link;
 
         btn.setStyle(style);
         if (btnData.label) btn.setLabel(btnData.label.substring(0, 80));
 
-        if (style === ButtonStyle.Link && btnData.url && isValidUrl(btnData.url)) {
+        if (isLink && btnData.url && isValidUrl(btnData.url)) {
           btn.setURL(btnData.url.trim());
         } else {
-          btn.setCustomId(btnData.customId || `custom_btn_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`);
+          const btnId = btnData.id || `btn_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+          btn.setCustomId(`cmsg_btn:${messageDbId}:${btnId}`);
         }
 
         if (btnData.emoji) {
@@ -502,4 +515,206 @@ export async function deployCustomMessage(
     channelName: channel.name,
     message: messageRecord,
   };
+}
+
+/**
+ * Handles button interactions configured on Custom Messages
+ * Supports: EPHEMERAL_REPLY, ROLE_TOGGLE, ROLE_ADD, ROLE_REMOVE, SEND_DM, etc.
+ */
+export async function handleCustomMessageInteraction(client: Client, interaction: Interaction) {
+  if (!interaction.isButton()) return;
+  if (!interaction.customId.startsWith("cmsg_btn:")) return;
+
+  const parts = interaction.customId.split(":");
+  const messageDbId = parts[1];
+  const btnId = parts[2];
+
+  const member = interaction.member as GuildMember;
+  if (!member || !interaction.guild) return;
+
+  try {
+    const customMessage = await getCustomMessageById(messageDbId);
+    if (!customMessage) {
+      await interaction.reply({
+        content: "ℹ️ Button action clicked.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    // Find the button in containerConfig or componentsConfig
+    let targetButton: any = null;
+
+    if (customMessage.mode === "components_v2" || !customMessage.mode) {
+      const containerItems: any[] = typeof customMessage.containerConfig === "string"
+        ? JSON.parse(customMessage.containerConfig || "[]")
+        : (customMessage.containerConfig || []);
+
+      for (const item of containerItems) {
+        if (item.type === "action_row" && Array.isArray(item.buttons)) {
+          const found = item.buttons.find((b: any) => b.id === btnId || b.customId === btnId);
+          if (found) {
+            targetButton = found;
+            break;
+          }
+        } else if (item.type === "section" && item.accessory?.type === "button") {
+          if (item.accessory.id === btnId || item.accessory.customId === btnId || `sec_btn_${item.id}` === btnId) {
+            targetButton = item.accessory;
+            break;
+          }
+        }
+      }
+    } else {
+      const rows: any[] = typeof customMessage.componentsConfig === "string"
+        ? JSON.parse(customMessage.componentsConfig || "[]")
+        : (customMessage.componentsConfig || []);
+
+      for (const row of rows) {
+        if (Array.isArray(row.buttons)) {
+          const found = row.buttons.find((b: any) => b.id === btnId || b.customId === btnId);
+          if (found) {
+            targetButton = found;
+            break;
+          }
+        }
+      }
+    }
+
+    if (!targetButton) {
+      await interaction.reply({
+        content: "✅ Action processed.",
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    const actionType = targetButton.actionType || "EPHEMERAL_REPLY";
+    const actionData = targetButton.actionData || {};
+
+    // 1. Send Ephemeral Reply
+    if (actionType === "EPHEMERAL_REPLY" || actionType === "REPLY") {
+      const replyContent = (actionData.ephemeralText || actionData.content || targetButton.responseMessage || "✅ Button action executed successfully!")
+        .replace("{user}", `<@${interaction.user.id}>`)
+        .replace("{username}", interaction.user.username)
+        .replace("{server}", interaction.guild.name);
+
+      await interaction.reply({
+        content: replyContent,
+        flags: MessageFlags.Ephemeral,
+      });
+      return;
+    }
+
+    // 2. Toggle Role (Self-Role)
+    if (actionType === "ROLE_TOGGLE") {
+      const roleId = actionData.roleId;
+      if (!roleId) {
+        await interaction.reply({
+          content: "⚠️ No role was configured for this button.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      const role = interaction.guild.roles.cache.get(roleId) || (await interaction.guild.roles.fetch(roleId).catch(() => null));
+      if (!role) {
+        await interaction.reply({
+          content: "❌ Configured role was not found on the server.",
+          flags: MessageFlags.Ephemeral,
+        });
+        return;
+      }
+
+      const hasRole = member.roles.cache.has(roleId);
+      if (hasRole) {
+        await member.roles.remove(roleId);
+        const msg = (actionData.roleRemoveMessage || "❌ Role {role} removed!")
+          .replace("{role}", `<@&${roleId}>`)
+          .replace("{user}", `<@${member.id}>`);
+        await interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
+      } else {
+        await member.roles.add(roleId);
+        const msg = (actionData.roleAddMessage || "✅ Role {role} added!")
+          .replace("{role}", `<@&${roleId}>`)
+          .replace("{user}", `<@${member.id}>`);
+        await interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
+      }
+      return;
+    }
+
+    // 3. Add Role
+    if (actionType === "ROLE_ADD") {
+      const roleId = actionData.roleId;
+      if (roleId) {
+        await member.roles.add(roleId);
+        const msg = (actionData.roleAddMessage || "✅ Role {role} added!")
+          .replace("{role}", `<@&${roleId}>`)
+          .replace("{user}", `<@${member.id}>`);
+        await interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
+      } else {
+        await interaction.reply({ content: "⚠️ No role configured.", flags: MessageFlags.Ephemeral });
+      }
+      return;
+    }
+
+    // 4. Remove Role
+    if (actionType === "ROLE_REMOVE") {
+      const roleId = actionData.roleId;
+      if (roleId) {
+        await member.roles.remove(roleId);
+        const msg = (actionData.roleRemoveMessage || "❌ Role {role} removed!")
+          .replace("{role}", `<@&${roleId}>`)
+          .replace("{user}", `<@${member.id}>`);
+        await interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
+      } else {
+        await interaction.reply({ content: "⚠️ No role configured.", flags: MessageFlags.Ephemeral });
+      }
+      return;
+    }
+
+    // 5. Send DM to User
+    if (actionType === "SEND_DM") {
+      const dmContent = (actionData.dmText || "Hello! Here is your requested information from the server.")
+        .replace("{user}", `<@${interaction.user.id}>`)
+        .replace("{username}", interaction.user.username);
+
+      try {
+        await interaction.user.send({ content: dmContent });
+        await interaction.reply({
+          content: "📩 Sent you a direct message (DM)!",
+          flags: MessageFlags.Ephemeral,
+        });
+      } catch (dmErr) {
+        await interaction.reply({
+          content: "⚠️ Could not send DM. Please make sure your server direct messages are enabled!",
+          flags: MessageFlags.Ephemeral,
+        });
+      }
+      return;
+    }
+
+    // Default fallback
+    await interaction.reply({
+      content: "✅ Action received.",
+      flags: MessageFlags.Ephemeral,
+    });
+  } catch (err: any) {
+    console.error("[CustomMessage Interaction] Error:", err);
+    if (!interaction.replied && !interaction.deferred) {
+      await interaction.reply({
+        content: "❌ An error occurred processing this button action.",
+        flags: MessageFlags.Ephemeral,
+      });
+    }
+  }
+}
+
+export function setupCustomMessageInteractions(client: Client) {
+  client.on("interactionCreate", async (interaction) => {
+    try {
+      await handleCustomMessageInteraction(client, interaction);
+    } catch (err) {
+      console.error("[CustomMessage] Interaction listener error:", err);
+    }
+  });
 }

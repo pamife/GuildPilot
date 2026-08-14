@@ -3,6 +3,7 @@ import { broadcastEvent } from "../socket/socketManager";
 import { setupTicketInteractions } from "./ticketHandler";
 import { setupApplicationInteractions } from "./applicationHandler";
 import { setupSelfRoleInteractions } from "./selfRoleHandler";
+import { setupCustomMessageInteractions } from "./customMessageHandler";
 
 export let hasMessageContentIntent = true;
 
@@ -28,6 +29,7 @@ function registerClientEvents(client: Client) {
     setupTicketInteractions(c);
     setupApplicationInteractions(c);
     setupSelfRoleInteractions(c);
+    setupCustomMessageInteractions(c);
     broadcastEvent("botStatusChange", {
       ready: true,
       tag: c.user.tag,
