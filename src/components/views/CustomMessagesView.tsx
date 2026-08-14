@@ -284,7 +284,8 @@ const PRESET_TEMPLATES = [
 ];
 
 const PRESET_COLORS = [
-  { name: "Blurple", hex: "#5865F2" },
+  { name: "Standard Gray", hex: "#242424" },
+  { name: "Discord Blurple", hex: "#5865F2" },
   { name: "Emerald Green", hex: "#23A55A" },
   { name: "Crimson Red", hex: "#F23F43" },
   { name: "Amber Gold", hex: "#F0B232" },
@@ -329,7 +330,7 @@ export function CustomMessagesView({
     channelId: channels.find((c) => c.type === 0)?.id || "",
     messageId: null,
     content: "",
-    accentColor: "#5865F2",
+    accentColor: "#242424",
     spoiler: false,
     containerConfig: [
       {
@@ -341,7 +342,7 @@ export function CustomMessagesView({
     embedConfig: {
       title: "Classic Embed Title",
       description: "Embed description formatted in markdown.",
-      color: "#5865F2",
+      color: "#242424",
       showTimestamp: true,
       fields: [],
     },
@@ -491,9 +492,10 @@ export function CustomMessagesView({
 
       const res = await api.post(`/guilds/${selectedGuildId}/custom-messages/${messageToDeployId}/send`, {
         channelId: currentMessage.channelId,
+        data: currentMessage,
       });
 
-      showToast(`✅ Successfully sent message to #${res.data.channelName || "channel"}!`, "success");
+      showToast(`✅ Successfully deployed message to #${res.data.channelName || "channel"}!`, "success");
       if (res.data.messageId) {
         setCurrentMessage((prev) => ({ ...prev, messageId: res.data.messageId }));
       }
@@ -1291,17 +1293,50 @@ export function CustomMessagesView({
                                 </div>
 
                                 {block.accessory?.type === "thumbnail" ? (
-                                  <input
-                                    type="text"
-                                    value={block.accessory.url || ""}
-                                    onChange={(e) =>
-                                      updateBlock(idx, {
-                                        accessory: { ...block.accessory, type: "thumbnail", url: e.target.value },
-                                      })
-                                    }
-                                    placeholder="https://example.com/thumbnail.png"
-                                    className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-1.5 rounded-lg text-xs text-white outline-none"
-                                  />
+                                  <div className="space-y-2">
+                                    <div className="flex items-center gap-2">
+                                      {block.accessory.url && (
+                                        <img
+                                          src={block.accessory.url}
+                                          alt="Thumbnail"
+                                          className="w-10 h-10 rounded-lg object-cover border border-[#27272a] shrink-0"
+                                        />
+                                      )}
+                                      <input
+                                        type="text"
+                                        value={block.accessory.url || ""}
+                                        onChange={(e) =>
+                                          updateBlock(idx, {
+                                            accessory: { ...block.accessory, type: "thumbnail", url: e.target.value },
+                                          })
+                                        }
+                                        placeholder="Top-Right Thumbnail URL (https://...)"
+                                        className="flex-1 bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                                      />
+                                      {block.accessory.url && (
+                                        <button
+                                          onClick={() => updateBlock(idx, { accessory: { ...block.accessory, type: "thumbnail", url: "" } })}
+                                          className="p-1.5 text-zinc-400 hover:text-rose-400 rounded hover:bg-[#1f2028]"
+                                          title="Clear Thumbnail"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                    </div>
+                                    <label className="flex items-center gap-2 text-[11px] text-zinc-400 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        checked={!!block.accessory.spoiler}
+                                        onChange={(e) =>
+                                          updateBlock(idx, {
+                                            accessory: { ...block.accessory, type: "thumbnail", spoiler: e.target.checked },
+                                          })
+                                        }
+                                        className="rounded bg-[#0e0f15] border-[#27272a] text-discord-brand"
+                                      />
+                                      <span>Mark thumbnail as spoiler (blur)</span>
+                                    </label>
+                                  </div>
                                 ) : (
                                   <div className="flex items-center gap-2">
                                     <input
@@ -1548,19 +1583,28 @@ export function CustomMessagesView({
 
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-[11px] font-bold text-zinc-400 block mb-1">Thumbnail URL</label>
-                        <input
-                          type="text"
-                          value={currentMessage.embedConfig?.thumbnail || ""}
-                          onChange={(e) =>
-                            setCurrentMessage({
-                              ...currentMessage,
-                              embedConfig: { ...currentMessage.embedConfig, thumbnail: e.target.value },
-                            })
-                          }
-                          placeholder="https://..."
-                          className="w-full bg-[#14151b] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
-                        />
+                        <label className="text-[11px] font-bold text-zinc-400 block mb-1">🖼️ Top-Right Thumbnail URL</label>
+                        <div className="flex items-center gap-2">
+                          {currentMessage.embedConfig?.thumbnail && (
+                            <img
+                              src={currentMessage.embedConfig.thumbnail}
+                              alt=""
+                              className="w-7 h-7 rounded object-cover border border-[#27272a] shrink-0"
+                            />
+                          )}
+                          <input
+                            type="text"
+                            value={currentMessage.embedConfig?.thumbnail || ""}
+                            onChange={(e) =>
+                              setCurrentMessage({
+                                ...currentMessage,
+                                embedConfig: { ...currentMessage.embedConfig, thumbnail: e.target.value },
+                              })
+                            }
+                            placeholder="https://..."
+                            className="w-full bg-[#14151b] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                          />
+                        </div>
                       </div>
                       <div>
                         <label className="text-[11px] font-bold text-zinc-400 block mb-1">Banner Image URL</label>
@@ -1787,14 +1831,25 @@ export function CustomMessagesView({
                         /* RENDER CLASSIC EMBED */
                         <div
                           className="mt-2 rounded-lg bg-[#2b2d31] p-4 border-l-4 shadow-md space-y-2.5 font-sans"
-                          style={{ borderColor: currentMessage.embedConfig?.color || currentMessage.accentColor || "#5865F2" }}
+                          style={{ borderColor: currentMessage.embedConfig?.color || currentMessage.accentColor || "#242424" }}
                         >
-                          {currentMessage.embedConfig?.title && (
-                            <h2 className="text-base font-bold text-white">{currentMessage.embedConfig.title}</h2>
-                          )}
-                          {currentMessage.embedConfig?.description && (
-                            <p className="text-sm text-zinc-300 whitespace-pre-wrap">{currentMessage.embedConfig.description}</p>
-                          )}
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="space-y-1 flex-1 min-w-0">
+                              {currentMessage.embedConfig?.title && (
+                                <h2 className="text-base font-bold text-white">{currentMessage.embedConfig.title}</h2>
+                              )}
+                              {currentMessage.embedConfig?.description && (
+                                <p className="text-sm text-zinc-300 whitespace-pre-wrap">{currentMessage.embedConfig.description}</p>
+                              )}
+                            </div>
+                            {currentMessage.embedConfig?.thumbnail && (
+                              <img
+                                src={currentMessage.embedConfig.thumbnail}
+                                alt="Top-Right Thumbnail"
+                                className="w-16 h-16 rounded-lg object-cover border border-[#3f4147] shrink-0 shadow"
+                              />
+                            )}
+                          </div>
                           {currentMessage.embedConfig?.image && (
                             <img
                               src={currentMessage.embedConfig.image}

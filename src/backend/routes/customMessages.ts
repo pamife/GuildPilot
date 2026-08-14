@@ -95,7 +95,11 @@ router.post("/:guildId/custom-messages/:id/send", async (req, res) => {
     }
 
     const { guildId, id } = req.params;
-    const { channelId } = req.body;
+    const { channelId, data } = req.body;
+
+    if (data) {
+      await updateCustomMessage(id, data);
+    }
 
     const result = await deployCustomMessage(discordClient, guildId, id, channelId);
     res.json(result);
