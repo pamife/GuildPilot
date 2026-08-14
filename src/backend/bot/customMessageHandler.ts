@@ -588,114 +588,104 @@ export async function handleCustomMessageInteraction(client: Client, interaction
       return;
     }
 
-    const actionType = targetButton.actionType || "EPHEMERAL_REPLY";
-    const actionData = targetButton.actionData || {};
+    // Extract actions list (supports both new multi-action `actions` array and legacy single `actionData`)
+    let actionsList: any[] = [];
+    if (Array.isArray(targetButton.actions) && targetButton.actions.length > 0) {
+      actionsList = targetButton.actions;
+    } else if (targetButton.actionData) {
+      actionsList = [{ ...targetButton.actionData, actionType: targetButton.actionType || targetButton.actionData.actionType || "EPHEMERAL_REPLY" }];
+    } else if (targetButton.actionType) {
+      actionsList = [{ actionType: targetButton.actionType, ephemeralText: targetButton.responseMessage }];
+    }
 
-    // 1. Send Ephemeral Reply
-    if (actionType === "EPHEMERAL_REPLY" || actionType === "REPLY") {
-      const replyContent = (actionData.ephemeralText || actionData.content || targetButton.responseMessage || "✅ Button action executed successfully!")
-        .replace("{user}", `<@${interaction.user.id}>`)
-        .replace("{username}", interaction.user.username)
-        .replace("{server}", interaction.guild.name);
-
+    if (actionsList.length === 0) {
       await interaction.reply({
-        content: replyContent,
+        content: "✅ Action processed.",
         flags: MessageFlags.Ephemeral,
       });
       return;
     }
 
-    // 2. Toggle Role (Self-Role)
-    if (actionType === "ROLE_TOGGLE") {
-      const roleId = actionData.roleId;
-      if (!roleId) {
-        await interaction.reply({
-          content: "⚠️ No role was configured for this button.",
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
+    const ephemeralMessages: string[] = [];
+
+    for (const act of actionsList) {
+      const type = act.actionType;
+
+      // 1. Role Toggle
+      if (type === "ROLE_TOGGLE" && act.roleId) {
+        const role = interaction.guild.roles.cache.get(act.roleId) || (await interaction.guild.roles.fetch(act.roleId).catch(() => null));
+        if (role) {
+          const hasRole = member.roles.cache.has(act.roleId);
+          if (hasRole) {
+            await member.roles.remove(act.roleId).catch(console.error);
+            const msg = (act.roleRemoveMessage || "❌ Role {role} removed!")
+              .replace("{role}", `<@&${act.roleId}>`)
+              .replace("{user}", `<@${member.id}>`);
+            ephemeralMessages.push(msg);
+          } else {
+            await member.roles.add(act.roleId).catch(console.error);
+            const msg = (act.roleAddMessage || "✅ Role {role} added!")
+              .replace("{role}", `<@&${act.roleId}>`)
+              .replace("{user}", `<@${member.id}>`);
+            ephemeralMessages.push(msg);
+          }
+        }
       }
 
-      const role = interaction.guild.roles.cache.get(roleId) || (await interaction.guild.roles.fetch(roleId).catch(() => null));
-      if (!role) {
-        await interaction.reply({
-          content: "❌ Configured role was not found on the server.",
-          flags: MessageFlags.Ephemeral,
-        });
-        return;
+      // 2. Role Add
+      else if (type === "ROLE_ADD" && act.roleId) {
+        const role = interaction.guild.roles.cache.get(act.roleId) || (await interaction.guild.roles.fetch(act.roleId).catch(() => null));
+        if (role) {
+          await member.roles.add(act.roleId).catch(console.error);
+          const msg = (act.roleAddMessage || "✅ Role {role} added!")
+            .replace("{role}", `<@&${act.roleId}>`)
+            .replace("{user}", `<@${member.id}>`);
+          ephemeralMessages.push(msg);
+        }
       }
 
-      const hasRole = member.roles.cache.has(roleId);
-      if (hasRole) {
-        await member.roles.remove(roleId);
-        const msg = (actionData.roleRemoveMessage || "❌ Role {role} removed!")
-          .replace("{role}", `<@&${roleId}>`)
-          .replace("{user}", `<@${member.id}>`);
-        await interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
-      } else {
-        await member.roles.add(roleId);
-        const msg = (actionData.roleAddMessage || "✅ Role {role} added!")
-          .replace("{role}", `<@&${roleId}>`)
-          .replace("{user}", `<@${member.id}>`);
-        await interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
+      // 3. Role Remove
+      else if (type === "ROLE_REMOVE" && act.roleId) {
+        const role = interaction.guild.roles.cache.get(act.roleId) || (await interaction.guild.roles.fetch(act.roleId).catch(() => null));
+        if (role) {
+          await member.roles.remove(act.roleId).catch(console.error);
+          const msg = (act.roleRemoveMessage || "❌ Role {role} removed!")
+            .replace("{role}", `<@&${act.roleId}>`)
+            .replace("{user}", `<@${member.id}>`);
+          ephemeralMessages.push(msg);
+        }
       }
-      return;
+
+      // 4. Send DM
+      else if (type === "SEND_DM" && act.dmText) {
+        const dmContent = act.dmText
+          .replace("{user}", `<@${interaction.user.id}>`)
+          .replace("{username}", interaction.user.username);
+
+        try {
+          await interaction.user.send({ content: dmContent });
+          ephemeralMessages.push("📩 Sent you a direct message (DM)!");
+        } catch (dmErr) {
+          ephemeralMessages.push("⚠️ Could not send DM. Please enable server direct messages in your Discord settings.");
+        }
+      }
+
+      // 5. Ephemeral Reply
+      else if (type === "EPHEMERAL_REPLY" || type === "REPLY") {
+        const text = (act.ephemeralText || act.content || "✅ Button action executed successfully!")
+          .replace("{user}", `<@${interaction.user.id}>`)
+          .replace("{username}", interaction.user.username)
+          .replace("{server}", interaction.guild.name);
+        ephemeralMessages.push(text);
+      }
     }
 
-    // 3. Add Role
-    if (actionType === "ROLE_ADD") {
-      const roleId = actionData.roleId;
-      if (roleId) {
-        await member.roles.add(roleId);
-        const msg = (actionData.roleAddMessage || "✅ Role {role} added!")
-          .replace("{role}", `<@&${roleId}>`)
-          .replace("{user}", `<@${member.id}>`);
-        await interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
-      } else {
-        await interaction.reply({ content: "⚠️ No role configured.", flags: MessageFlags.Ephemeral });
-      }
-      return;
-    }
+    const finalResponse = ephemeralMessages.length > 0
+      ? ephemeralMessages.join("\n")
+      : "✅ Action processed successfully!";
 
-    // 4. Remove Role
-    if (actionType === "ROLE_REMOVE") {
-      const roleId = actionData.roleId;
-      if (roleId) {
-        await member.roles.remove(roleId);
-        const msg = (actionData.roleRemoveMessage || "❌ Role {role} removed!")
-          .replace("{role}", `<@&${roleId}>`)
-          .replace("{user}", `<@${member.id}>`);
-        await interaction.reply({ content: msg, flags: MessageFlags.Ephemeral });
-      } else {
-        await interaction.reply({ content: "⚠️ No role configured.", flags: MessageFlags.Ephemeral });
-      }
-      return;
-    }
-
-    // 5. Send DM to User
-    if (actionType === "SEND_DM") {
-      const dmContent = (actionData.dmText || "Hello! Here is your requested information from the server.")
-        .replace("{user}", `<@${interaction.user.id}>`)
-        .replace("{username}", interaction.user.username);
-
-      try {
-        await interaction.user.send({ content: dmContent });
-        await interaction.reply({
-          content: "📩 Sent you a direct message (DM)!",
-          flags: MessageFlags.Ephemeral,
-        });
-      } catch (dmErr) {
-        await interaction.reply({
-          content: "⚠️ Could not send DM. Please make sure your server direct messages are enabled!",
-          flags: MessageFlags.Ephemeral,
-        });
-      }
-      return;
-    }
-
-    // Default fallback
     await interaction.reply({
-      content: "✅ Action received.",
+      content: finalResponse,
       flags: MessageFlags.Ephemeral,
     });
   } catch (err: any) {

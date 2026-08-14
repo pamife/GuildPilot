@@ -32,7 +32,9 @@ import {
   Mail,
   Zap,
   CheckCircle2,
-  Clock,
+  Code,
+  RotateCcw,
+  Wand2,
 } from "lucide-react";
 import { useToast } from "../ToastContainer";
 import { api } from "@/lib/api";
@@ -59,8 +61,9 @@ export type ActionType =
   | "LINK"
   | "CUSTOM_ID";
 
-export interface ButtonActionConfig {
-  actionType?: ActionType | string;
+export interface ButtonActionItem {
+  id?: string;
+  actionType: ActionType | string;
   ephemeralText?: string;
   roleId?: string;
   roleAddMessage?: string;
@@ -79,7 +82,8 @@ export interface ButtonItem {
   customId?: string;
   disabled?: boolean;
   actionType?: ActionType | string;
-  actionData?: ButtonActionConfig;
+  actionData?: ButtonActionItem;
+  actions?: ButtonActionItem[];
 }
 
 export interface ComponentItem {
@@ -98,8 +102,9 @@ export interface ComponentItem {
     customId?: string;
     emoji?: string;
     disabled?: boolean;
-    actionType?: ActionType;
-    actionData?: ButtonActionConfig;
+    actionType?: ActionType | string;
+    actionData?: ButtonActionItem;
+    actions?: ButtonActionItem[];
   };
   buttons?: ButtonItem[];
 }
@@ -187,11 +192,12 @@ const PRESET_TEMPLATES = [
             label: "I Agree & Accept",
             customId: "rules_accept",
             emoji: "✅",
-            actionType: "EPHEMERAL_REPLY" as const,
-            actionData: {
-              actionType: "EPHEMERAL_REPLY",
-              ephemeralText: "🎉 Thank you {user}! You have accepted the server rules and unlocked full access.",
-            },
+            actions: [
+              {
+                actionType: "EPHEMERAL_REPLY",
+                ephemeralText: "🎉 Thank you {user}! You have accepted the server rules.",
+              },
+            ],
           },
         ],
       },
@@ -199,7 +205,7 @@ const PRESET_TEMPLATES = [
   },
   {
     name: "Role Notification / Ping Hub",
-    description: "Buttons with instant Self-Role toggle actions and ephemeral notifications.",
+    description: "Buttons with instant Self-Role toggle actions and combined ephemeral feedback.",
     mode: "components_v2" as const,
     accentColor: "#9B59B6",
     spoiler: false,
@@ -219,22 +225,24 @@ const PRESET_TEMPLATES = [
             style: "Primary" as const,
             label: "Announcements Ping",
             emoji: "📢",
-            actionType: "EPHEMERAL_REPLY" as const,
-            actionData: {
-              actionType: "EPHEMERAL_REPLY",
-              ephemeralText: "🔔 Notification role preference updated for {user}!",
-            },
+            actions: [
+              {
+                actionType: "EPHEMERAL_REPLY",
+                ephemeralText: "🔔 Notification role preference updated for {user}!",
+              },
+            ],
           },
           {
             id: "btn-events",
             style: "Success" as const,
             label: "Events & Giveaways",
             emoji: "🎉",
-            actionType: "EPHEMERAL_REPLY" as const,
-            actionData: {
-              actionType: "EPHEMERAL_REPLY",
-              ephemeralText: "🎁 Events & Giveaway pings enabled for {user}!",
-            },
+            actions: [
+              {
+                actionType: "EPHEMERAL_REPLY",
+                ephemeralText: "🎁 Events & Giveaway pings enabled for {user}!",
+              },
+            ],
           },
         ],
       },
@@ -257,11 +265,12 @@ const PRESET_TEMPLATES = [
           label: "Ticket Info",
           customId: "support_info",
           emoji: "📩",
-          actionType: "EPHEMERAL_REPLY" as const,
-          actionData: {
-            actionType: "EPHEMERAL_REPLY",
-            ephemeralText: "🎫 Please visit our `#tickets` channel or open a support session to reach out to our staff team.",
-          },
+          actions: [
+            {
+              actionType: "EPHEMERAL_REPLY",
+              ephemeralText: "🎫 Please visit our `#tickets` channel or open a support session to reach out to our staff team.",
+            },
+          ],
         },
       },
       { id: "block-2", type: "separator" as const, divider: true },
@@ -297,13 +306,18 @@ export function CustomMessagesView({
   const [activeTab, setActiveTab] = useState<"editor" | "library">("editor");
   const [previewTab, setPreviewTab] = useState<"visual" | "json">("visual");
 
-  // State for Button Action Config Modal
+  // JSON Raw Editor State
+  const [rawJsonText, setRawJsonText] = useState("");
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
+  // State for Multi-Action Config Modal
   const [actionModalOpen, setActionModalOpen] = useState(false);
   const [activeButtonTarget, setActiveButtonTarget] = useState<{
     blockIndex?: number;
     buttonIndex?: number;
     isSectionAccessory?: boolean;
     buttonData: ButtonItem | any;
+    actions: ButtonActionItem[];
   } | null>(null);
 
   // Current active message being edited
@@ -336,6 +350,16 @@ export function CustomMessagesView({
 
   const textChannels = channels.filter((c) => c.type === 0);
 
+  // Keep Raw JSON text synced when currentMessage changes (if not editing JSON directly)
+  useEffect(() => {
+    try {
+      setRawJsonText(JSON.stringify(currentMessage, null, 2));
+      setJsonError(null);
+    } catch (e) {
+      // Ignore
+    }
+  }, [currentMessage]);
+
   // Fetch saved custom messages
   const fetchMessages = async () => {
     if (!selectedGuildId) return;
@@ -359,6 +383,41 @@ export function CustomMessagesView({
   useEffect(() => {
     fetchMessages();
   }, [selectedGuildId]);
+
+  // Apply JSON Changes from the Raw Editor to the Designer State
+  const handleApplyJsonChanges = () => {
+    try {
+      const parsed = JSON.parse(rawJsonText);
+      if (!parsed || typeof parsed !== "object") {
+        throw new Error("JSON must be a valid object.");
+      }
+
+      setCurrentMessage({
+        ...currentMessage,
+        ...parsed,
+        containerConfig: Array.isArray(parsed.containerConfig) ? parsed.containerConfig : (currentMessage.containerConfig || []),
+        embedConfig: typeof parsed.embedConfig === "object" ? parsed.embedConfig : (currentMessage.embedConfig || {}),
+        componentsConfig: Array.isArray(parsed.componentsConfig) ? parsed.componentsConfig : (currentMessage.componentsConfig || []),
+      });
+      setJsonError(null);
+      showToast("✅ JSON payload successfully applied to Designer!", "success");
+    } catch (err: any) {
+      setJsonError(err.message || "Invalid JSON syntax.");
+      showToast("Invalid JSON syntax: " + err.message, "error");
+    }
+  };
+
+  // Format JSON text
+  const handleFormatJson = () => {
+    try {
+      const parsed = JSON.parse(rawJsonText);
+      setRawJsonText(JSON.stringify(parsed, null, 2));
+      setJsonError(null);
+      showToast("JSON formatted.", "info");
+    } catch (e: any) {
+      setJsonError(e.message);
+    }
+  };
 
   // Handle saving message to DB
   const handleSaveMessage = async () => {
@@ -576,11 +635,13 @@ export function CustomMessagesView({
             id: "btn-" + Date.now(),
             style: "Primary",
             label: "Button",
-            actionType: "EPHEMERAL_REPLY",
-            actionData: {
-              actionType: "EPHEMERAL_REPLY",
-              ephemeralText: "✅ You clicked the button, {user}!",
-            },
+            actions: [
+              {
+                id: "act-1",
+                actionType: "EPHEMERAL_REPLY",
+                ephemeralText: "✅ You clicked the button, {user}!",
+              },
+            ],
           },
         ],
       };
@@ -617,55 +678,81 @@ export function CustomMessagesView({
     });
   };
 
-  // Open Button Action Configurator Modal
+  // Open Multi-Action Configurator Modal
   const openButtonActionModal = (
     blockIndex: number,
     buttonIndex?: number,
     isSectionAccessory?: boolean,
     buttonData?: any
   ) => {
+    // Normalise existing actions list
+    let existingActions: ButtonActionItem[] = [];
+    if (Array.isArray(buttonData?.actions) && buttonData.actions.length > 0) {
+      existingActions = JSON.parse(JSON.stringify(buttonData.actions));
+    } else if (buttonData?.actionData) {
+      existingActions = [JSON.parse(JSON.stringify(buttonData.actionData))];
+    } else if (buttonData?.actionType) {
+      existingActions = [
+        {
+          id: "act-1",
+          actionType: buttonData.actionType,
+          ephemeralText: buttonData.responseMessage || "✅ Action processed for {user}!",
+          url: buttonData.url,
+          customId: buttonData.customId,
+        },
+      ];
+    } else {
+      existingActions = [
+        {
+          id: "act-1",
+          actionType: "EPHEMERAL_REPLY",
+          ephemeralText: "✅ Action processed for {user}!",
+        },
+      ];
+    }
+
     setActiveButtonTarget({
       blockIndex,
       buttonIndex,
       isSectionAccessory,
-      buttonData: {
-        ...buttonData,
-        actionType: buttonData?.actionType || (buttonData?.style === "Link" ? "LINK" : "EPHEMERAL_REPLY"),
-        actionData: buttonData?.actionData || {
-          actionType: buttonData?.style === "Link" ? "LINK" : "EPHEMERAL_REPLY",
-          ephemeralText: "✅ Action processed for {user}!",
-          roleAddMessage: "✅ Role {role} added!",
-          roleRemoveMessage: "❌ Role {role} removed!",
-        },
-      },
+      buttonData: { ...buttonData },
+      actions: existingActions,
     });
     setActionModalOpen(true);
   };
 
-  // Save Configured Button Action
-  const saveButtonAction = (updatedButtonData: any) => {
+  // Save Multi-Actions back to Button
+  const saveButtonActions = () => {
     if (!activeButtonTarget) return;
-    const { blockIndex, buttonIndex, isSectionAccessory } = activeButtonTarget;
+    const { blockIndex, buttonIndex, isSectionAccessory, buttonData, actions } = activeButtonTarget;
+
+    const updatedBtn = {
+      ...buttonData,
+      actions: actions,
+      // For backwards compatibility, set primary action
+      actionType: actions[0]?.actionType || "EPHEMERAL_REPLY",
+      actionData: actions[0] || undefined,
+    };
 
     if (blockIndex !== undefined) {
       if (isSectionAccessory) {
         updateBlock(blockIndex, {
           accessory: {
             ...currentMessage.containerConfig[blockIndex]?.accessory,
-            ...updatedButtonData,
+            ...updatedBtn,
           },
         });
       } else if (buttonIndex !== undefined) {
         const nextButtons = [...(currentMessage.containerConfig[blockIndex]?.buttons || [])];
         nextButtons[buttonIndex] = {
           ...nextButtons[buttonIndex],
-          ...updatedButtonData,
+          ...updatedBtn,
         };
         updateBlock(blockIndex, { buttons: nextButtons });
       }
     }
     setActionModalOpen(false);
-    showToast("Button action saved!", "success");
+    showToast("Button actions saved!", "success");
   };
 
   // Markdown quick toolbar helper
@@ -691,7 +778,7 @@ export function CustomMessagesView({
                 <Sparkles className="w-3 h-3" /> Discord Components V2
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400">Design, save, edit, and dispatch interactive Discord messages with custom button actions</p>
+            <p className="text-[11px] text-zinc-400">Design, save, edit, and dispatch interactive Discord messages with custom button actions & direct JSON editor</p>
           </div>
         </div>
 
@@ -1022,7 +1109,7 @@ export function CustomMessagesView({
                         <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                           <Layers className="w-4 h-4 text-discord-brand" /> Container Components ({currentMessage.containerConfig.length}/10)
                         </h3>
-                        <p className="text-[11px] text-zinc-400">Add and arrange markdown texts, media galleries, sections, dividers & interactive action buttons</p>
+                        <p className="text-[11px] text-zinc-400">Add and arrange markdown texts, media galleries, sections, dividers & multi-action buttons</p>
                       </div>
 
                       {/* Add Component Menu */}
@@ -1184,11 +1271,13 @@ export function CustomMessagesView({
                                             type: "button",
                                             style: "Primary",
                                             label: "Action",
-                                            actionType: "EPHEMERAL_REPLY",
-                                            actionData: {
-                                              actionType: "EPHEMERAL_REPLY",
-                                              ephemeralText: "✅ Button clicked by {user}!",
-                                            },
+                                            actions: [
+                                              {
+                                                id: "act-1",
+                                                actionType: "EPHEMERAL_REPLY",
+                                                ephemeralText: "✅ Button clicked by {user}!",
+                                              },
+                                            ],
                                           },
                                         })
                                       }
@@ -1231,7 +1320,7 @@ export function CustomMessagesView({
                                       className="px-3 py-1.5 rounded-lg bg-discord-brand/20 hover:bg-discord-brand/30 border border-discord-brand/40 text-discord-brand text-xs font-bold flex items-center gap-1.5 transition-all"
                                     >
                                       <Settings2 className="w-3.5 h-3.5" />
-                                      <span>Configure Action</span>
+                                      <span>Actions ({block.accessory?.actions?.length || 1})</span>
                                     </button>
                                   </div>
                                 )}
@@ -1351,24 +1440,22 @@ export function CustomMessagesView({
                                       <button
                                         onClick={() => openButtonActionModal(idx, bIdx, false, btn)}
                                         className={`w-full py-1.5 px-2 rounded-lg text-xs font-bold flex items-center justify-center gap-1 border transition-all ${
-                                          btn.actionType === "ROLE_TOGGLE" || btn.actionType === "ROLE_ADD"
-                                            ? "bg-violet-600/20 text-violet-300 border-violet-500/40"
-                                            : btn.actionType === "SEND_DM"
-                                            ? "bg-amber-600/20 text-amber-300 border-amber-500/40"
-                                            : btn.actionType === "LINK"
-                                            ? "bg-sky-600/20 text-sky-300 border-sky-500/40"
+                                          btn.actions && btn.actions.length > 1
+                                            ? "bg-emerald-600/20 text-emerald-300 border-emerald-500/40"
                                             : "bg-discord-brand/20 text-discord-brand border-discord-brand/40"
                                         }`}
                                       >
                                         <Settings2 className="w-3 h-3 shrink-0" />
                                         <span className="truncate">
-                                          {btn.actionType === "ROLE_TOGGLE"
+                                          {btn.actions && btn.actions.length > 1
+                                            ? `${btn.actions.length} Actions`
+                                            : btn.actionType === "ROLE_TOGGLE" || btn.actions?.[0]?.actionType === "ROLE_TOGGLE"
                                             ? "Toggle Role"
-                                            : btn.actionType === "SEND_DM"
+                                            : btn.actionType === "SEND_DM" || btn.actions?.[0]?.actionType === "SEND_DM"
                                             ? "Send DM"
-                                            : btn.actionType === "LINK"
+                                            : btn.actionType === "LINK" || btn.actions?.[0]?.actionType === "LINK"
                                             ? "Open Link"
-                                            : "Ephemeral Reply"}
+                                            : "Actions"}
                                         </span>
                                       </button>
                                     </div>
@@ -1396,11 +1483,13 @@ export function CustomMessagesView({
                                         id: "btn-" + Date.now(),
                                         style: "Primary" as const,
                                         label: "New Button",
-                                        actionType: "EPHEMERAL_REPLY" as const,
-                                        actionData: {
-                                          actionType: "EPHEMERAL_REPLY",
-                                          ephemeralText: "✅ Button clicked by {user}!",
-                                        },
+                                        actions: [
+                                          {
+                                            id: "act-1",
+                                            actionType: "EPHEMERAL_REPLY",
+                                            ephemeralText: "✅ Button clicked by {user}!",
+                                          },
+                                        ],
                                       },
                                     ];
                                     updateBlock(idx, { buttons: nextBtns });
@@ -1528,13 +1617,19 @@ export function CustomMessagesView({
             </div>
           </div>
 
-          {/* Right Column: Real-Time Discord Client Simulator */}
+          {/* Right Column: Real-Time Discord Client Simulator & Live JSON Code Editor */}
           <div className="w-1/2 flex flex-col bg-[#050507] overflow-hidden">
             {/* Preview Header */}
             <div className="p-4 border-b border-[#18181b] bg-[#0c0d12] flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Eye className="w-4 h-4 text-discord-brand" />
-                <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">Live Discord Client Simulator</span>
+                {previewTab === "visual" ? (
+                  <Eye className="w-4 h-4 text-discord-brand" />
+                ) : (
+                  <Code className="w-4 h-4 text-emerald-400" />
+                )}
+                <span className="text-xs font-bold uppercase tracking-wider text-zinc-300">
+                  {previewTab === "visual" ? "Live Discord Client Simulator" : "Direct JSON Editor (Live Sync)"}
+                </span>
               </div>
 
               <div className="flex items-center gap-1 bg-[#14151b] p-1 rounded-lg border border-[#27272a]">
@@ -1552,7 +1647,7 @@ export function CustomMessagesView({
                     previewTab === "json" ? "bg-discord-brand text-white" : "text-zinc-400 hover:text-white"
                   }`}
                 >
-                  API Payload JSON
+                  Direct JSON Editor
                 </button>
               </div>
             </div>
@@ -1718,23 +1813,75 @@ export function CustomMessagesView({
                   </div>
                 </div>
               ) : (
-                /* JSON Payload Inspector */
-                <div className="w-full h-full bg-[#0e0f15] border border-[#27272a] rounded-xl p-4 overflow-y-auto">
-                  <div className="flex items-center justify-between pb-2 mb-2 border-b border-[#27272a]">
-                    <span className="text-xs font-mono text-zinc-400">Discord REST API v10 Payload (flags: 32768)</span>
-                    <button
-                      onClick={() => {
-                        navigator.clipboard.writeText(JSON.stringify(currentMessage, null, 2));
-                        showToast("Payload JSON copied to clipboard!", "success");
-                      }}
-                      className="text-xs text-discord-brand hover:underline font-bold flex items-center gap-1"
-                    >
-                      <Copy className="w-3 h-3" /> Copy JSON
-                    </button>
+                /* LIVE DIRECT JSON CODE EDITOR */
+                <div className="w-full h-full flex flex-col bg-[#0e0f15] border border-[#27272a] rounded-xl overflow-hidden shadow-2xl">
+                  <div className="flex items-center justify-between p-3 bg-[#050507] border-b border-[#27272a]">
+                    <div className="flex items-center gap-2">
+                      <Code className="w-4 h-4 text-emerald-400" />
+                      <span className="text-xs font-mono text-zinc-300">Message Payload JSON</span>
+                      {jsonError ? (
+                        <span className="text-[10px] bg-rose-500/20 text-rose-400 px-2 py-0.5 rounded font-mono">
+                          Syntax Error
+                        </span>
+                      ) : (
+                        <span className="text-[10px] bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded font-mono">
+                          Valid JSON
+                        </span>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={handleFormatJson}
+                        className="px-2.5 py-1 rounded bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold flex items-center gap-1 border border-[#27272a]"
+                        title="Format JSON"
+                      >
+                        <Wand2 className="w-3 h-3 text-amber-400" />
+                        <span>Format</span>
+                      </button>
+                      <button
+                        onClick={() => {
+                          navigator.clipboard.writeText(rawJsonText);
+                          showToast("JSON copied to clipboard!", "success");
+                        }}
+                        className="px-2.5 py-1 rounded bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold flex items-center gap-1 border border-[#27272a]"
+                        title="Copy JSON"
+                      >
+                        <Copy className="w-3 h-3 text-sky-400" />
+                        <span>Copy</span>
+                      </button>
+                      <button
+                        onClick={handleApplyJsonChanges}
+                        className="px-3 py-1 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 shadow-md shadow-emerald-600/20"
+                      >
+                        <Check className="w-3.5 h-3.5" />
+                        <span>Apply JSON Changes</span>
+                      </button>
+                    </div>
                   </div>
-                  <pre className="text-xs font-mono text-emerald-400 whitespace-pre-wrap">
-                    {JSON.stringify(currentMessage, null, 2)}
-                  </pre>
+
+                  <div className="flex-1 p-3 relative flex flex-col">
+                    <textarea
+                      value={rawJsonText}
+                      onChange={(e) => {
+                        setRawJsonText(e.target.value);
+                        try {
+                          JSON.parse(e.target.value);
+                          setJsonError(null);
+                        } catch (err: any) {
+                          setJsonError(err.message);
+                        }
+                      }}
+                      placeholder="Paste or edit Custom Message JSON here..."
+                      className="w-full flex-1 bg-[#090a0f] text-emerald-400 font-mono text-xs p-3 rounded-lg border border-[#27272a] focus:border-emerald-500 outline-none resize-none leading-relaxed"
+                      spellCheck={false}
+                    />
+                    {jsonError && (
+                      <div className="mt-2 p-2 bg-rose-950/40 border border-rose-800/60 rounded-lg text-rose-300 text-[11px] font-mono">
+                        {jsonError}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -1742,14 +1889,14 @@ export function CustomMessagesView({
         </div>
       )}
 
-      {/* Button Action Configurator Modal */}
+      {/* Button Multi-Action Configurator Modal */}
       {actionModalOpen && activeButtonTarget && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-150">
-          <div className="bg-[#0e0f15] border border-[#27272a] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden flex flex-col">
+          <div className="bg-[#0e0f15] border border-[#27272a] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b border-[#18181b] flex items-center justify-between bg-[#050507]">
               <div className="flex items-center gap-2">
                 <Settings2 className="w-5 h-5 text-discord-brand" />
-                <h2 className="text-sm font-bold text-white">Configure Button Action</h2>
+                <h2 className="text-sm font-bold text-white">Configure Button Actions Sequence</h2>
               </div>
               <button
                 onClick={() => setActionModalOpen(false)}
@@ -1760,216 +1907,165 @@ export function CustomMessagesView({
             </div>
 
             <div className="p-6 space-y-4 overflow-y-auto max-h-[75vh]">
-              {/* Action Type Selector */}
-              <div className="space-y-1.5">
-                <label className="text-xs font-bold text-zinc-300">Action Type</label>
-                <select
-                  value={activeButtonTarget.buttonData?.actionType || "EPHEMERAL_REPLY"}
-                  onChange={(e) => {
-                    const newType = e.target.value as ActionType;
+              <div className="flex items-center justify-between">
+                <div>
+                  <h4 className="text-xs font-bold text-zinc-200">Actions Triggered on Button Click</h4>
+                  <p className="text-[11px] text-zinc-400">Combine multiple actions like adding a role, sending a private ephemeral confirmation, and sending a DM all in one click!</p>
+                </div>
+                <button
+                  onClick={() => {
+                    const newAct: ButtonActionItem = {
+                      id: "act-" + Date.now(),
+                      actionType: "EPHEMERAL_REPLY",
+                      ephemeralText: "✅ Done!",
+                    };
                     setActiveButtonTarget({
                       ...activeButtonTarget,
-                      buttonData: {
-                        ...activeButtonTarget.buttonData,
-                        actionType: newType,
-                        style: newType === "LINK" ? "Link" : (activeButtonTarget.buttonData?.style === "Link" ? "Primary" : activeButtonTarget.buttonData?.style),
-                      },
+                      actions: [...activeButtonTarget.actions, newAct],
                     });
                   }}
-                  className="w-full bg-[#14151b] border border-[#27272a] focus:border-discord-brand px-3 py-2 rounded-xl text-xs font-semibold text-white outline-none"
+                  className="px-3 py-1.5 rounded-lg bg-discord-brand/20 hover:bg-discord-brand/30 border border-discord-brand/40 text-discord-brand text-xs font-bold flex items-center gap-1"
                 >
-                  <option value="EPHEMERAL_REPLY">💬 Send Ephemeral Reply (Private message to user)</option>
-                  <option value="ROLE_TOGGLE">🛡️ Toggle Role (Self-Role Add/Remove)</option>
-                  <option value="ROLE_ADD">➕ Add Role to User</option>
-                  <option value="ROLE_REMOVE">➖ Remove Role from User</option>
-                  <option value="SEND_DM">📩 Send Direct Message (DM)</option>
-                  <option value="LINK">🔗 Open External URL (Link Button)</option>
-                  <option value="CUSTOM_ID">⚡ Advanced Custom ID</option>
-                </select>
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Action</span>
+                </button>
               </div>
 
-              {/* Action Fields: Ephemeral Reply */}
-              {activeButtonTarget.buttonData?.actionType === "EPHEMERAL_REPLY" && (
-                <div className="space-y-2 p-3 bg-[#14151b] rounded-xl border border-[#27272a]">
-                  <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                    <MessageCircle className="w-4 h-4 text-discord-brand" /> Ephemeral Response Message
-                  </label>
-                  <p className="text-[11px] text-zinc-400">Only the user who clicks the button will see this private message. Supports markdown and variables like &#123;user&#125;.</p>
-                  <textarea
-                    rows={3}
-                    value={activeButtonTarget.buttonData?.actionData?.ephemeralText || ""}
-                    onChange={(e) =>
-                      setActiveButtonTarget({
-                        ...activeButtonTarget,
-                        buttonData: {
-                          ...activeButtonTarget.buttonData,
-                          actionData: {
-                            ...activeButtonTarget.buttonData?.actionData,
-                            ephemeralText: e.target.value,
-                          },
-                        },
-                      })
-                    }
-                    placeholder="e.g. 🎉 Thanks {user}! Here is your secret link: https://..."
-                    className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand p-2.5 rounded-lg text-xs text-white outline-none"
-                  />
-                </div>
-              )}
-
-              {/* Action Fields: Role Actions (TOGGLE, ADD, REMOVE) */}
-              {(activeButtonTarget.buttonData?.actionType === "ROLE_TOGGLE" ||
-                activeButtonTarget.buttonData?.actionType === "ROLE_ADD" ||
-                activeButtonTarget.buttonData?.actionType === "ROLE_REMOVE") && (
-                <div className="space-y-3 p-3 bg-[#14151b] rounded-xl border border-[#27272a]">
-                  <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                    <Shield className="w-4 h-4 text-violet-400" /> Select Server Role
-                  </label>
-                  <select
-                    value={activeButtonTarget.buttonData?.actionData?.roleId || ""}
-                    onChange={(e) =>
-                      setActiveButtonTarget({
-                        ...activeButtonTarget,
-                        buttonData: {
-                          ...activeButtonTarget.buttonData,
-                          actionData: {
-                            ...activeButtonTarget.buttonData?.actionData,
-                            roleId: e.target.value,
-                          },
-                        },
-                      })
-                    }
-                    className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-2 rounded-lg text-xs font-semibold text-white outline-none"
+              {/* Actions List */}
+              <div className="space-y-3 pt-2">
+                {activeButtonTarget.actions.map((act, actIdx) => (
+                  <div
+                    key={act.id || actIdx}
+                    className="p-3.5 bg-[#14151b] rounded-xl border border-[#27272a] space-y-3"
                   >
-                    <option value="">-- Choose a Role --</option>
-                    {roles.map((r) => (
-                      <option key={r.id} value={r.id}>
-                        @{r.name}
-                      </option>
-                    ))}
-                  </select>
+                    <div className="flex items-center justify-between border-b border-[#1c1d25] pb-2">
+                      <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
+                        <span className="w-4 h-4 rounded bg-[#1f2028] text-[10px] flex items-center justify-center font-mono">
+                          {actIdx + 1}
+                        </span>
+                        <span>Action Step</span>
+                      </span>
 
-                  <div className="space-y-2 pt-1">
-                    <div>
-                      <label className="text-[11px] font-bold text-zinc-400 block mb-1">Add Confirmation Message</label>
-                      <input
-                        type="text"
-                        value={activeButtonTarget.buttonData?.actionData?.roleAddMessage || "✅ Role {role} added!"}
-                        onChange={(e) =>
-                          setActiveButtonTarget({
-                            ...activeButtonTarget,
-                            buttonData: {
-                              ...activeButtonTarget.buttonData,
-                              actionData: {
-                                ...activeButtonTarget.buttonData?.actionData,
-                                roleAddMessage: e.target.value,
-                              },
-                            },
-                          })
-                        }
-                        className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
-                      />
-                    </div>
-                    {activeButtonTarget.buttonData?.actionType === "ROLE_TOGGLE" && (
-                      <div>
-                        <label className="text-[11px] font-bold text-zinc-400 block mb-1">Remove Confirmation Message</label>
-                        <input
-                          type="text"
-                          value={activeButtonTarget.buttonData?.actionData?.roleRemoveMessage || "❌ Role {role} removed!"}
-                          onChange={(e) =>
+                      {activeButtonTarget.actions.length > 1 && (
+                        <button
+                          onClick={() => {
+                            const next = activeButtonTarget.actions.filter((_, i) => i !== actIdx);
                             setActiveButtonTarget({
                               ...activeButtonTarget,
-                              buttonData: {
-                                ...activeButtonTarget.buttonData,
-                                actionData: {
-                                  ...activeButtonTarget.buttonData?.actionData,
-                                  roleRemoveMessage: e.target.value,
-                                },
-                              },
-                            })
-                          }
+                              actions: next,
+                            });
+                          }}
+                          className="p-1 text-zinc-400 hover:text-rose-400"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Action Type */}
+                    <div className="space-y-1">
+                      <label className="text-[11px] font-bold text-zinc-400">Action Type</label>
+                      <select
+                        value={act.actionType}
+                        onChange={(e) => {
+                          const next = [...activeButtonTarget.actions];
+                          next[actIdx] = {
+                            ...next[actIdx],
+                            actionType: e.target.value as ActionType,
+                          };
+                          setActiveButtonTarget({
+                            ...activeButtonTarget,
+                            actions: next,
+                          });
+                        }}
+                        className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-1.5 rounded-lg text-xs font-semibold text-white outline-none"
+                      >
+                        <option value="EPHEMERAL_REPLY">💬 Send Ephemeral Reply (Private message to user)</option>
+                        <option value="ROLE_TOGGLE">🛡️ Toggle Role (Self-Role Add/Remove)</option>
+                        <option value="ROLE_ADD">➕ Add Role to User</option>
+                        <option value="ROLE_REMOVE">➖ Remove Role from User</option>
+                        <option value="SEND_DM">📩 Send Direct Message (DM)</option>
+                        <option value="LINK">🔗 Open External URL (Link Button)</option>
+                        <option value="CUSTOM_ID">⚡ Custom ID Event</option>
+                      </select>
+                    </div>
+
+                    {/* Action Type Specific Inputs */}
+                    {(act.actionType === "EPHEMERAL_REPLY" || act.actionType === "REPLY") && (
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-zinc-400">Ephemeral Reply Message</label>
+                        <textarea
+                          rows={2}
+                          value={act.ephemeralText || ""}
+                          onChange={(e) => {
+                            const next = [...activeButtonTarget.actions];
+                            next[actIdx] = { ...next[actIdx], ephemeralText: e.target.value };
+                            setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                          }}
+                          placeholder="🎉 Thanks {user}! Action successful."
+                          className="w-full bg-[#0e0f15] border border-[#27272a] p-2 rounded-lg text-xs text-white outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {(act.actionType === "ROLE_TOGGLE" || act.actionType === "ROLE_ADD" || act.actionType === "ROLE_REMOVE") && (
+                      <div className="space-y-2">
+                        <label className="text-[11px] font-bold text-zinc-400">Target Server Role</label>
+                        <select
+                          value={act.roleId || ""}
+                          onChange={(e) => {
+                            const next = [...activeButtonTarget.actions];
+                            next[actIdx] = { ...next[actIdx], roleId: e.target.value };
+                            setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                          }}
+                          className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                        >
+                          <option value="">-- Select a Role --</option>
+                          {roles.map((r) => (
+                            <option key={r.id} value={r.id}>
+                              @{r.name}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+
+                    {act.actionType === "SEND_DM" && (
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-zinc-400">Direct Message Content (DM)</label>
+                        <textarea
+                          rows={2}
+                          value={act.dmText || ""}
+                          onChange={(e) => {
+                            const next = [...activeButtonTarget.actions];
+                            next[actIdx] = { ...next[actIdx], dmText: e.target.value };
+                            setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                          }}
+                          placeholder="Hello {user}, here is your private info..."
+                          className="w-full bg-[#0e0f15] border border-[#27272a] p-2 rounded-lg text-xs text-white outline-none"
+                        />
+                      </div>
+                    )}
+
+                    {act.actionType === "LINK" && (
+                      <div className="space-y-1">
+                        <label className="text-[11px] font-bold text-zinc-400">Website URL</label>
+                        <input
+                          type="text"
+                          value={act.url || ""}
+                          onChange={(e) => {
+                            const next = [...activeButtonTarget.actions];
+                            next[actIdx] = { ...next[actIdx], url: e.target.value };
+                            setActiveButtonTarget({ ...activeButtonTarget, actions: next });
+                          }}
+                          placeholder="https://example.com"
                           className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                         />
                       </div>
                     )}
                   </div>
-                </div>
-              )}
-
-              {/* Action Fields: Send DM */}
-              {activeButtonTarget.buttonData?.actionType === "SEND_DM" && (
-                <div className="space-y-2 p-3 bg-[#14151b] rounded-xl border border-[#27272a]">
-                  <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                    <Mail className="w-4 h-4 text-amber-400" /> Direct Message Content (DM)
-                  </label>
-                  <p className="text-[11px] text-zinc-400">Sent directly to the user's Discord DMs when clicked.</p>
-                  <textarea
-                    rows={3}
-                    value={activeButtonTarget.buttonData?.actionData?.dmText || ""}
-                    onChange={(e) =>
-                      setActiveButtonTarget({
-                        ...activeButtonTarget,
-                        buttonData: {
-                          ...activeButtonTarget.buttonData,
-                          actionData: {
-                            ...activeButtonTarget.buttonData?.actionData,
-                            dmText: e.target.value,
-                          },
-                        },
-                      })
-                    }
-                    placeholder="Type DM content here..."
-                    className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand p-2.5 rounded-lg text-xs text-white outline-none"
-                  />
-                </div>
-              )}
-
-              {/* Action Fields: Link */}
-              {activeButtonTarget.buttonData?.actionType === "LINK" && (
-                <div className="space-y-2 p-3 bg-[#14151b] rounded-xl border border-[#27272a]">
-                  <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                    <ExternalLink className="w-4 h-4 text-sky-400" /> Target Website URL
-                  </label>
-                  <input
-                    type="text"
-                    value={activeButtonTarget.buttonData?.url || ""}
-                    onChange={(e) =>
-                      setActiveButtonTarget({
-                        ...activeButtonTarget,
-                        buttonData: {
-                          ...activeButtonTarget.buttonData,
-                          url: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="https://yourwebsite.com"
-                    className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-2 rounded-lg text-xs text-white outline-none"
-                  />
-                </div>
-              )}
-
-              {/* Action Fields: Custom ID */}
-              {activeButtonTarget.buttonData?.actionType === "CUSTOM_ID" && (
-                <div className="space-y-2 p-3 bg-[#14151b] rounded-xl border border-[#27272a]">
-                  <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
-                    <Zap className="w-4 h-4 text-yellow-400" /> Custom ID String
-                  </label>
-                  <input
-                    type="text"
-                    value={activeButtonTarget.buttonData?.customId || ""}
-                    onChange={(e) =>
-                      setActiveButtonTarget({
-                        ...activeButtonTarget,
-                        buttonData: {
-                          ...activeButtonTarget.buttonData,
-                          customId: e.target.value,
-                        },
-                      })
-                    }
-                    placeholder="my_custom_event_id"
-                    className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-2 rounded-lg text-xs text-white outline-none"
-                  />
-                </div>
-              )}
+                ))}
+              </div>
             </div>
 
             <div className="p-4 border-t border-[#18181b] bg-[#050507] flex items-center justify-end gap-2">
@@ -1980,10 +2076,10 @@ export function CustomMessagesView({
                 Cancel
               </button>
               <button
-                onClick={() => saveButtonAction(activeButtonTarget.buttonData)}
+                onClick={saveButtonActions}
                 className="px-4 py-2 rounded-xl bg-discord-brand hover:bg-discord-brand/90 text-white text-xs font-bold shadow-lg shadow-discord-brand/20 transition-all"
               >
-                Save Action
+                Save All Actions
               </button>
             </div>
           </div>
