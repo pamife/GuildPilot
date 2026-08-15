@@ -1,9 +1,10 @@
 import { broadcastEvent } from "../socket/socketManager";
-import { resetUpdateProgress } from "./updateService";
+import { resetUpdateProgress, checkOrTriggerUpdate } from "./updateService";
 import { exec } from "child_process";
 
 let nextRestartTimestamp: Date = getNextHourlyTimestamp();
 let restartTimer: NodeJS.Timeout | null = null;
+let autoUpdateInterval: NodeJS.Timeout | null = null;
 
 function getNextHourlyTimestamp(): Date {
   const now = new Date();
@@ -53,6 +54,18 @@ export function triggerImmediateRestart(reason = "Automatischer stündlicher Neu
 export function initHourlyRestartScheduler(): void {
   scheduleNextHourlyRestart();
   console.log(`[HourlyRestart] ⏰ Stündlicher Auto-Neustart aktiviert. Nächster Neustart um ${nextRestartTimestamp.toLocaleTimeString()}`);
+
+  // Recurring background GitHub check every 3 minutes
+  if (autoUpdateInterval) clearInterval(autoUpdateInterval);
+  
+  // Initial check 15 seconds after server startup
+  setTimeout(() => {
+    checkOrTriggerUpdate(true).catch(() => {});
+  }, 15000);
+
+  autoUpdateInterval = setInterval(() => {
+    checkOrTriggerUpdate(true).catch(() => {});
+  }, 3 * 60 * 1000); // Check every 3 minutes
 }
 
 function scheduleNextHourlyRestart(): void {
@@ -61,7 +74,15 @@ function scheduleNextHourlyRestart(): void {
   nextRestartTimestamp = getNextHourlyTimestamp();
   const msUntilNext = Math.max(1000, nextRestartTimestamp.getTime() - Date.now());
 
-  restartTimer = setTimeout(() => {
-    triggerImmediateRestart("Stündlicher automatischer System-Neustart (Cron 60 Min)");
+  restartTimer = setTimeout(async () => {
+    console.log("[HourlyRestart] Checking for GitHub updates prior to hourly restart...");
+    try {
+      const updateResult = await checkOrTriggerUpdate(true);
+      if (!updateResult.hasUpdate) {
+        triggerImmediateRestart("Stündlicher automatischer System-Neustart (Cron 60 Min)");
+      }
+    } catch {
+      triggerImmediateRestart("Stündlicher automatischer System-Neustart (Cron 60 Min)");
+    }
   }, msUntilNext);
 }

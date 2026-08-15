@@ -122,8 +122,8 @@ try {
   log("Step 3/6: Executing git pull origin main...");
   reportProgress(3, 6, 45, "Lade Quellcode herunter (git pull)...", `Ziel-Commit ${remoteCommit.substring(0, 7)} wird heruntergeladen...`);
   try {
-    execSync("git reset --hard HEAD", { cwd: projectDir, stdio: "inherit" });
-    execSync("git pull origin main", { cwd: projectDir, stdio: "inherit" });
+    execSync("git reset --hard HEAD", { cwd: projectDir, stdio: "inherit", shell: true });
+    execSync("git pull origin main", { cwd: projectDir, stdio: "inherit", shell: true });
   } catch (gitErr) {
     reportProgress(3, 6, 45, `Git Pull fehlgeschlagen: ${gitErr.message}`, `❌ Git Pull-Fehler: ${gitErr.message}`, "error");
     throw gitErr;
@@ -133,8 +133,8 @@ try {
   log("Step 4/6: Synchronizing Prisma Client & Database Schema...");
   reportProgress(4, 6, 65, "Synchronisiere Datenbank-Schema...", "Npx prisma generate & db push...");
   try {
-    execSync("npx prisma generate", { cwd: projectDir, stdio: "inherit" });
-    execSync("npx prisma db push --accept-data-loss", { cwd: projectDir, stdio: "inherit" });
+    execSync("npx prisma generate", { cwd: projectDir, stdio: "inherit", shell: true });
+    execSync("npx prisma db push --accept-data-loss", { cwd: projectDir, stdio: "inherit", shell: true });
   } catch (prismaErr) {
     reportProgress(4, 6, 65, `Prisma Sync fehlgeschlagen: ${prismaErr.message}`, `❌ Prisma-Fehler: ${prismaErr.message}`, "error");
     throw prismaErr;
@@ -144,7 +144,7 @@ try {
   log("Step 5/6: Building production binaries (npm run build)...");
   reportProgress(5, 6, 85, "Kompiliere Production Build (npm run build)...", "Bauen von Frontend & Backend binaries...");
   try {
-    execSync("npm run build", { cwd: projectDir, stdio: "inherit" });
+    execSync("npm run build", { cwd: projectDir, stdio: "inherit", shell: true });
   } catch (buildErr) {
     reportProgress(5, 6, 85, `Build fehlgeschlagen: ${buildErr.message}`, `❌ Build-Fehler: ${buildErr.message}`, "error");
     throw buildErr;
@@ -172,9 +172,9 @@ try {
 
     try {
       log(`Restarting services via PM2 (${pm2Bin} startOrRestart ecosystem.config.js)...`);
-      execSync(`${pm2Bin} startOrRestart ecosystem.config.js`, { cwd: projectDir, stdio: "inherit" });
+      execSync(`${pm2Bin} startOrRestart ecosystem.config.js`, { cwd: projectDir, stdio: "inherit", shell: true });
     } catch (e1) {
-      execSync(`${pm2Bin} restart all`, { cwd: projectDir, stdio: "inherit" });
+      execSync(`${pm2Bin} restart all`, { cwd: projectDir, stdio: "inherit", shell: true });
     }
   } catch (pm2Err) {
     log(`PM2 restart skipped or failed (${pm2Err.message}). Standalone mode detected.`);
