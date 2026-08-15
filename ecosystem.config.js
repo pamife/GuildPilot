@@ -10,7 +10,7 @@ module.exports = {
       },
       autorestart: true,
       watch: false,
-      max_memory_restart: "500M",
+      max_memory_restart: "1500M",
       log_date_format: "YYYY-MM-DD HH:mm:ss",
       error_file: "logs/backend-error.log",
       out_file: "logs/backend-out.log"
@@ -25,7 +25,7 @@ module.exports = {
       },
       autorestart: true,
       watch: false,
-      max_memory_restart: "500M",
+      max_memory_restart: "1500M",
       log_date_format: "YYYY-MM-DD HH:mm:ss",
       error_file: "logs/frontend-error.log",
       out_file: "logs/frontend-out.log"

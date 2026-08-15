@@ -173,18 +173,16 @@ export function WelcomeView({
     return () => clearTimeout(timer);
   }, [generatePreview]);
 
-  // Save Settings
+  // Save Settings (Saves both Welcome & Leave configurations)
   const handleSave = async () => {
     if (!selectedGuildId) return;
     setSaving(true);
     try {
-      if (activeTab === "welcome") {
-        await api.post(`/guilds/${selectedGuildId}/welcome`, welcomeConfig);
-        showToast("Welcome settings saved successfully!", "success");
-      } else {
-        await api.post(`/guilds/${selectedGuildId}/leave`, leaveConfig);
-        showToast("Goodbye settings saved successfully!", "success");
-      }
+      await Promise.all([
+        api.post(`/guilds/${selectedGuildId}/welcome`, welcomeConfig),
+        api.post(`/guilds/${selectedGuildId}/leave`, leaveConfig),
+      ]);
+      showToast("Welcome & Goodbye settings saved successfully!", "success");
     } catch (err: any) {
       showToast(err.response?.data?.error || "Failed to save settings", "error");
     } finally {
@@ -395,17 +393,36 @@ export function WelcomeView({
                       ? welcomeConfig.enabled
                       : leaveConfig.enabled
                   }
-                  onChange={(e) => {
+                  onChange={async (e) => {
+                    const newEnabled = e.target.checked;
                     if (activeTab === "welcome") {
-                      setWelcomeConfig((prev) => ({
-                        ...prev,
-                        enabled: e.target.checked,
-                      }));
+                      const updated = { ...welcomeConfig, enabled: newEnabled };
+                      setWelcomeConfig(updated);
+                      if (selectedGuildId) {
+                        try {
+                          await api.post(`/guilds/${selectedGuildId}/welcome`, updated);
+                          showToast(
+                            newEnabled
+                              ? "Welcome messages enabled & saved!"
+                              : "Welcome messages disabled & saved!",
+                            "info"
+                          );
+                        } catch {}
+                      }
                     } else {
-                      setLeaveConfig((prev) => ({
-                        ...prev,
-                        enabled: e.target.checked,
-                      }));
+                      const updated = { ...leaveConfig, enabled: newEnabled };
+                      setLeaveConfig(updated);
+                      if (selectedGuildId) {
+                        try {
+                          await api.post(`/guilds/${selectedGuildId}/leave`, updated);
+                          showToast(
+                            newEnabled
+                              ? "Goodbye messages enabled & saved!"
+                              : "Goodbye messages disabled & saved!",
+                            "info"
+                          );
+                        } catch {}
+                      }
                     }
                   }}
                   className="sr-only peer"

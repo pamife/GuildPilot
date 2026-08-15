@@ -7,19 +7,14 @@ let restartTimer: NodeJS.Timeout | null = null;
 let autoUpdateInterval: NodeJS.Timeout | null = null;
 
 function getNextHourlyTimestamp(): Date {
-  const now = new Date();
-  const next = new Date(now);
-  next.setHours(now.getHours() + 1);
-  next.setMinutes(0);
-  next.setSeconds(0);
-  next.setMilliseconds(0);
-  return next;
+  // Always schedule full 60 minutes from current time
+  return new Date(Date.now() + 60 * 60 * 1000);
 }
 
 export function getNextRestartTime(): { nextRestart: string; minutesRemaining: number } {
   const now = new Date();
   const diffMs = Math.max(0, nextRestartTimestamp.getTime() - now.getTime());
-  const minutesRemaining = Math.ceil(diffMs / (1000 * 60));
+  const minutesRemaining = Math.max(1, Math.ceil(diffMs / (1000 * 60)));
   return {
     nextRestart: nextRestartTimestamp.toISOString(),
     minutesRemaining,
@@ -53,34 +48,32 @@ export function triggerImmediateRestart(reason = "Automatischer stündlicher Neu
 
 export function initHourlyRestartScheduler(): void {
   scheduleNextHourlyRestart();
-  console.log(`[HourlyRestart] ⏰ Stündlicher Auto-Neustart aktiviert. Nächster Neustart um ${nextRestartTimestamp.toLocaleTimeString()}`);
+  console.log(`[HourlyRestart] ⏰ Stündlicher Auto-Neustart aktiviert. Nächster regulärer Neustart um ${nextRestartTimestamp.toLocaleTimeString()}`);
 
-  // Recurring background GitHub check every 3 minutes
+  // Recurring background GitHub check every 10 minutes (checking only, no automatic forced reboot)
   if (autoUpdateInterval) clearInterval(autoUpdateInterval);
   
-  // Initial check 15 seconds after server startup
+  // Initial check 30 seconds after server startup (non-installing check)
   setTimeout(() => {
-    checkOrTriggerUpdate(true).catch(() => {});
-  }, 15000);
+    checkOrTriggerUpdate(false).catch(() => {});
+  }, 30000);
 
   autoUpdateInterval = setInterval(() => {
-    checkOrTriggerUpdate(true).catch(() => {});
-  }, 3 * 60 * 1000); // Check every 3 minutes
+    checkOrTriggerUpdate(false).catch(() => {});
+  }, 10 * 60 * 1000); // Check every 10 minutes non-intrusively
 }
 
 function scheduleNextHourlyRestart(): void {
   if (restartTimer) clearTimeout(restartTimer);
 
   nextRestartTimestamp = getNextHourlyTimestamp();
-  const msUntilNext = Math.max(1000, nextRestartTimestamp.getTime() - Date.now());
+  const msUntilNext = Math.max(60000, nextRestartTimestamp.getTime() - Date.now());
 
   restartTimer = setTimeout(async () => {
-    console.log("[HourlyRestart] Checking for GitHub updates prior to hourly restart...");
+    console.log("[HourlyRestart] ⏰ 60 Minuten abgelaufen. Führe stündlichen Neustart durch...");
     try {
-      const updateResult = await checkOrTriggerUpdate(true);
-      if (!updateResult.hasUpdate) {
-        triggerImmediateRestart("Stündlicher automatischer System-Neustart (Cron 60 Min)");
-      }
+      const updateResult = await checkOrTriggerUpdate(false);
+      triggerImmediateRestart("Stündlicher automatischer System-Neustart (Cron 60 Min)");
     } catch {
       triggerImmediateRestart("Stündlicher automatischer System-Neustart (Cron 60 Min)");
     }
