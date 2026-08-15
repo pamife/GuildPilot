@@ -27,14 +27,15 @@ export function isBotReady(): boolean {
 }
 
 function registerClientEvents(client: Client) {
+  setupTicketInteractions(client);
+  setupApplicationInteractions(client);
+  setupSelfRoleInteractions(client);
+  setupCustomMessageInteractions(client);
+  setupWelcomeInteractions(client);
+  setupAutoReactInteractions(client);
+
   client.once("ready", (c) => {
     console.log(`[TheGodGen Bot] Logged in as ${c.user.tag}`);
-    setupTicketInteractions(c);
-    setupApplicationInteractions(c);
-    setupSelfRoleInteractions(c);
-    setupCustomMessageInteractions(c);
-    setupWelcomeInteractions(c);
-    setupAutoReactInteractions(c);
     broadcastEvent("botStatusChange", {
       ready: true,
       tag: c.user.tag,
@@ -127,26 +128,27 @@ export async function initDiscordBot() {
   }
 
   try {
-    console.log("[TheGodGen Bot] Attempting connection to Discord Gateway...");
+    console.log("[TheGodGen Bot] Attempting connection to Discord Gateway with GuildMembers & MessageContent...");
     await discordClient.login(token);
   } catch (error: any) {
     console.error("[TheGodGen Bot] Login error:", error.message || error);
 
     // Handle DisallowedGatewayIntents error by falling back to standard non-privileged intents
     if (error.code === "DisallowedGatewayIntents" || error.message?.includes("intents")) {
-      console.warn("[TheGodGen Bot] Privileged MessageContent intent disallowed by Discord portal. Retrying with standard intents...");
+      console.warn("[TheGodGen Bot] Privileged MessageContent intent disallowed by Discord portal. Retrying with GuildMembers intent...");
       hasMessageContentIntent = false;
 
       try {
         discordClient = new Client({
           intents: [
             GatewayIntentBits.Guilds,
+            GatewayIntentBits.GuildMembers,
             GatewayIntentBits.GuildEmojisAndStickers,
             GatewayIntentBits.GuildInvites,
             GatewayIntentBits.GuildVoiceStates,
             GatewayIntentBits.GuildMessages,
           ],
-          partials: [Partials.Channel, Partials.User],
+          partials: [Partials.Channel, Partials.User, Partials.Message, Partials.GuildMember],
         });
 
         registerClientEvents(discordClient);

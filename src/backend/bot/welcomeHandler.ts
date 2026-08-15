@@ -4,6 +4,7 @@ import {
   TextChannel,
   AttachmentBuilder,
   User,
+  PartialGuildMember,
 } from "discord.js";
 import { getWelcomeSetting, getLeaveSetting } from "../services/welcomeService";
 import { generateGreetingCard } from "../services/welcomeCardGenerator";
@@ -29,23 +30,34 @@ function replacePlaceholders(
 }
 
 export function setupWelcomeInteractions(client: Client) {
+  console.log("[Welcome] 🛠️ Setting up Welcome & Goodbye event listeners...");
+
   // 1. Member Joined Server Event
   client.on("guildMemberAdd", async (member: GuildMember) => {
     try {
       const guild = member.guild;
+      console.log(
+        `[Welcome] 🔔 Member joined: ${member.user?.tag || member.id} in ${guild.name} (${guild.id})`
+      );
+
       const setting = await getWelcomeSetting(guild.id);
+      console.log(
+        `[Welcome] Config for ${guild.name}: enabled=${setting.enabled}, channelId=${setting.channelId}`
+      );
 
       // Auto-assign roles if configured
       if (setting.autoRoles) {
         try {
           const roleIds: string[] = JSON.parse(setting.autoRoles || "[]");
           if (Array.isArray(roleIds) && roleIds.length > 0) {
-            await member.roles.add(roleIds).catch((err) => {
-              console.warn(
-                `[Welcome] Failed to assign auto-roles to ${member.user.tag}:`,
-                err.message
-              );
-            });
+            for (const rId of roleIds) {
+              await member.roles.add(rId).catch((err) => {
+                console.warn(
+                  `[Welcome] Failed to assign auto-role ${rId} to ${member.user.tag}:`,
+                  err.message
+                );
+              });
+            }
           }
         } catch (e) {
           console.warn("[Welcome] Error parsing autoRoles JSON:", e);
@@ -53,16 +65,33 @@ export function setupWelcomeInteractions(client: Client) {
       }
 
       // Check if welcome message is enabled
-      if (!setting.enabled || !setting.channelId) return;
+      if (!setting.enabled) {
+        console.log(`[Welcome] Welcome messages are disabled for ${guild.name}.`);
+        return;
+      }
+
+      if (!setting.channelId) {
+        console.warn(`[Welcome] Welcome message enabled, but no channelId configured for ${guild.name}.`);
+        return;
+      }
 
       const channel = (await guild.channels
         .fetch(setting.channelId)
-        .catch(() => null)) as TextChannel | null;
-      if (!channel || !channel.isTextBased()) return;
+        .catch((err) => {
+          console.error(`[Welcome] Failed to fetch channel ${setting.channelId}:`, err.message);
+          return null;
+        })) as TextChannel | null;
+
+      if (!channel || !channel.isTextBased()) {
+        console.error(
+          `[Welcome] Target channel ${setting.channelId} is invalid or not text-based.`
+        );
+        return;
+      }
 
       const placeholderData = {
         userMention: `<@${member.id}>`,
-        username: member.user.username,
+        username: member.user?.username || member.displayName || "Member",
         serverName: guild.name,
         memberCount: guild.memberCount,
       };
@@ -75,30 +104,38 @@ export function setupWelcomeInteractions(client: Client) {
       const files: AttachmentBuilder[] = [];
 
       if (setting.sendCard) {
-        const cardTitle = replacePlaceholders(
-          setting.cardTitle || "Welcome @{username}",
-          placeholderData
-        );
-        const cardSubtitle = replacePlaceholders(
-          setting.cardSubtitle || "Member #{memberCount}",
-          placeholderData
-        );
+        try {
+          const cardTitle = replacePlaceholders(
+            setting.cardTitle || "Welcome @{username}",
+            placeholderData
+          );
+          const cardSubtitle = replacePlaceholders(
+            setting.cardSubtitle || "Member #{memberCount}",
+            placeholderData
+          );
 
-        const cardBuffer = await generateGreetingCard({
-          avatarUrl: member.user.displayAvatarURL({ extension: "png", size: 256 }),
-          username: member.user.username,
-          memberCount: guild.memberCount,
-          serverName: guild.name,
-          title: cardTitle,
-          subtitle: cardSubtitle,
-          avatarRingColor: setting.avatarRingColor || "#00d2d3",
-          cardBgColor: setting.cardBgColor || "#1e1f22",
-          cardBorderColor: setting.cardBorderColor || "#2b2d31",
-          cardBgImage: setting.cardBgImage,
-          mode: "welcome",
-        });
+          const avatarUrl = member.user?.displayAvatarURL
+            ? member.user.displayAvatarURL({ extension: "png", size: 256 })
+            : null;
 
-        files.push(new AttachmentBuilder(cardBuffer, { name: "welcome.png" }));
+          const cardBuffer = await generateGreetingCard({
+            avatarUrl,
+            username: member.user?.username || member.displayName || "Member",
+            memberCount: guild.memberCount,
+            serverName: guild.name,
+            title: cardTitle,
+            subtitle: cardSubtitle,
+            avatarRingColor: setting.avatarRingColor || "#00d2d3",
+            cardBgColor: setting.cardBgColor || "#1e1f22",
+            cardBorderColor: setting.cardBorderColor || "#2b2d31",
+            cardBgImage: setting.cardBgImage,
+            mode: "welcome",
+          });
+
+          files.push(new AttachmentBuilder(cardBuffer, { name: "welcome.png" }));
+        } catch (cardErr: any) {
+          console.error("[Welcome] Error generating welcome card:", cardErr.message);
+        }
       }
 
       // Send to Welcome Channel
@@ -106,6 +143,8 @@ export function setupWelcomeInteractions(client: Client) {
         content: messageContent,
         files: files.length > 0 ? files : undefined,
       });
+
+      console.log(`[Welcome] ✅ Successfully sent welcome message for ${member.user?.tag} in #${channel.name}`);
 
       // Optional DM to member
       if (setting.sendDm && setting.dmText) {
@@ -117,26 +156,51 @@ export function setupWelcomeInteractions(client: Client) {
         }
       }
     } catch (error: any) {
-      console.error("[Welcome] Error in guildMemberAdd event:", error);
+      console.error("[Welcome] ❌ Error in guildMemberAdd event:", error);
     }
   });
 
   // 2. Member Left Server Event (Goodbye / Bye)
-  client.on("guildMemberRemove", async (member) => {
+  client.on("guildMemberRemove", async (member: GuildMember | PartialGuildMember) => {
     try {
       const guild = member.guild;
-      const setting = await getLeaveSetting(guild.id);
+      const username = member.user?.username || "Member";
+      console.log(
+        `[Leave] 🔔 Member left: ${username} (${member.id}) from ${guild.name} (${guild.id})`
+      );
 
-      if (!setting.enabled || !setting.channelId) return;
+      const setting = await getLeaveSetting(guild.id);
+      console.log(
+        `[Leave] Config for ${guild.name}: enabled=${setting.enabled}, channelId=${setting.channelId}`
+      );
+
+      if (!setting.enabled) {
+        console.log(`[Leave] Goodbye messages are disabled for ${guild.name}.`);
+        return;
+      }
+
+      if (!setting.channelId) {
+        console.warn(`[Leave] Goodbye message enabled, but no channelId configured for ${guild.name}.`);
+        return;
+      }
 
       const channel = (await guild.channels
         .fetch(setting.channelId)
-        .catch(() => null)) as TextChannel | null;
-      if (!channel || !channel.isTextBased()) return;
+        .catch((err) => {
+          console.error(`[Leave] Failed to fetch channel ${setting.channelId}:`, err.message);
+          return null;
+        })) as TextChannel | null;
+
+      if (!channel || !channel.isTextBased()) {
+        console.error(
+          `[Leave] Target channel ${setting.channelId} is invalid or not text-based.`
+        );
+        return;
+      }
 
       const placeholderData = {
-        userMention: `@${member.user?.username || "Member"}`,
-        username: member.user?.username || "Member",
+        userMention: `@${username}`,
+        username: username,
         serverName: guild.name,
         memberCount: guild.memberCount,
       };
@@ -149,38 +213,48 @@ export function setupWelcomeInteractions(client: Client) {
       const files: AttachmentBuilder[] = [];
 
       if (setting.sendCard) {
-        const cardTitle = replacePlaceholders(
-          setting.cardTitle || "Goodbye @{username}",
-          placeholderData
-        );
-        const cardSubtitle = replacePlaceholders(
-          setting.cardSubtitle || "Left {server} • {memberCount} members remain",
-          placeholderData
-        );
+        try {
+          const cardTitle = replacePlaceholders(
+            setting.cardTitle || "Goodbye @{username}",
+            placeholderData
+          );
+          const cardSubtitle = replacePlaceholders(
+            setting.cardSubtitle || "Left {server} • {memberCount} members remain",
+            placeholderData
+          );
 
-        const cardBuffer = await generateGreetingCard({
-          avatarUrl: member.user?.displayAvatarURL({ extension: "png", size: 256 }),
-          username: member.user?.username || "Member",
-          memberCount: guild.memberCount,
-          serverName: guild.name,
-          title: cardTitle,
-          subtitle: cardSubtitle,
-          avatarRingColor: setting.avatarRingColor || "#f43f5e",
-          cardBgColor: setting.cardBgColor || "#1e1f22",
-          cardBorderColor: setting.cardBorderColor || "#2b2d31",
-          cardBgImage: setting.cardBgImage,
-          mode: "leave",
-        });
+          const avatarUrl = member.user?.displayAvatarURL
+            ? member.user.displayAvatarURL({ extension: "png", size: 256 })
+            : null;
 
-        files.push(new AttachmentBuilder(cardBuffer, { name: "goodbye.png" }));
+          const cardBuffer = await generateGreetingCard({
+            avatarUrl,
+            username: username,
+            memberCount: guild.memberCount,
+            serverName: guild.name,
+            title: cardTitle,
+            subtitle: cardSubtitle,
+            avatarRingColor: setting.avatarRingColor || "#f43f5e",
+            cardBgColor: setting.cardBgColor || "#1e1f22",
+            cardBorderColor: setting.cardBorderColor || "#2b2d31",
+            cardBgImage: setting.cardBgImage,
+            mode: "leave",
+          });
+
+          files.push(new AttachmentBuilder(cardBuffer, { name: "goodbye.png" }));
+        } catch (cardErr: any) {
+          console.error("[Leave] Error generating leave card:", cardErr.message);
+        }
       }
 
       await channel.send({
         content: messageContent,
         files: files.length > 0 ? files : undefined,
       });
+
+      console.log(`[Leave] ✅ Successfully sent goodbye message for ${username} in #${channel.name}`);
     } catch (error: any) {
-      console.error("[Leave] Error in guildMemberRemove event:", error);
+      console.error("[Leave] ❌ Error in guildMemberRemove event:", error);
     }
   });
 }
@@ -221,30 +295,34 @@ export async function sendTestWelcome(
   const files: AttachmentBuilder[] = [];
 
   if (setting.sendCard !== false) {
-    const cardTitle = replacePlaceholders(
-      setting.cardTitle || "Welcome @{username}",
-      placeholderData
-    );
-    const cardSubtitle = replacePlaceholders(
-      setting.cardSubtitle || "Member #{memberCount}",
-      placeholderData
-    );
+    try {
+      const cardTitle = replacePlaceholders(
+        setting.cardTitle || "Welcome @{username}",
+        placeholderData
+      );
+      const cardSubtitle = replacePlaceholders(
+        setting.cardSubtitle || "Member #{memberCount}",
+        placeholderData
+      );
 
-    const cardBuffer = await generateGreetingCard({
-      avatarUrl: testUser.displayAvatarURL({ extension: "png", size: 256 }),
-      username: testUser.username,
-      memberCount: guild.memberCount,
-      serverName: guild.name,
-      title: cardTitle,
-      subtitle: cardSubtitle,
-      avatarRingColor: setting.avatarRingColor || "#00d2d3",
-      cardBgColor: setting.cardBgColor || "#1e1f22",
-      cardBorderColor: setting.cardBorderColor || "#2b2d31",
-      cardBgImage: setting.cardBgImage,
-      mode: "welcome",
-    });
+      const cardBuffer = await generateGreetingCard({
+        avatarUrl: testUser.displayAvatarURL({ extension: "png", size: 256 }),
+        username: testUser.username,
+        memberCount: guild.memberCount,
+        serverName: guild.name,
+        title: cardTitle,
+        subtitle: cardSubtitle,
+        avatarRingColor: setting.avatarRingColor || "#00d2d3",
+        cardBgColor: setting.cardBgColor || "#1e1f22",
+        cardBorderColor: setting.cardBorderColor || "#2b2d31",
+        cardBgImage: setting.cardBgImage,
+        mode: "welcome",
+      });
 
-    files.push(new AttachmentBuilder(cardBuffer, { name: "welcome-test.png" }));
+      files.push(new AttachmentBuilder(cardBuffer, { name: "welcome-test.png" }));
+    } catch (e: any) {
+      console.error("[Welcome Test] Card error:", e);
+    }
   }
 
   await channel.send({
@@ -291,30 +369,34 @@ export async function sendTestLeave(
   const files: AttachmentBuilder[] = [];
 
   if (setting.sendCard !== false) {
-    const cardTitle = replacePlaceholders(
-      setting.cardTitle || "Goodbye @{username}",
-      placeholderData
-    );
-    const cardSubtitle = replacePlaceholders(
-      setting.cardSubtitle || "Left {server} • {memberCount} members remain",
-      placeholderData
-    );
+    try {
+      const cardTitle = replacePlaceholders(
+        setting.cardTitle || "Goodbye @{username}",
+        placeholderData
+      );
+      const cardSubtitle = replacePlaceholders(
+        setting.cardSubtitle || "Left {server} • {memberCount} members remain",
+        placeholderData
+      );
 
-    const cardBuffer = await generateGreetingCard({
-      avatarUrl: testUser.displayAvatarURL({ extension: "png", size: 256 }),
-      username: testUser.username,
-      memberCount: guild.memberCount,
-      serverName: guild.name,
-      title: cardTitle,
-      subtitle: cardSubtitle,
-      avatarRingColor: setting.avatarRingColor || "#f43f5e",
-      cardBgColor: setting.cardBgColor || "#1e1f22",
-      cardBorderColor: setting.cardBorderColor || "#2b2d31",
-      cardBgImage: setting.cardBgImage,
-      mode: "leave",
-    });
+      const cardBuffer = await generateGreetingCard({
+        avatarUrl: testUser.displayAvatarURL({ extension: "png", size: 256 }),
+        username: testUser.username,
+        memberCount: guild.memberCount,
+        serverName: guild.name,
+        title: cardTitle,
+        subtitle: cardSubtitle,
+        avatarRingColor: setting.avatarRingColor || "#f43f5e",
+        cardBgColor: setting.cardBgColor || "#1e1f22",
+        cardBorderColor: setting.cardBorderColor || "#2b2d31",
+        cardBgImage: setting.cardBgImage,
+        mode: "leave",
+      });
 
-    files.push(new AttachmentBuilder(cardBuffer, { name: "goodbye-test.png" }));
+      files.push(new AttachmentBuilder(cardBuffer, { name: "goodbye-test.png" }));
+    } catch (e: any) {
+      console.error("[Leave Test] Card error:", e);
+    }
   }
 
   await channel.send({
