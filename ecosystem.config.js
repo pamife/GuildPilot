@@ -17,8 +17,8 @@ module.exports = {
     },
     {
       name: "guildpilot-frontend",
-      script: "node_modules/next/dist/bin/next",
-      args: "start -H 0.0.0.0 -p 3000",
+      script: "npm",
+      args: "run start:frontend",
       cwd: __dirname,
       env: {
         NODE_ENV: "production",

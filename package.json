@@ -10,6 +10,7 @@
     "build:backend": "tsc -p tsconfig.server.json",
     "build:frontend": "next build",
     "build": "prisma generate && npm run build:backend && npm run build:frontend",
+    "start:frontend": "next start -H 0.0.0.0 -p 3000",
     "start": "node dist/backend/server.js",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push"
