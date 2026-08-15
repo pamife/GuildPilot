@@ -472,3 +472,41 @@ model CustomMessage {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
 }
+
+model WelcomeSetting {
+  id              String   @id @default(uuid())
+  guildId         String   @unique
+  enabled         Boolean  @default(false)
+  channelId       String?
+  messageText     String   @default("Welcome {user} to **{server}**!")
+  cardTitle       String   @default("Welcome @{username}")
+  cardSubtitle    String   @default("Member #{memberCount}")
+  avatarRingColor String   @default("#00d2d3")
+  cardBgColor     String   @default("#18191c")
+  cardBorderColor String   @default("#2b2d31")
+  cardBgImage     String?
+  sendCard        Boolean  @default(true)
+  sendDm          Boolean  @default(false)
+  dmText          String?  @default("Welcome to {server}, {user}!")
+  autoRoles       String   @default("[]") // JSON string of role IDs
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model LeaveSetting {
+  id              String   @id @default(uuid())
+  guildId         String   @unique
+  enabled         Boolean  @default(false)
+  channelId       String?
+  messageText     String   @default("**{username}** has left the server. We will miss you!")
+  cardTitle       String   @default("Goodbye @{username}")
+  cardSubtitle    String   @default("Left {server} • {memberCount} members remain")
+  avatarRingColor String   @default("#f43f5e")
+  cardBgColor     String   @default("#18191c")
+  cardBorderColor String   @default("#2b2d31")
+  cardBgImage     String?
+  sendCard        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+

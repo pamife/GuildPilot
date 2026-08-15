@@ -17,6 +17,7 @@ import { TicketsView } from "@/components/views/TicketsView";
 import { ApplicationsView } from "@/components/views/ApplicationsView";
 import { SelfRolesView } from "@/components/views/SelfRolesView";
 import { CustomMessagesView } from "@/components/views/CustomMessagesView";
+import { WelcomeView } from "@/components/views/WelcomeView";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { ShieldAlert, LogIn, Radio, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
@@ -411,6 +412,14 @@ function DashboardContent() {
           </div>
         )}
         {currentView === "host-server" && <HostServerView />}
+        {currentView === "welcome" && (
+          <WelcomeView
+            channels={channels}
+            roles={roles}
+            selectedGuildId={selectedGuildId}
+            botStatus={botStatus}
+          />
+        )}
         {currentView === "custom-messages" && (
           <CustomMessagesView
             channels={channels}

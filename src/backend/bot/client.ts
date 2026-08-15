@@ -4,19 +4,21 @@ import { setupTicketInteractions } from "./ticketHandler";
 import { setupApplicationInteractions } from "./applicationHandler";
 import { setupSelfRoleInteractions } from "./selfRoleHandler";
 import { setupCustomMessageInteractions } from "./customMessageHandler";
+import { setupWelcomeInteractions } from "./welcomeHandler";
 
 export let hasMessageContentIntent = true;
 
 export let discordClient = new Client({
   intents: [
     GatewayIntentBits.Guilds,
+    GatewayIntentBits.GuildMembers,
     GatewayIntentBits.GuildEmojisAndStickers,
     GatewayIntentBits.GuildInvites,
     GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessages,
     GatewayIntentBits.MessageContent,
   ],
-  partials: [Partials.Channel, Partials.User, Partials.Message],
+  partials: [Partials.Channel, Partials.User, Partials.Message, Partials.GuildMember],
 });
 
 export function isBotReady(): boolean {
@@ -30,6 +32,7 @@ function registerClientEvents(client: Client) {
     setupApplicationInteractions(c);
     setupSelfRoleInteractions(c);
     setupCustomMessageInteractions(c);
+    setupWelcomeInteractions(c);
     broadcastEvent("botStatusChange", {
       ready: true,
       tag: c.user.tag,
