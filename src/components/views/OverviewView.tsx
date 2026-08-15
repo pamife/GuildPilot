@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Users, Hash, Shield, Smile, Link, Radio, Cpu, RefreshCw } from "lucide-react";
+import { Users, Hash, Shield, Smile, Link, Radio, Cpu, RefreshCw, Sparkles } from "lucide-react";
 
 interface OverviewProps {
   guildDetails: any;
@@ -84,6 +84,81 @@ export function OverviewView({ guildDetails, onRefresh, onNavigate }: OverviewPr
             </div>
           );
         })}
+      </div>
+
+      {/* Quick Action Navigation Shortcuts */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div
+          onClick={() => onNavigate("welcome")}
+          className="cursor-pointer bg-[#09090b] border border-[#1f1f23] hover:border-cyan-500/40 rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 shadow-lg group flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-cyan-500/10 text-cyan-400 group-hover:scale-110 transition-transform">
+              <Sparkles className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white group-hover:text-cyan-400 transition-colors">
+                Welcome & Goodbyes
+              </p>
+              <p className="text-[11px] text-zinc-400">Image greeting cards & autoroles</p>
+            </div>
+          </div>
+          <span className="text-xs text-cyan-400 font-bold">Open &rarr;</span>
+        </div>
+
+        <div
+          onClick={() => onNavigate("auto-react")}
+          className="cursor-pointer bg-[#09090b] border border-[#1f1f23] hover:border-amber-500/40 rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 shadow-lg group flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-400 group-hover:scale-110 transition-transform">
+              <Smile className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white group-hover:text-amber-400 transition-colors">
+                Auto Emojis & Reactions
+              </p>
+              <p className="text-[11px] text-zinc-400">Automated reactions in channels</p>
+            </div>
+          </div>
+          <span className="text-xs text-amber-400 font-bold">Open &rarr;</span>
+        </div>
+
+        <div
+          onClick={() => onNavigate("custom-messages")}
+          className="cursor-pointer bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/40 rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 shadow-lg group flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 group-hover:scale-110 transition-transform">
+              <Hash className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white group-hover:text-indigo-400 transition-colors">
+                Custom Messages & V2
+              </p>
+              <p className="text-[11px] text-zinc-400">Rich embeds & components</p>
+            </div>
+          </div>
+          <span className="text-xs text-indigo-400 font-bold">Open &rarr;</span>
+        </div>
+
+        <div
+          onClick={() => onNavigate("self-roles")}
+          className="cursor-pointer bg-[#09090b] border border-[#1f1f23] hover:border-purple-500/40 rounded-2xl p-4 transition-all duration-200 hover:-translate-y-0.5 shadow-lg group flex items-center justify-between"
+        >
+          <div className="flex items-center gap-3">
+            <div className="p-2.5 rounded-xl bg-purple-500/10 text-purple-400 group-hover:scale-110 transition-transform">
+              <Shield className="w-5 h-5" />
+            </div>
+            <div>
+              <p className="text-xs font-bold text-white group-hover:text-purple-400 transition-colors">
+                Self Roles Panels
+              </p>
+              <p className="text-[11px] text-zinc-400">Button & dropdown role assign</p>
+            </div>
+          </div>
+          <span className="text-xs text-purple-400 font-bold">Open &rarr;</span>
+        </div>
       </div>
 
       {/* Channel Breakdown & Bot Status Row */}

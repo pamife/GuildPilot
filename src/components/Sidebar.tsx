@@ -82,7 +82,7 @@ export function Sidebar({
   const navigationItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "welcome", label: "Welcome & Goodbyes", icon: Sparkles },
-    { id: "auto-react", label: "Auto Reactions", icon: Smile },
+    { id: "auto-react", label: "Auto Emojis & Reactions", icon: Smile },
     { id: "custom-messages", label: "Custom Messages & V2", icon: MessageSquareText },
     { id: "applications", label: "Applications", icon: ClipboardList },
     { id: "tickets", label: "Ticket System", icon: Ticket },
