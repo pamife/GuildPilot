@@ -15,15 +15,18 @@ import {
   AlertCircle,
   RefreshCw,
   Power,
+  Download,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/ToastContainer";
+import { QuickImportModal } from "../QuickImportModal";
 
 interface AutoReactViewProps {
   selectedGuildId: string | null;
   channels: any[];
   emojis: any[]; // Guild custom emojis
   botStatus: { ready: boolean; tag: string; ping: number } | null;
+  guilds?: any[];
 }
 
 const COMMON_EMOJIS = [
@@ -35,10 +38,12 @@ export function AutoReactView({
   channels,
   emojis: guildCustomEmojis,
   botStatus,
+  guilds = [],
 }: AutoReactViewProps) {
   const { showToast } = useToast();
   const [rules, setRules] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Modal / Editor State
   const [isEditing, setIsEditing] = useState(false);
@@ -203,13 +208,24 @@ export function AutoReactView({
           </div>
         </div>
 
-        <button
-          onClick={openCreateModal}
-          className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-discord-brand hover:bg-discord-brandHover text-white shadow-lg shadow-discord-brand/25 transition-all active:scale-95"
-        >
-          <Plus className="w-4 h-4" />
-          <span>New Auto React</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#2b2d31] hover:bg-[#35373c] text-zinc-300 hover:text-white border border-[#3f4147] transition-all cursor-pointer"
+            title="Import auto-reaction rules from another server"
+          >
+            <Download className="w-4 h-4 text-amber-400" />
+            <span>Import from Server</span>
+          </button>
+
+          <button
+            onClick={openCreateModal}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-discord-brand hover:bg-discord-brandHover text-white shadow-lg shadow-discord-brand/25 transition-all active:scale-95 cursor-pointer"
+          >
+            <Plus className="w-4 h-4" />
+            <span>New Auto React</span>
+          </button>
+        </div>
       </div>
 
       {/* Main List */}
@@ -597,6 +613,16 @@ export function AutoReactView({
           </div>
         </div>
       )}
+
+      {/* QUICK IMPORT MODAL */}
+      <QuickImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        targetGuildId={selectedGuildId}
+        guilds={guilds}
+        moduleType="auto-react"
+        onImportComplete={fetchRules}
+      />
     </div>
   );
 }

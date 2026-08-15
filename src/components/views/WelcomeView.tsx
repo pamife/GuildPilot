@@ -18,15 +18,18 @@ import {
   CheckCircle2,
   RefreshCw,
   AlertCircle,
+  Download,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/ToastContainer";
+import { QuickImportModal } from "../QuickImportModal";
 
 interface WelcomeViewProps {
   selectedGuildId: string | null;
   channels: any[];
   roles: any[];
   botStatus: { ready: boolean; tag: string; ping: number } | null;
+  guilds?: any[];
 }
 
 const PRESET_RING_COLORS = [
@@ -45,12 +48,14 @@ export function WelcomeView({
   channels,
   roles,
   botStatus,
+  guilds = [],
 }: WelcomeViewProps) {
   const { showToast } = useToast();
   const [activeTab, setActiveTab] = useState<"welcome" | "leave">("welcome");
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Welcome Settings State
   const [welcomeConfig, setWelcomeConfig] = useState({
@@ -269,9 +274,18 @@ export function WelcomeView({
         {/* Action Buttons */}
         <div className="flex items-center gap-3">
           <button
+            onClick={() => setIsImportModalOpen(true)}
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#2b2d31] hover:bg-[#35373c] text-zinc-300 hover:text-white border border-[#3f4147] transition-all cursor-pointer"
+            title="Import welcome & goodbye card settings from another server"
+          >
+            <Download className="w-4 h-4 text-cyan-400" />
+            <span>Import from Server</span>
+          </button>
+
+          <button
             onClick={handleTest}
             disabled={testing || !currentConfig.channelId}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#2b2d31] hover:bg-[#35373c] text-white border border-[#3f4147] transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#2b2d31] hover:bg-[#35373c] text-white border border-[#3f4147] transition-all disabled:opacity-50 cursor-pointer"
             title="Send a live test message to your selected Discord channel"
           >
             {testing ? (
@@ -928,6 +942,16 @@ export function WelcomeView({
           </div>
         </div>
       </div>
+
+      {/* QUICK IMPORT MODAL */}
+      <QuickImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        targetGuildId={selectedGuildId}
+        guilds={guilds}
+        moduleType="welcome"
+        onImportComplete={fetchSettings}
+      />
     </div>
   );
 }

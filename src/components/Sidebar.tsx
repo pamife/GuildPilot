@@ -25,10 +25,12 @@ import {
   Tag,
   MessageSquareText,
   Sparkles,
+  Download,
 } from "lucide-react";
 
 export type ViewType =
   | "overview"
+  | "server-clone"
   | "welcome"
   | "auto-react"
   | "custom-messages"
@@ -81,6 +83,7 @@ export function Sidebar({
 
   const navigationItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
+    { id: "server-clone", label: "Server Importer", icon: Download },
     { id: "welcome", label: "Welcome & Goodbyes", icon: Sparkles },
     { id: "auto-react", label: "Auto Emojis & Reactions", icon: Smile },
     { id: "custom-messages", label: "Custom Messages & V2", icon: MessageSquareText },

@@ -19,6 +19,7 @@ import { SelfRolesView } from "@/components/views/SelfRolesView";
 import { CustomMessagesView } from "@/components/views/CustomMessagesView";
 import { WelcomeView } from "@/components/views/WelcomeView";
 import { AutoReactView } from "@/components/views/AutoReactView";
+import { ServerCloneView } from "@/components/views/ServerCloneView";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { ShieldAlert, LogIn, Radio, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
@@ -413,12 +414,21 @@ function DashboardContent() {
           </div>
         )}
         {currentView === "host-server" && <HostServerView />}
+        {currentView === "server-clone" && (
+          <ServerCloneView
+            guilds={guilds}
+            selectedGuildId={selectedGuildId}
+            onRefreshData={fetchGuildData}
+            onNavigate={setCurrentView}
+          />
+        )}
         {currentView === "welcome" && (
           <WelcomeView
             channels={channels}
             roles={roles}
             selectedGuildId={selectedGuildId}
             botStatus={botStatus}
+            guilds={guilds}
           />
         )}
         {currentView === "auto-react" && (
@@ -427,6 +437,7 @@ function DashboardContent() {
             emojis={emojis}
             selectedGuildId={selectedGuildId}
             botStatus={botStatus}
+            guilds={guilds}
           />
         )}
         {currentView === "custom-messages" && (
@@ -435,13 +446,24 @@ function DashboardContent() {
             roles={roles}
             selectedGuildId={selectedGuildId}
             botStatus={botStatus}
+            guilds={guilds}
           />
         )}
         {currentView === "applications" && (
-          <ApplicationsView selectedGuildId={selectedGuildId} channels={channels} roles={roles} />
+          <ApplicationsView
+            selectedGuildId={selectedGuildId}
+            channels={channels}
+            roles={roles}
+            guilds={guilds}
+          />
         )}
         {currentView === "tickets" && (
-          <TicketsView selectedGuildId={selectedGuildId} channels={channels} roles={roles} />
+          <TicketsView
+            selectedGuildId={selectedGuildId}
+            channels={channels}
+            roles={roles}
+            guilds={guilds}
+          />
         )}
         {currentView === "self-roles" && (
           <SelfRolesView selectedGuildId={selectedGuildId} channels={channels} roles={roles} />

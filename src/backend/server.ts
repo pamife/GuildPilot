@@ -23,6 +23,7 @@ import selfRoleRoutes from "./routes/selfRoles";
 import customMessageRoutes from "./routes/customMessages";
 import welcomeRoutes from "./routes/welcome";
 import autoReactRoutes from "./routes/autoReact";
+import serverCloneRoutes from "./routes/serverClone";
 
 const app = express();
 const server = http.createServer(app);
@@ -66,6 +67,7 @@ app.use("/api/guilds", selfRoleRoutes);
 app.use("/api/guilds", customMessageRoutes);
 app.use("/api/guilds", welcomeRoutes);
 app.use("/api/guilds", autoReactRoutes);
+app.use("/api/guilds", serverCloneRoutes);
 app.use("/api/templates", templateRoutes);
 app.use("/api/utilities", utilityRoutes);
 app.use("/api/host-server", hostServerRoutes);

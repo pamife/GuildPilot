@@ -35,9 +35,11 @@ import {
   Code,
   RotateCcw,
   Wand2,
+  Download,
 } from "lucide-react";
 import { useToast } from "../ToastContainer";
 import { api } from "@/lib/api";
+import { QuickImportModal } from "../QuickImportModal";
 
 interface Channel {
   id: string;
@@ -149,6 +151,7 @@ interface CustomMessagesViewProps {
   roles?: Role[];
   selectedGuildId: string | null;
   botStatus: { ready: boolean; tag: string; ping: number } | null;
+  guilds?: any[];
 }
 
 const PRESET_TEMPLATES = [
@@ -190,8 +193,7 @@ const PRESET_TEMPLATES = [
           {
             id: "btn-2",
             style: "Success" as const,
-            label: "I Agree & Accept",
-            customId: "rules_accept",
+            label: "I Agree to Rules",
             emoji: "✅",
             actions: [
               {
@@ -300,6 +302,7 @@ export function CustomMessagesView({
   roles = [],
   selectedGuildId,
   botStatus,
+  guilds = [],
 }: CustomMessagesViewProps) {
   const { showToast } = useToast();
 
@@ -307,6 +310,7 @@ export function CustomMessagesView({
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState<"editor" | "library">("editor");
   const [previewTab, setPreviewTab] = useState<"visual" | "json">("visual");
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // JSON Raw Editor State
   const [rawJsonText, setRawJsonText] = useState("");
@@ -884,13 +888,23 @@ export function CustomMessagesView({
               </h2>
               <p className="text-xs text-zinc-400">All your saved Discord message templates, announcements, and interactive V2 panels.</p>
             </div>
-            <button
-              onClick={handleNewMessage}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl bg-discord-brand hover:bg-discord-brand/90 text-white text-xs font-bold shadow-lg shadow-discord-brand/25 transition-all"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Create New Message</span>
-            </button>
+            <div className="flex items-center gap-2.5">
+              <button
+                onClick={() => setIsImportModalOpen(true)}
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#141419] hover:bg-[#1f1f28] text-zinc-300 hover:text-white text-xs font-semibold border border-[#27272a] shadow-md transition-all cursor-pointer"
+                title="Import custom messages from another server"
+              >
+                <Download className="w-4 h-4 text-indigo-400" />
+                <span>Import from Server</span>
+              </button>
+              <button
+                onClick={handleNewMessage}
+                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-discord-brand hover:bg-discord-brand/90 text-white text-xs font-bold shadow-lg shadow-discord-brand/25 transition-all cursor-pointer"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Create New Message</span>
+              </button>
+            </div>
           </div>
 
           <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -2352,6 +2366,16 @@ export function CustomMessagesView({
           </div>
         </div>
       )}
+
+      {/* QUICK IMPORT MODAL */}
+      <QuickImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        targetGuildId={selectedGuildId}
+        guilds={guilds}
+        moduleType="custom-messages"
+        onImportComplete={fetchMessages}
+      />
     </div>
   );
 }

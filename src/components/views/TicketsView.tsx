@@ -45,10 +45,11 @@ import {
   Check,
   Palette,
   Sparkles,
-  MessageSquare,
   Zap,
+  MessageSquare,
   TrendingUp,
 } from "lucide-react";
+import { QuickImportModal } from "../QuickImportModal";
 
 type SubPage = "dashboard" | "analytics" | "panels" | "tickets-list" | "categories" | "settings" | "logs";
 type ModalTab = "embed" | "types" | "roles" | "welcome";
@@ -57,6 +58,7 @@ interface TicketsViewProps {
   selectedGuildId: string | null;
   channels: any[];
   roles: any[];
+  guilds?: any[];
 }
 
 interface IntakeQuestion {
@@ -77,7 +79,7 @@ interface TicketReason {
   questions?: IntakeQuestion[];
 }
 
-export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewProps) {
+export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: TicketsViewProps) {
   const { showToast } = useToast();
   const [activeSubPage, setActiveSubPage] = useState<SubPage>("dashboard");
 
@@ -105,6 +107,9 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
   const [ticketStatusFilter, setTicketStatusFilter] = useState("ALL");
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 8;
+
+  // Quick Import Modal state
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Panel Modal Editor states
   const [isPanelModalOpen, setIsPanelModalOpen] = useState(false);
@@ -1050,12 +1055,21 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
                 <h2 className="text-lg font-bold text-white">Ticket Panels</h2>
                 <p className="text-xs text-zinc-400">Configure and deploy interactive ticket embeds with supporter role access & pre-ticket questions.</p>
               </div>
-              <button
-                onClick={handleOpenCreatePanel}
-                className="flex items-center gap-2 px-4 py-2 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow-lg shadow-discord-brand/20 transition-all transform hover:scale-[1.02]"
-              >
-                <Plus className="w-4 h-4" /> Create Panel
-              </button>
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#121217] hover:bg-[#1f1f28] text-zinc-300 hover:text-white font-semibold text-xs border border-[#27272a] shadow-md transition-all cursor-pointer"
+                  title="Import ticket panels & settings from another server"
+                >
+                  <Download className="w-3.5 h-3.5 text-indigo-400" /> Import from Server
+                </button>
+                <button
+                  onClick={handleOpenCreatePanel}
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow-lg shadow-discord-brand/20 transition-all transform hover:scale-[1.02] cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> Create Panel
+                </button>
+              </div>
             </div>
 
             {/* Panels List Grid */}
@@ -2492,6 +2506,16 @@ export function TicketsView({ selectedGuildId, channels, roles }: TicketsViewPro
           </div>
         </div>
       )}
+
+      {/* QUICK IMPORT MODAL */}
+      <QuickImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        targetGuildId={selectedGuildId}
+        guilds={guilds}
+        moduleType="tickets"
+        onImportComplete={fetchAllData}
+      />
     </div>
   );
 }

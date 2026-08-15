@@ -47,6 +47,8 @@ import {
   BellRing,
 } from "lucide-react";
 
+import { QuickImportModal } from "../QuickImportModal";
+
 type SubPage = "dashboard" | "panels" | "forms" | "applications" | "questions" | "roles" | "review-queue" | "statistics" | "settings";
 type PanelTab = "embed" | "dm_embed" | "welcome" | "decisions" | "forms" | "channels";
 
@@ -54,11 +56,13 @@ interface ApplicationsViewProps {
   selectedGuildId: string | null;
   channels: any[];
   roles: any[];
+  guilds?: any[];
 }
 
-export function ApplicationsView({ selectedGuildId, channels, roles }: ApplicationsViewProps) {
+export function ApplicationsView({ selectedGuildId, channels, roles, guilds = [] }: ApplicationsViewProps) {
   const { showToast } = useToast();
   const [activeSubPage, setActiveSubPage] = useState<SubPage>("dashboard");
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Data states
   const [stats, setStats] = useState<any>({
@@ -864,12 +868,21 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
                 <h2 className="text-xl font-bold text-white tracking-tight">All Application Forms</h2>
                 <p className="text-xs text-zinc-400 mt-0.5">Create & manage forms across all panels</p>
               </div>
-              <button
-                onClick={() => handleOpenFormModal()}
-                className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
-              >
-                <Plus className="w-4 h-4" /> Create Form
-              </button>
+              <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => setIsImportModalOpen(true)}
+                  className="flex items-center gap-2 px-3.5 py-2.5 bg-[#121217] hover:bg-[#1f1f28] text-zinc-300 hover:text-white font-semibold text-xs rounded-xl border border-[#27272a] shadow-md transition-all cursor-pointer"
+                  title="Import application forms & panels from another server"
+                >
+                  <Download className="w-4 h-4 text-indigo-400" /> Import from Server
+                </button>
+                <button
+                  onClick={() => handleOpenFormModal()}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-sm rounded-xl shadow-lg shadow-indigo-600/20 transition-all cursor-pointer"
+                >
+                  <Plus className="w-4 h-4" /> Create Form
+                </button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -1855,6 +1868,16 @@ export function ApplicationsView({ selectedGuildId, channels, roles }: Applicati
           </div>
         </div>
       )}
+
+      {/* QUICK IMPORT MODAL */}
+      <QuickImportModal
+        isOpen={isImportModalOpen}
+        onClose={() => setIsImportModalOpen(false)}
+        targetGuildId={selectedGuildId}
+        guilds={guilds}
+        moduleType="applications"
+        onImportComplete={fetchData}
+      />
     </div>
   );
 }
