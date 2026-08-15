@@ -17,8 +17,7 @@ module.exports = {
     },
     {
       name: "guildpilot-frontend",
-      script: "npm",
-      args: "run start:frontend",
+      script: "server-frontend.js",
       cwd: __dirname,
       env: {
         NODE_ENV: "production",
