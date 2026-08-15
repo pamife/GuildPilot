@@ -35,12 +35,14 @@ export async function updateWelcomeSetting(guildId: string, data: any) {
     updateData.autoRoles = JSON.stringify(updateData.autoRoles);
   }
 
+  const { id, createdAt, updatedAt, guildId: _g, ...cleanData } = updateData;
+
   return await prisma.welcomeSetting.upsert({
     where: { guildId },
-    update: updateData,
+    update: cleanData,
     create: {
       guildId,
-      ...updateData,
+      ...cleanData,
     },
   });
 }
@@ -70,12 +72,13 @@ export async function getLeaveSetting(guildId: string) {
 }
 
 export async function updateLeaveSetting(guildId: string, data: any) {
+  const { id, createdAt, updatedAt, guildId: _g, ...cleanData } = data;
   return await prisma.leaveSetting.upsert({
     where: { guildId },
-    update: data,
+    update: cleanData,
     create: {
       guildId,
-      ...data,
+      ...cleanData,
     },
   });
 }

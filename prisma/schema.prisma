@@ -510,3 +510,16 @@ model LeaveSetting {
   updatedAt       DateTime @updatedAt
 }
 
+model AutoReact {
+  id         String   @id @default(uuid())
+  guildId    String
+  name       String
+  enabled    Boolean  @default(true)
+  channelIds String   @default("[]") // JSON array of channel IDs
+  emojis     String   @default("[]") // JSON array of emoji strings (e.g. ["👍", "🔥", "<:custom:123>"])
+  ignoreBots Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+}
+
+

@@ -18,6 +18,7 @@ import { ApplicationsView } from "@/components/views/ApplicationsView";
 import { SelfRolesView } from "@/components/views/SelfRolesView";
 import { CustomMessagesView } from "@/components/views/CustomMessagesView";
 import { WelcomeView } from "@/components/views/WelcomeView";
+import { AutoReactView } from "@/components/views/AutoReactView";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { ShieldAlert, LogIn, Radio, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
@@ -416,6 +417,14 @@ function DashboardContent() {
           <WelcomeView
             channels={channels}
             roles={roles}
+            selectedGuildId={selectedGuildId}
+            botStatus={botStatus}
+          />
+        )}
+        {currentView === "auto-react" && (
+          <AutoReactView
+            channels={channels}
+            emojis={emojis}
             selectedGuildId={selectedGuildId}
             botStatus={botStatus}
           />

@@ -17,6 +17,7 @@ import {
   Eye,
   CheckCircle2,
   RefreshCw,
+  AlertCircle,
 } from "lucide-react";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/ToastContainer";
@@ -333,6 +334,29 @@ export function WelcomeView({
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-y-auto divide-y lg:divide-y-0 lg:divide-x divide-[#2b2d31]">
         {/* Left Column: Settings Config */}
         <div className="lg:col-span-7 p-6 space-y-6 overflow-y-auto">
+          {/* Discord Gateway Intent Reminder Alert */}
+          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
+            <div className="text-xs space-y-1">
+              <span className="font-bold text-amber-300 block">
+                Wichtiger Discord Bot Hinweis (Server Members Intent)
+              </span>
+              <p className="text-zinc-300 leading-relaxed">
+                Damit Discord dem Bot mitteilt, wenn jemand dem Server beitritt oder ihn verlässt, muss im{" "}
+                <a
+                  href="https://discord.com/developers/applications"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="text-cyan-400 underline font-semibold"
+                >
+                  Discord Developer Portal
+                </a>{" "}
+                unter <strong>Bot &gt; Privileged Gateway Intents</strong> die Option{" "}
+                <strong className="text-amber-300">SERVER MEMBERS INTENT</strong> aktiviert sein.
+              </p>
+            </div>
+          </div>
+
           {/* Main Toggle & Channel Picker */}
           <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 space-y-4">
             <div className="flex items-center justify-between">

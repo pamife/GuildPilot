@@ -5,6 +5,7 @@ import { setupApplicationInteractions } from "./applicationHandler";
 import { setupSelfRoleInteractions } from "./selfRoleHandler";
 import { setupCustomMessageInteractions } from "./customMessageHandler";
 import { setupWelcomeInteractions } from "./welcomeHandler";
+import { setupAutoReactInteractions } from "./autoReactHandler";
 
 export let hasMessageContentIntent = true;
 
@@ -33,6 +34,7 @@ function registerClientEvents(client: Client) {
     setupSelfRoleInteractions(c);
     setupCustomMessageInteractions(c);
     setupWelcomeInteractions(c);
+    setupAutoReactInteractions(c);
     broadcastEvent("botStatusChange", {
       ready: true,
       tag: c.user.tag,
