@@ -21,6 +21,7 @@ import { WelcomeView } from "@/components/views/WelcomeView";
 import { AutoReactView } from "@/components/views/AutoReactView";
 import { ServerCloneView } from "@/components/views/ServerCloneView";
 import { MemberManagerView } from "@/components/views/MemberManagerView";
+import { BackupsView } from "@/components/views/BackupsView";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { ShieldAlert, LogIn, Radio, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
@@ -208,6 +209,18 @@ function DashboardContent() {
     socket.on("guildMemberUpdate", handleLiveEvent);
     socket.on("guildBanAdd", handleLiveEvent);
     socket.on("guildBanRemove", handleLiveEvent);
+    socket.on("guildCreate", () => {
+      fetchGuilds();
+      fetchGuildData();
+    });
+    socket.on("guildDelete", (data: any) => {
+      fetchGuilds();
+      fetchGuildData();
+      showToast(`Bot wurde vom Server "${data.name}" entfernt. Automatisches Notfall-Backup wurde archiviert.`, "info");
+    });
+    socket.on("backupCreated", (data: any) => {
+      showToast(`Backup "${data.backupName || data.guildName}" gesichert.`, "success");
+    });
 
     return () => {
       socket.off("botStatusChange", handleBotStatusChange);
@@ -232,6 +245,9 @@ function DashboardContent() {
       socket.off("guildMemberUpdate", handleLiveEvent);
       socket.off("guildBanAdd", handleLiveEvent);
       socket.off("guildBanRemove", handleLiveEvent);
+      socket.off("guildCreate");
+      socket.off("guildDelete");
+      socket.off("backupCreated");
     };
   }, [fetchGuildData, showToast]);
 
@@ -430,6 +446,13 @@ function DashboardContent() {
             selectedGuildId={selectedGuildId}
             roles={roles}
             channels={channels}
+          />
+        )}
+        {currentView === "backups" && (
+          <BackupsView
+            guilds={guilds}
+            selectedGuildId={selectedGuildId}
+            onRefreshGuilds={fetchGuilds}
           />
         )}
         {currentView === "server-clone" && (

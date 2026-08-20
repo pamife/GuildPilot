@@ -27,11 +27,13 @@ import {
   Sparkles,
   Download,
   Users,
+  Archive,
 } from "lucide-react";
 
 export type ViewType =
   | "overview"
   | "members"
+  | "backups"
   | "server-clone"
   | "welcome"
   | "auto-react"
@@ -86,6 +88,7 @@ export function Sidebar({
   const navigationItems = [
     { id: "overview", label: "Overview", icon: LayoutDashboard },
     { id: "members", label: "Member Manager", icon: Users },
+    { id: "backups", label: "Server Backups", icon: Archive },
     { id: "server-clone", label: "Server Importer", icon: Download },
     { id: "welcome", label: "Welcome & Goodbyes", icon: Sparkles },
     { id: "auto-react", label: "Auto Emojis & Reactions", icon: Smile },

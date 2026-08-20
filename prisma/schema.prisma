@@ -25,6 +25,24 @@ model AuditLog {
   timestamp DateTime @default(now())
 }
 
+model ServerBackup {
+  id            String   @id @default(uuid())
+  guildId       String
+  guildName     String
+  guildIcon     String?
+  backupName    String
+  backupType    String   @default("MANUAL") // MANUAL, AUTO_LEAVE, AUTO_SCHEDULED, IMPORTED
+  reason        String?
+  memberCount   Int      @default(0)
+  channelsCount Int      @default(0)
+  rolesCount    Int      @default(0)
+  emojisCount   Int      @default(0)
+  isBotInGuild  Boolean  @default(true)
+  data          String   // JSON Snapshot
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
 model TicketPanel {
   id                 String   @id @default(uuid())
   guildId            String

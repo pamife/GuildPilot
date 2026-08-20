@@ -6,6 +6,7 @@ import { setupSelfRoleInteractions } from "./selfRoleHandler";
 import { setupCustomMessageInteractions } from "./customMessageHandler";
 import { setupWelcomeInteractions } from "./welcomeHandler";
 import { setupAutoReactInteractions } from "./autoReactHandler";
+import { createAutoLeaveBackup } from "../services/backupService";
 
 export let hasMessageContentIntent = true;
 
@@ -50,6 +51,21 @@ function registerClientEvents(client: Client) {
   });
 
   // Setup Discord Event Listeners for live updates
+  client.on("guildCreate", (guild) => {
+    broadcastEvent("guildCreate", { guildId: guild.id, name: guild.name, icon: guild.iconURL() });
+  });
+
+  client.on("guildDelete", async (guild) => {
+    console.warn(`[TheGodGen Bot] Bot removed from guild ${guild.name} (${guild.id}). Creating emergency backup...`);
+    try {
+      await createAutoLeaveBackup(guild);
+    } catch (e: any) {
+      console.error("[TheGodGen Bot] Auto-backup failed on guildDelete:", e.message);
+    }
+    broadcastEvent("guildDelete", { guildId: guild.id, name: guild.name });
+    broadcastEvent("backupCreated", { guildId: guild.id, guildName: guild.name });
+  });
+
   client.on("guildUpdate", (oldGuild, newGuild) => {
     broadcastEvent("guildUpdate", { guildId: newGuild.id, name: newGuild.name, icon: newGuild.iconURL() });
   });

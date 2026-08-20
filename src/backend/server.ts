@@ -25,6 +25,7 @@ import welcomeRoutes from "./routes/welcome";
 import autoReactRoutes from "./routes/autoReact";
 import serverCloneRoutes from "./routes/serverClone";
 import memberRoutes from "./routes/members";
+import backupRoutes from "./routes/backups";
 
 const app = express();
 const server = http.createServer(app);
@@ -70,6 +71,7 @@ app.use("/api/guilds", welcomeRoutes);
 app.use("/api/guilds", autoReactRoutes);
 app.use("/api/guilds", serverCloneRoutes);
 app.use("/api/guilds", memberRoutes);
+app.use("/api/backups", backupRoutes);
 app.use("/api/templates", templateRoutes);
 app.use("/api/utilities", utilityRoutes);
 app.use("/api/host-server", hostServerRoutes);
