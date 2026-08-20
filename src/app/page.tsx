@@ -20,6 +20,7 @@ import { CustomMessagesView } from "@/components/views/CustomMessagesView";
 import { WelcomeView } from "@/components/views/WelcomeView";
 import { AutoReactView } from "@/components/views/AutoReactView";
 import { ServerCloneView } from "@/components/views/ServerCloneView";
+import { MemberManagerView } from "@/components/views/MemberManagerView";
 import { api } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
 import { ShieldAlert, LogIn, Radio, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
@@ -202,6 +203,11 @@ function DashboardContent() {
     socket.on("stickerDelete", handleLiveEvent);
     socket.on("inviteCreate", handleLiveEvent);
     socket.on("inviteDelete", handleLiveEvent);
+    socket.on("guildMemberAdd", handleLiveEvent);
+    socket.on("guildMemberRemove", handleLiveEvent);
+    socket.on("guildMemberUpdate", handleLiveEvent);
+    socket.on("guildBanAdd", handleLiveEvent);
+    socket.on("guildBanRemove", handleLiveEvent);
 
     return () => {
       socket.off("botStatusChange", handleBotStatusChange);
@@ -221,6 +227,11 @@ function DashboardContent() {
       socket.off("stickerDelete", handleLiveEvent);
       socket.off("inviteCreate", handleLiveEvent);
       socket.off("inviteDelete", handleLiveEvent);
+      socket.off("guildMemberAdd", handleLiveEvent);
+      socket.off("guildMemberRemove", handleLiveEvent);
+      socket.off("guildMemberUpdate", handleLiveEvent);
+      socket.off("guildBanAdd", handleLiveEvent);
+      socket.off("guildBanRemove", handleLiveEvent);
     };
   }, [fetchGuildData, showToast]);
 
@@ -414,6 +425,13 @@ function DashboardContent() {
           </div>
         )}
         {currentView === "host-server" && <HostServerView />}
+        {currentView === "members" && (
+          <MemberManagerView
+            selectedGuildId={selectedGuildId}
+            roles={roles}
+            channels={channels}
+          />
+        )}
         {currentView === "server-clone" && (
           <ServerCloneView
             guilds={guilds}

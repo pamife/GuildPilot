@@ -115,6 +115,46 @@ function registerClientEvents(client: Client) {
       broadcastEvent("inviteDelete", { guildId: invite.guild.id, code: invite.code });
     }
   });
+
+  client.on("guildMemberAdd", (member) => {
+    broadcastEvent("guildMemberAdd", {
+      guildId: member.guild.id,
+      memberId: member.id,
+      username: member.user.username,
+    });
+  });
+
+  client.on("guildMemberRemove", (member) => {
+    broadcastEvent("guildMemberRemove", {
+      guildId: member.guild.id,
+      memberId: member.id,
+      username: member.user.username,
+    });
+  });
+
+  client.on("guildMemberUpdate", (oldMember, newMember) => {
+    broadcastEvent("guildMemberUpdate", {
+      guildId: newMember.guild.id,
+      memberId: newMember.id,
+      nickname: newMember.nickname,
+    });
+  });
+
+  client.on("guildBanAdd", (ban) => {
+    broadcastEvent("guildBanAdd", {
+      guildId: ban.guild.id,
+      userId: ban.user.id,
+      username: ban.user.username,
+    });
+  });
+
+  client.on("guildBanRemove", (ban) => {
+    broadcastEvent("guildBanRemove", {
+      guildId: ban.guild.id,
+      userId: ban.user.id,
+      username: ban.user.username,
+    });
+  });
 }
 
 registerClientEvents(discordClient);
