@@ -594,12 +594,14 @@ function DashboardContent() {
         )}
         {currentView === "utilities" && (
           <UtilitiesView
+            selectedGuildId={selectedGuildId}
             channels={channels}
             roles={roles}
             emojis={emojis}
             onBulkCreateChannels={handleBulkCreateChannels}
             onBulkRenameChannels={handleBulkRenameChannels}
             onSearch={handleSearch}
+            onRefreshData={fetchGuildData}
           />
         )}
       </main>
