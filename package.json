@@ -8,14 +8,16 @@
     "dev:frontend": "next dev -p 3000",
     "dev": "concurrently -k -p \"[{name}]\" -c \"blue.bold,cyan.bold\" -n \"Backend,Frontend\" \"npm run dev:backend\" \"npm run dev:frontend\"",
     "build:backend": "tsc -p tsconfig.server.json",
-    "build:frontend": "next build",
+    "build:frontend": "prisma generate && next build",
     "build": "prisma generate && npm run build:backend && npm run build:frontend",
     "start:frontend": "next start -H 0.0.0.0 -p 3000",
     "start": "node dist/backend/server.js",
+    "postinstall": "prisma generate",
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "test:security": "tsx scripts/test-security.ts"
   },
+
 
   "keywords": [
     "discord",
