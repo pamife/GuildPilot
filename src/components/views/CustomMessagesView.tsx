@@ -789,33 +789,33 @@ export function CustomMessagesView({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#090a0f] text-white">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#0b0f17] text-slate-200">
       {/* Top Header Bar */}
-      <header className="h-14 border-b border-[#18181b] bg-[#050507] px-6 flex items-center justify-between shrink-0 z-20">
+      <header className="h-16 border-b border-[#1e293b] bg-[#0d121c] px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-discord-brand/20 border border-discord-brand/40 flex items-center justify-center text-discord-brand shadow-inner">
+          <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
             <MessageSquareText className="w-5 h-5" />
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-base font-bold tracking-tight">Custom Messages & Announcements</h1>
-              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-discord-brand/20 text-discord-brand border border-discord-brand/30 flex items-center gap-1">
-                <Sparkles className="w-3 h-3" /> Discord Components V2
+              <h1 className="text-base font-bold text-white tracking-tight">Benutzerdefinierte Nachrichten & Ankündigungen</h1>
+              <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 flex items-center gap-1">
+                <Sparkles className="w-3 h-3" /> Discord V2 Komponenten
               </span>
             </div>
-            <p className="text-[11px] text-zinc-400">Design, save, edit, and dispatch interactive Discord messages with custom button actions & direct JSON editor</p>
+            <p className="text-xs text-slate-400">Interaktive Discord-Nachrichten mit Buttons, Aktionen & JSON-Editor gestalten und versenden</p>
           </div>
         </div>
 
         <div className="flex items-center gap-2.5">
           {/* Top View Toggle: Designer vs Saved Library */}
-          <div className="flex items-center p-1 bg-[#14151b] rounded-xl border border-[#27272a]">
+          <div className="flex items-center p-1 bg-[#111724] rounded-xl border border-[#1e293b]">
             <button
               onClick={() => setActiveTab("editor")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "editor"
-                  ? "bg-discord-brand text-white shadow-sm"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               <Edit className="w-3.5 h-3.5" />
@@ -823,34 +823,34 @@ export function CustomMessagesView({
             </button>
             <button
               onClick={() => setActiveTab("library")}
-              className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                 activeTab === "library"
-                  ? "bg-discord-brand text-white shadow-sm"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-slate-400 hover:text-white"
               }`}
             >
               <FolderOpen className="w-3.5 h-3.5" />
-              <span>Saved Messages ({savedMessages.length})</span>
+              <span>Gespeicherte ({savedMessages.length})</span>
             </button>
           </div>
 
           {/* Preset Templates Dropdown */}
           <div className="relative group">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] transition-all">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111724] hover:bg-[#1a253a] text-slate-300 text-xs font-semibold border border-[#1e293b] transition-all cursor-pointer">
               <Bookmark className="w-3.5 h-3.5 text-amber-400" />
-              <span>Presets</span>
-              <ChevronDown className="w-3 h-3 text-zinc-500" />
+              <span>Vorlagen</span>
+              <ChevronDown className="w-3 h-3 text-slate-500" />
             </button>
-            <div className="absolute right-0 top-full mt-1 w-64 bg-[#0e0f15] border border-[#27272a] rounded-xl shadow-2xl p-1.5 hidden group-hover:block z-50 animate-in fade-in zoom-in-95">
-              <div className="text-[10px] font-bold uppercase text-zinc-500 px-2 py-1">Quick Templates</div>
+            <div className="absolute right-0 top-full mt-1 w-64 bg-[#0f1626] border border-[#212d45] rounded-xl shadow-2xl p-1.5 hidden group-hover:block z-50 animate-in fade-in duration-100">
+              <div className="text-[10px] font-bold uppercase text-slate-400 px-2 py-1">Schnellvorlagen</div>
               {PRESET_TEMPLATES.map((p, idx) => (
                 <button
                   key={idx}
                   onClick={() => applyPreset(p)}
-                  className="w-full text-left p-2 rounded-lg hover:bg-[#1f2028] transition-colors"
+                  className="w-full text-left p-2 rounded-lg hover:bg-[#182338] transition-colors cursor-pointer"
                 >
                   <p className="text-xs font-bold text-white">{p.name}</p>
-                  <p className="text-[10px] text-zinc-400 line-clamp-1">{p.description}</p>
+                  <p className="text-[10px] text-slate-400 line-clamp-1">{p.description}</p>
                 </button>
               ))}
             </div>
@@ -859,20 +859,20 @@ export function CustomMessagesView({
           {/* New Message Button */}
           <button
             onClick={handleNewMessage}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] transition-all"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111724] hover:bg-[#1a253a] text-slate-300 text-xs font-semibold border border-[#1e293b] transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-emerald-400" />
-            <span>New</span>
+            <span>Neu</span>
           </button>
 
           {/* Save Button */}
           <button
             onClick={handleSaveMessage}
             disabled={loading}
-            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-discord-brand hover:bg-discord-brand/90 text-white text-xs font-bold shadow-md shadow-discord-brand/25 transition-all disabled:opacity-50"
+            className="flex items-center gap-1.5 px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold shadow-md shadow-indigo-600/25 transition-all disabled:opacity-50 cursor-pointer"
           >
             <Bookmark className="w-3.5 h-3.5" />
-            <span>{currentMessage.id ? "Save Changes" : "Save Message"}</span>
+            <span>{currentMessage.id ? "Änderungen speichern" : "Nachricht speichern"}</span>
           </button>
         </div>
       </header>

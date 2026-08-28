@@ -550,36 +550,36 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
       : panelForm.questions || [];
 
   return (
-    <div className="flex flex-col h-full bg-[#000000] text-zinc-100 overflow-hidden font-sans select-none">
-      {/* OLED Top Header & Subpage Navigation */}
-      <div className="p-4 bg-[#050507] border-b border-[#18181b] flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-2xl">
+    <div className="flex flex-col h-full bg-[#0b0f17] text-slate-200 overflow-hidden font-sans select-none">
+      {/* Top Header & Subpage Navigation */}
+      <div className="p-4 bg-[#0d121c] border-b border-[#1e293b] flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-2xl bg-discord-brand/20 border border-discord-brand/40 flex items-center justify-center text-discord-brand shadow-lg shadow-discord-brand/10">
+          <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
             <Ticket className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white flex items-center gap-2">
-              Ticket Control Engine
-              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-discord-brand/20 text-discord-brand border border-discord-brand/30 uppercase tracking-widest">
-                OLED Edition v2.0
+            <h1 className="text-base font-bold text-white flex items-center gap-2">
+              Ticket Support Engine
+              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 font-semibold uppercase tracking-widest">
+                Support & Log System
               </span>
             </h1>
-            <p className="text-xs text-zinc-400">
-              Supporter Role Access, Custom Discord Slash Commands & Persistent Ticket History
+            <p className="text-xs text-slate-400">
+              Support-Rollen-Zugriff, Ticket-Panels, Transkripte & Ticket-Verwaltung
             </p>
           </div>
         </div>
 
         {/* Subpage Tabs */}
-        <div className="flex items-center gap-1 bg-[#090a0f] p-1 rounded-2xl border border-[#18181b]">
+        <div className="flex items-center gap-1 bg-[#111724] p-1 rounded-xl border border-[#1e293b]">
           {[
-            { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-            { id: "analytics", label: "Analytics & Stats", icon: BarChart3 },
+            { id: "dashboard", label: "Übersicht", icon: LayoutDashboard },
+            { id: "analytics", label: "Statistiken", icon: BarChart3 },
             { id: "panels", label: "Panels", icon: Layers },
             { id: "tickets-list", label: "Tickets", icon: ListFilter },
-            { id: "categories", label: "Categories", icon: FolderTree },
-            { id: "settings", label: "Settings", icon: Settings },
-            { id: "logs", label: "Logs", icon: History },
+            { id: "categories", label: "Kategorien", icon: FolderTree },
+            { id: "settings", label: "Einstellungen", icon: Settings },
+            { id: "logs", label: "Protokolle", icon: History },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeSubPage === tab.id;
@@ -587,10 +587,10 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               <button
                 key={tab.id}
                 onClick={() => setActiveSubPage(tab.id as SubPage)}
-                className={`flex items-center gap-2 px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all ${
+                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   isActive
-                    ? "bg-discord-brand text-white shadow-lg shadow-discord-brand/20 font-bold"
-                    : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+                    ? "bg-indigo-600 text-white shadow-sm font-bold"
+                    : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -601,21 +601,21 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
         </div>
       </div>
 
-      {/* Main Content Area - OLED Black */}
-      <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-[#000000]">
+      {/* Main Content Area */}
+      <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-[#0b0f17]">
         {/* ========================================================= */}
         {/* 1. DASHBOARD SUBPAGE */}
         {/* ========================================================= */}
         {activeSubPage === "dashboard" && (
           <div className="space-y-6">
-            {/* Stat Cards - OLED Dark */}
+            {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] flex items-center justify-between shadow-xl hover:border-discord-brand/40 transition-all">
+              <div className="p-4 rounded-2xl bg-[#111724] border border-[#1e293b] flex items-center justify-between shadow-sm hover:border-indigo-500/40 transition-all">
                 <div>
-                  <span className="text-xs text-zinc-500 font-semibold block">Total Tickets</span>
+                  <span className="text-xs text-slate-400 font-semibold block">Gesamt Tickets</span>
                   <span className="text-2xl font-bold text-white font-mono">{stats.total || 0}</span>
                 </div>
-                <div className="p-3 rounded-2xl bg-discord-brand/10 text-discord-brand border border-discord-brand/20">
+                <div className="p-3 rounded-2xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
                   <Ticket className="w-5 h-5" />
                 </div>
               </div>

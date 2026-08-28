@@ -655,38 +655,38 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
   const selectedForm = forms.find((f) => f.id === selectedFormId) || forms[0];
 
   return (
-    <div className="flex-1 flex flex-col h-screen bg-[#000000] text-zinc-100 overflow-hidden select-none">
+    <div className="flex-1 flex flex-col h-full bg-[#0b0f17] text-slate-200 overflow-hidden select-none">
       {/* Top Navbar Header */}
-      <header className="h-16 bg-[#09090b] border-b border-[#1f1f23] px-6 flex items-center justify-between shrink-0 shadow-md">
+      <header className="h-16 bg-[#0d121c] border-b border-[#1e293b] px-6 flex items-center justify-between shrink-0 shadow-sm">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/30 flex items-center justify-center text-indigo-400 shadow-inner">
+          <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
             <ClipboardList className="w-5 h-5" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white tracking-tight flex items-center gap-2">
-              Applications Workflow Engine
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/30">
-                Custom DM & Decision Messages
+            <h1 className="text-base font-bold text-white tracking-tight flex items-center gap-2">
+              Bewerbungs- & Formular-Engine
+              <span className="text-[10px] px-2.5 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 font-semibold border border-indigo-500/20">
+                Benutzerdefinierte DM & Entscheidungsnachrichten
               </span>
             </h1>
-            <p className="text-xs text-zinc-400">
-              Customize intake DM embeds, accepted/denied/waitlisted notification messages per form
+            <p className="text-xs text-slate-400">
+              Bewerbungsformulare, Review-Queue, automatische Rollenvergabe & Statistiken verwalten
             </p>
           </div>
         </div>
 
         {/* Sub-Pages Navigation Bar */}
-        <div className="flex items-center gap-1 bg-[#0d0d11] p-1 rounded-xl border border-[#1f1f23]">
+        <div className="flex items-center gap-1 bg-[#111724] p-1 rounded-xl border border-[#1e293b]">
           {[
-            { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
+            { id: "dashboard", label: "Übersicht", icon: LayoutDashboard },
             { id: "panels", label: "Panels", icon: Layers },
-            { id: "forms", label: "Forms", icon: FileText },
-            { id: "applications", label: "Applications", icon: ClipboardList },
-            { id: "questions", label: "Questions", icon: HelpCircle },
-            { id: "roles", label: "Roles", icon: Shield },
-            { id: "review-queue", label: "Review Queue", icon: UserCheck },
-            { id: "statistics", label: "Statistics", icon: BarChart3 },
-            { id: "settings", label: "Settings", icon: Settings },
+            { id: "forms", label: "Formulare", icon: FileText },
+            { id: "applications", label: "Bewerbungen", icon: ClipboardList },
+            { id: "questions", label: "Fragen", icon: HelpCircle },
+            { id: "roles", label: "Rollen", icon: Shield },
+            { id: "review-queue", label: "Review-Queue", icon: UserCheck },
+            { id: "statistics", label: "Statistiken", icon: BarChart3 },
+            { id: "settings", label: "Einstellungen", icon: Settings },
           ].map((tab) => {
             const Icon = tab.icon;
             const isActive = activeSubPage === tab.id;
@@ -696,8 +696,8 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 onClick={() => setActiveSubPage(tab.id as SubPage)}
                 className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
                   isActive
-                    ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 font-bold"
-                    : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+                    ? "bg-indigo-600 text-white shadow-sm font-bold"
+                    : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />

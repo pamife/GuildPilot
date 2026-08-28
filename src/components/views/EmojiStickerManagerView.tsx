@@ -134,36 +134,36 @@ export function EmojiStickerManagerView({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#0b0f17] text-slate-200">
       {/* Header Banner */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[#0d121c] border border-[#1e293b] shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
-            <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
               <Smile className="w-5 h-5" />
             </div>
-            Emoji & Sticker Manager
+            Emoji- & Sticker-Manager
           </h2>
-          <p className="text-sm text-zinc-400 mt-0.5">Upload, rename, and manage custom server emojis and stickers.</p>
+          <p className="text-xs text-slate-400 mt-1">Eigene Server-Emojis und Sticker hochladen, umbenennen und verwalten.</p>
         </div>
 
         {/* Tab Selector */}
-        <div className="flex items-center p-1.5 bg-[#09090b] rounded-xl border border-[#1f1f23] gap-1">
+        <div className="flex items-center p-1 bg-[#111724] rounded-xl border border-[#1e293b] gap-1">
           <button
             onClick={() => setActiveTab("emojis")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "emojis" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 font-bold" : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === "emojis" ? "bg-indigo-600 text-white shadow-sm font-bold" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
             }`}
           >
             <Smile className="w-4 h-4" /> Emojis ({emojis.length})
           </button>
           <button
             onClick={() => setActiveTab("stickers")}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
-              activeTab === "stickers" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20 font-bold" : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+            className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+              activeTab === "stickers" ? "bg-indigo-600 text-white shadow-sm font-bold" : "text-slate-400 hover:text-white hover:bg-[#1a2333]"
             }`}
           >
-            <StickerIcon className="w-4 h-4" /> Stickers ({stickers.length})
+            <StickerIcon className="w-4 h-4" /> Sticker ({stickers.length})
           </button>
         </div>
       </div>
@@ -174,9 +174,9 @@ export function EmojiStickerManagerView({
           <div className="flex justify-end">
             <button
               onClick={() => setIsUploadEmojiOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow-md shadow-indigo-600/25 transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4" /> Upload Custom Emoji
+              <Plus className="w-4 h-4" /> Neues Emoji hochladen
             </button>
           </div>
 
@@ -184,31 +184,31 @@ export function EmojiStickerManagerView({
             {emojis.map((e) => (
               <div
                 key={e.id}
-                className="group relative bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-lg transition-all hover:-translate-y-0.5"
+                className="group relative bg-[#111724] border border-[#1e293b] hover:border-indigo-500/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm transition-all"
               >
                 <img src={e.url} alt={e.name} className="w-12 h-12 object-contain mb-2" />
-                <span className="text-xs font-mono font-semibold text-zinc-200 truncate w-full">:{e.name}:</span>
+                <span className="text-xs font-mono font-semibold text-slate-200 truncate w-full">:{e.name}:</span>
                 {e.animated && (
-                  <span className="mt-1 text-[9px] bg-indigo-600 px-1.5 py-0.5 rounded-full font-bold uppercase text-white tracking-wider">
+                  <span className="mt-1 text-[9px] bg-indigo-600 px-2 py-0.5 rounded-full font-bold uppercase text-white tracking-wider">
                     GIF
                   </span>
                 )}
 
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 flex items-center gap-1 bg-[#0a0a0e]/90 backdrop-blur-md p-1 rounded-lg border border-[#1f1f23]">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 flex items-center gap-1 bg-[#0d121c]/90 backdrop-blur-md p-1 rounded-lg border border-[#1e293b]">
                   <button
                     onClick={() => {
                       setEditingEmoji(e);
                       setRenameEmojiName(e.name);
                     }}
-                    className="p-1 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-md cursor-pointer"
-                    title="Rename Emoji"
+                    className="p-1 text-slate-400 hover:text-white hover:bg-[#1a2333] rounded-md cursor-pointer"
+                    title="Emoji umbenennen"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDeleteEmojiClick(e)}
-                    className="p-1 text-zinc-400 hover:text-rose-400 hover:bg-[#18181b] rounded-md cursor-pointer"
-                    title="Delete Emoji"
+                    className="p-1 text-slate-400 hover:text-rose-400 hover:bg-[#1a2333] rounded-md cursor-pointer"
+                    title="Emoji löschen"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -225,9 +225,9 @@ export function EmojiStickerManagerView({
           <div className="flex justify-end">
             <button
               onClick={() => setIsUploadStickerOpen(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
+              className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-bold text-xs shadow-md shadow-indigo-600/25 transition-all cursor-pointer"
             >
-              <Plus className="w-4 h-4" /> Upload Custom Sticker
+              <Plus className="w-4 h-4" /> Neuen Sticker hochladen
             </button>
           </div>
 
@@ -235,19 +235,19 @@ export function EmojiStickerManagerView({
             {stickers.map((s) => (
               <div
                 key={s.id}
-                className="group relative bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/40 rounded-2xl p-5 flex flex-col items-center text-center shadow-lg transition-all hover:-translate-y-0.5"
+                className="group relative bg-[#111724] border border-[#1e293b] hover:border-indigo-500/40 rounded-2xl p-5 flex flex-col items-center text-center shadow-sm transition-all"
               >
                 <img src={s.url} alt={s.name} className="w-24 h-24 object-contain mb-3" />
                 <p className="text-sm font-bold text-white">{s.name}</p>
-                <p className="text-xs text-zinc-400 mt-1 truncate max-w-full">{s.description || "No description"}</p>
+                <p className="text-xs text-slate-400 mt-1 truncate max-w-full">{s.description || "Keine Beschreibung"}</p>
                 <span className="mt-2 text-[10px] bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-0.5 rounded-full text-indigo-400 font-mono">
                   🏷️ {s.tags}
                 </span>
 
                 <button
                   onClick={() => handleDeleteStickerClick(s)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 p-1.5 bg-[#0a0a0e]/90 backdrop-blur-md rounded-lg border border-[#1f1f23] text-zinc-400 hover:text-rose-400 cursor-pointer"
-                  title="Delete Sticker"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 p-1.5 bg-[#0d121c]/90 backdrop-blur-md rounded-lg border border-[#1e293b] text-slate-400 hover:text-rose-400 cursor-pointer"
+                  title="Sticker löschen"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -259,67 +259,67 @@ export function EmojiStickerManagerView({
 
       {/* UPLOAD EMOJI MODAL */}
       {isUploadEmojiOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
-              <h3 className="text-lg font-bold text-white">Upload Emoji</h3>
-              <button onClick={() => setIsUploadEmojiOpen(false)} className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#18181b]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
+              <h3 className="text-base font-bold text-white">Emoji hochladen</h3>
+              <button onClick={() => setIsUploadEmojiOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2333]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleEmojiUploadSubmit} className="space-y-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Emoji Name
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Emoji-Name
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. poggers"
+                  placeholder="z. B. poggers"
                   value={emojiName}
                   onChange={(e) => setEmojiName(e.target.value)}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Image (File or URL)
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Bilddatei (Datei oder URL)
                 </label>
                 <input
                   type="file"
                   accept="image/png, image/jpeg, image/gif"
                   onChange={(e) => handleFileUpload(e, setEmojiImage)}
-                  className="w-full text-xs text-zinc-400 bg-[#0d0d11] border border-[#27272a] rounded-xl p-2 cursor-pointer mb-2"
+                  className="w-full text-xs text-slate-400 bg-[#0d121c] border border-[#1e293b] rounded-xl p-2 cursor-pointer mb-2"
                 />
                 <input
                   type="url"
-                  placeholder="Or paste image URL (https://...)"
+                  placeholder="Oder Bild-URL einfügen (https://...)"
                   value={emojiImage.startsWith("data:") ? "" : emojiImage}
                   onChange={(e) => setEmojiImage(e.target.value)}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2 text-xs transition-all outline-none"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2 text-xs transition-all outline-none"
                 />
               </div>
 
               {emojiImage && (
-                <div className="flex justify-center p-4 bg-[#0d0d11] border border-[#1f1f23] rounded-xl">
+                <div className="flex justify-center p-4 bg-[#0d121c] border border-[#1e293b] rounded-xl">
                   <img src={emojiImage} alt="Preview" className="w-12 h-12 object-contain" />
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1e293b]">
                 <button
                   type="button"
                   onClick={() => setIsUploadEmojiOpen(false)}
-                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
+                  className="px-4 py-2 text-xs text-slate-400 hover:text-white hover:bg-[#1a2333] rounded-xl font-medium"
                 >
-                  Cancel
+                  Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/25 cursor-pointer"
                 >
-                  Upload
+                  Hochladen
                 </button>
               </div>
             </form>
@@ -329,40 +329,40 @@ export function EmojiStickerManagerView({
 
       {/* RENAME EMOJI MODAL */}
       {editingEmoji && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
-              <h3 className="text-lg font-bold text-white">Rename Emoji</h3>
-              <button onClick={() => setEditingEmoji(null)} className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#18181b]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
+              <h3 className="text-base font-bold text-white">Emoji umbenennen</h3>
+              <button onClick={() => setEditingEmoji(null)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2333]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleEmojiRenameSubmit} className="space-y-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  New Emoji Name
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Neuer Emoji-Name
                 </label>
                 <input
                   type="text"
                   required
                   value={renameEmojiName}
                   onChange={(e) => setRenameEmojiName(e.target.value)}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
                 />
               </div>
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1e293b]">
                 <button
                   type="button"
                   onClick={() => setEditingEmoji(null)}
-                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
+                  className="px-4 py-2 text-xs text-slate-400 hover:text-white hover:bg-[#1a2333] rounded-xl font-medium"
                 >
-                  Cancel
+                  Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/25 cursor-pointer"
                 >
-                  Save Name
+                  Speichern
                 </button>
               </div>
             </form>
@@ -372,80 +372,80 @@ export function EmojiStickerManagerView({
 
       {/* UPLOAD STICKER MODAL */}
       {isUploadStickerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
-              <h3 className="text-lg font-bold text-white">Upload Custom Sticker</h3>
-              <button onClick={() => setIsUploadStickerOpen(false)} className="p-1 rounded-lg text-zinc-400 hover:text-white hover:bg-[#18181b]">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
+          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
+              <h3 className="text-base font-bold text-white">Sticker hochladen</h3>
+              <button onClick={() => setIsUploadStickerOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2333]">
                 <X className="w-5 h-5" />
               </button>
             </div>
             <form onSubmit={handleStickerUploadSubmit} className="space-y-4">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Sticker Name
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Sticker-Name
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. Wave Hello"
+                  placeholder="z. B. Wave Hello"
                   value={stickerName}
                   onChange={(e) => setStickerName(e.target.value)}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Description
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Beschreibung
                 </label>
                 <input
                   type="text"
-                  placeholder="Sticker description..."
+                  placeholder="Sticker-Beschreibung..."
                   value={stickerDesc}
                   onChange={(e) => setStickerDesc(e.target.value)}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Tag Emoji / Keyword
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Passendes Emoji / Schlagwort
                 </label>
                 <input
                   type="text"
-                  placeholder="e.g. 👋 or wave"
+                  placeholder="z. B. 👋 oder Welle"
                   value={stickerTags}
                   onChange={(e) => setStickerTags(e.target.value)}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Image Attachment (PNG/APNG)
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Bilddatei (PNG/APNG)
                 </label>
                 <input
                   type="file"
                   accept="image/png, image/apng"
                   onChange={(e) => handleFileUpload(e, setStickerFile)}
-                  className="w-full text-xs text-zinc-400 bg-[#0d0d11] border border-[#27272a] rounded-xl p-2 cursor-pointer"
+                  className="w-full text-xs text-slate-400 bg-[#0d121c] border border-[#1e293b] rounded-xl p-2 cursor-pointer"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1e293b]">
                 <button
                   type="button"
                   onClick={() => setIsUploadStickerOpen(false)}
-                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
+                  className="px-4 py-2 text-xs text-slate-400 hover:text-white hover:bg-[#1a2333] rounded-xl font-medium"
                 >
-                  Cancel
+                  Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/25 cursor-pointer"
                 >
-                  Upload Sticker
+                  Sticker hochladen
                 </button>
               </div>
             </form>
@@ -455,3 +455,4 @@ export function EmojiStickerManagerView({
     </div>
   );
 }
+

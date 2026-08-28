@@ -452,22 +452,22 @@ export function MemberManagerView({
   }, [members, bans]);
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#090a0f] text-zinc-200 select-none">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#0b0f17] text-slate-200 select-none">
       {/* Top Header */}
-      <div className="p-5 border-b border-[#18181b] bg-[#050507] shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-6 border-b border-[#1e293b] bg-[#0d121c] shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2.5 rounded-xl bg-discord-brand/20 border border-discord-brand/40 text-discord-brand shadow-inner">
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
               <Users className="w-6 h-6" />
             </div>
             <div>
               <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                 Mitglieder-Manager
-                <span className="text-xs font-mono font-normal bg-[#18181b] border border-[#27272a] text-zinc-400 px-2.5 py-0.5 rounded-full">
+                <span className="text-xs font-mono font-normal bg-[#111724] border border-[#1e293b] text-slate-400 px-2.5 py-0.5 rounded-full">
                   {members.length} Mitglieder geladen
                 </span>
               </h1>
-              <p className="text-xs text-zinc-400 mt-0.5">
+              <p className="text-xs text-slate-400 mt-0.5">
                 Vollständige Server-Mitgliederverwaltung: Rollen, Nicknames, Timeouts, Kicks, Bans und Voice.
               </p>
             </div>
@@ -480,7 +480,7 @@ export function MemberManagerView({
               fetchBans();
               setIsBansModalOpen(true);
             }}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#12131a] hover:bg-[#1c1d28] border border-[#27272a] hover:border-rose-500/50 text-xs font-semibold text-zinc-300 hover:text-rose-300 transition-all shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#111724] hover:bg-[#1a253a] border border-[#1e293b] hover:border-rose-500/40 text-xs font-semibold text-slate-300 hover:text-rose-300 transition-all shadow-sm cursor-pointer"
           >
             <Ban className="w-4 h-4 text-rose-400" />
             <span>Bans verwalten</span>
@@ -493,47 +493,47 @@ export function MemberManagerView({
             onClick={fetchMembers}
             disabled={loading}
             title="Mitgliederliste aktualisieren"
-            className="p-2.5 rounded-xl bg-[#12131a] hover:bg-[#1c1d28] border border-[#27272a] text-zinc-400 hover:text-white transition-all shadow-sm cursor-pointer disabled:opacity-50"
+            className="p-2.5 rounded-xl bg-[#111724] hover:bg-[#1a253a] border border-[#1e293b] text-slate-400 hover:text-white transition-all shadow-sm cursor-pointer disabled:opacity-50"
           >
-            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-discord-brand" : ""}`} />
+            <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-indigo-400" : ""}`} />
           </button>
         </div>
       </div>
 
       {/* Stats Ribbon */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 p-4 bg-[#07070a] border-b border-[#18181b] text-xs">
-        <div className="p-2.5 rounded-xl bg-[#0e0f17] border border-[#1e1f2b] flex items-center justify-between">
-          <span className="text-zinc-400 flex items-center gap-1.5">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 p-4 bg-[#0d121c] border-b border-[#1e293b] text-xs">
+        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+          <span className="text-slate-400 flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-indigo-400" /> Gesamt
           </span>
           <span className="font-bold text-white font-mono">{stats.total}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#0e0f17] border border-[#1e1f2b] flex items-center justify-between">
-          <span className="text-zinc-400 flex items-center gap-1.5">
+        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+          <span className="text-slate-400 flex items-center gap-1.5">
             <UserCheck className="w-3.5 h-3.5 text-emerald-400" /> Menschen
           </span>
           <span className="font-bold text-emerald-300 font-mono">{stats.humans}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#0e0f17] border border-[#1e1f2b] flex items-center justify-between">
-          <span className="text-zinc-400 flex items-center gap-1.5">
+        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+          <span className="text-slate-400 flex items-center gap-1.5">
             <Bot className="w-3.5 h-3.5 text-sky-400" /> Bots
           </span>
           <span className="font-bold text-sky-300 font-mono">{stats.bots}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#0e0f17] border border-[#1e1f2b] flex items-center justify-between">
-          <span className="text-zinc-400 flex items-center gap-1.5">
+        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+          <span className="text-slate-400 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-pink-400" /> Booster
           </span>
           <span className="font-bold text-pink-300 font-mono">{stats.boosters}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#0e0f17] border border-[#1e1f2b] flex items-center justify-between">
-          <span className="text-zinc-400 flex items-center gap-1.5">
+        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+          <span className="text-slate-400 flex items-center gap-1.5">
             <Volume2 className="w-3.5 h-3.5 text-teal-400" /> Im Voice
           </span>
           <span className="font-bold text-teal-300 font-mono">{stats.inVoice}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#0e0f17] border border-[#1e1f2b] flex items-center justify-between">
-          <span className="text-zinc-400 flex items-center gap-1.5">
+        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+          <span className="text-slate-400 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-amber-400" /> Timeouts
           </span>
           <span className="font-bold text-amber-300 font-mono">{stats.timedOut}</span>
@@ -541,11 +541,11 @@ export function MemberManagerView({
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div className="p-4 bg-[#090a0f] border-b border-[#18181b] flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div className="p-4 bg-[#0b0f17] border-b border-[#1e293b] flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[300px]">
           {/* Search Box */}
           <div className="relative flex-1 min-w-[220px]">
-            <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
             <input
               type="text"
               placeholder="Suchen nach Name, Nickname oder ID..."

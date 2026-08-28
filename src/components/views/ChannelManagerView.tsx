@@ -80,7 +80,6 @@ export function ChannelManagerView({
     .sort((a, b) => a.position - b.position);
 
   const applySymbolToName = (symbolPrefix: string, setter: (val: string) => void, currentVal: string) => {
-    // If name already starts with a symbol, strip it or prefix it
     setter(`${symbolPrefix}${currentVal}`);
   };
 
@@ -97,11 +96,11 @@ export function ChannelManagerView({
         type: newChannelType,
         parentId: newParentId || undefined,
       });
-      showToast(`Channel "${newChannelName}" created successfully!`, "success");
+      showToast(`Kanal "${newChannelName}" erfolgreich erstellt!`, "success");
       setIsCreateOpen(false);
       setNewChannelName("");
     } catch (err: any) {
-      showToast(err.message || "Failed to create channel", "error");
+      showToast(err.message || "Fehler beim Erstellen des Kanals", "error");
     }
   };
 
@@ -126,57 +125,57 @@ export function ChannelManagerView({
         slowmode: editSlowmode,
         parentId: editParentId === "" ? null : editParentId,
       });
-      showToast(`Channel updated successfully!`, "success");
+      showToast(`Kanal #${editName} erfolgreich aktualisiert!`, "success");
       setIsEditOpen(false);
     } catch (err: any) {
-      showToast(err.message || "Failed to update channel", "error");
+      showToast(err.message || "Fehler beim Aktualisieren des Kanals", "error");
     }
   };
 
   const handleDelete = async (ch: Channel) => {
-    if (!confirm(`Are you sure you want to delete #${ch.name}?`)) return;
+    if (!confirm(`Möchtest du #${ch.name} wirklich unwiderruflich löschen?`)) return;
     try {
       await onDeleteChannel(ch.id);
-      showToast(`Channel #${ch.name} deleted.`, "info");
+      showToast(`Kanal #${ch.name} gelöscht.`, "info");
     } catch (err: any) {
-      showToast(err.message || "Failed to delete channel", "error");
+      showToast(err.message || "Fehler beim Löschen des Kanals", "error");
     }
   };
 
   const handleDuplicate = async (ch: Channel) => {
     try {
       await onDuplicateChannel(ch.id);
-      showToast(`Channel #${ch.name} duplicated!`, "success");
+      showToast(`Kanal #${ch.name} dupliziert!`, "success");
     } catch (err: any) {
-      showToast(err.message || "Failed to duplicate channel", "error");
+      showToast(err.message || "Fehler beim Duplizieren des Kanals", "error");
     }
   };
 
   const renderChannelIcon = (type: number) => {
     switch (type) {
       case 0:
-        return <Hash className="w-4 h-4 text-indigo-400" />;
+        return <Hash className="w-4 h-4 text-indigo-400 shrink-0" />;
       case 2:
-        return <Volume2 className="w-4 h-4 text-indigo-400" />;
+        return <Volume2 className="w-4 h-4 text-emerald-400 shrink-0" />;
       case 4:
-        return <FolderTree className="w-4 h-4 text-indigo-400" />;
+        return <FolderTree className="w-4 h-4 text-amber-400 shrink-0" />;
       case 15:
-        return <MessageSquare className="w-4 h-4 text-indigo-400" />;
+        return <MessageSquare className="w-4 h-4 text-sky-400 shrink-0" />;
       default:
-        return <Hash className="w-4 h-4 text-indigo-400" />;
+        return <Hash className="w-4 h-4 text-indigo-400 shrink-0" />;
     }
   };
 
   const renderChannelRow = (ch: Channel) => (
     <div
       key={ch.id}
-      className="group flex items-center justify-between p-3 rounded-xl bg-[#0d0d11] hover:bg-[#121218] border border-[#1f1f23] hover:border-indigo-500/30 transition-all shadow-sm"
+      className="group flex items-center justify-between p-3 rounded-xl bg-[#0d121c] hover:bg-[#131b2b] border border-[#1a2333] hover:border-indigo-500/40 transition-all shadow-sm"
     >
       <div className="flex items-center gap-2.5 min-w-0">
         {renderChannelIcon(ch.type)}
-        <span className="text-sm font-semibold text-zinc-200 truncate">{ch.name}</span>
+        <span className="text-xs font-semibold text-slate-200 truncate">{ch.name}</span>
         {ch.nsfw && (
-          <span title="NSFW">
+          <span title="Altersbeschränkter Inhalt (NSFW)">
             <Flame className="w-3.5 h-3.5 text-rose-400 shrink-0" />
           </span>
         )}
@@ -190,22 +189,22 @@ export function ChannelManagerView({
       <div className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1">
         <button
           onClick={() => handleDuplicate(ch)}
-          title="Duplicate Channel"
-          className="p-1.5 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
+          title="Kanal duplizieren"
+          className="p-1.5 text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-lg transition-colors cursor-pointer"
         >
           <Copy className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => openEditModal(ch)}
-          title="Channel Settings"
-          className="p-1.5 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
+          title="Kanal-Einstellungen"
+          className="p-1.5 text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-lg transition-colors cursor-pointer"
         >
           <Settings className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => handleDelete(ch)}
-          title="Delete Channel"
-          className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
+          title="Kanal löschen"
+          className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
         >
           <Trash2 className="w-3.5 h-3.5" />
         </button>
@@ -214,23 +213,23 @@ export function ChannelManagerView({
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 space-y-6">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#0b0f17] text-slate-200">
       {/* Action Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
             <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
               <Hash className="w-5 h-5" />
             </div>
-            Channel Manager
+            Kanal-Manager
           </h2>
-          <p className="text-sm text-zinc-400 mt-0.5">Create, edit, duplicate, and style channels with Discord symbols & aesthetic fonts.</p>
+          <p className="text-xs text-slate-400 mt-0.5">Kanäle erstellen, bearbeiten, sortieren und mit Symbolen & Schriftstilen formatieren.</p>
         </div>
         <button
           onClick={() => setIsCreateOpen(true)}
-          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-sm transition-all shadow-lg shadow-indigo-600/20 cursor-pointer"
+          className="flex items-center gap-2 px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl font-semibold text-xs transition-all shadow-md shadow-indigo-600/25 cursor-pointer"
         >
-          <Plus className="w-4 h-4" /> Create Channel
+          <Plus className="w-4 h-4" /> Kanal erstellen
         </button>
       </div>
 
@@ -239,10 +238,10 @@ export function ChannelManagerView({
         {/* Uncategorized Channels */}
         {uncategorizedChannels.length > 0 && (
           <div className="space-y-2">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-zinc-400 px-1">
-              Uncategorized Channels ({uncategorizedChannels.length})
+            <h4 className="text-[11px] font-bold uppercase tracking-wider text-slate-400 px-1">
+              Unkategorisierte Kanäle ({uncategorizedChannels.length})
             </h4>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {uncategorizedChannels.map((ch) => renderChannelRow(ch))}
             </div>
           </div>
@@ -254,25 +253,25 @@ export function ChannelManagerView({
             .filter((c) => c.parentId === cat.id)
             .sort((a, b) => a.position - b.position);
           return (
-            <div key={cat.id} className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 space-y-3.5 shadow-lg transition-all">
-              <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
+            <div key={cat.id} className="bg-[#111724] border border-[#1e293b] hover:border-indigo-500/30 rounded-2xl p-5 space-y-3.5 shadow-sm transition-all">
+              <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
                 <div className="flex items-center gap-2.5">
                   <FolderTree className="w-4 h-4 text-indigo-400" />
-                  <span className="text-sm font-bold uppercase tracking-wider text-white">{cat.name}</span>
-                  <span className="text-xs text-zinc-500 font-mono">({childChannels.length})</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-white">{cat.name}</span>
+                  <span className="text-[11px] text-slate-400 font-mono">({childChannels.length})</span>
                 </div>
                 <div className="flex items-center gap-1">
                   <button
                     onClick={() => openEditModal(cat)}
-                    className="p-1.5 text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
-                    title="Edit Category"
+                    className="p-1.5 text-slate-400 hover:text-white hover:bg-[#18233a] rounded-lg transition-colors cursor-pointer"
+                    title="Kategorie bearbeiten"
                   >
                     <Settings className="w-3.5 h-3.5" />
                   </button>
                   <button
                     onClick={() => handleDelete(cat)}
-                    className="p-1.5 text-zinc-400 hover:text-rose-400 hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer"
-                    title="Delete Category"
+                    className="p-1.5 text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition-colors cursor-pointer"
+                    title="Kategorie löschen"
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -280,9 +279,9 @@ export function ChannelManagerView({
               </div>
 
               {childChannels.length === 0 ? (
-                <p className="text-xs text-zinc-500 italic py-2">No channels inside this category.</p>
+                <p className="text-xs text-slate-400 italic py-2">Keine Kanäle in dieser Kategorie.</p>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                   {childChannels.map((ch) => renderChannelRow(ch))}
                 </div>
               )}
@@ -291,53 +290,53 @@ export function ChannelManagerView({
         })}
       </div>
 
-      {/* CREATE CHANNEL MODAL WITH FANCY STYLER */}
+      {/* CREATE CHANNEL MODAL */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4">
-            <div className="flex items-center justify-between p-5 border-b border-[#1f1f23]">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-indigo-400" /> Create Channel
+          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4">
+            <div className="flex items-center justify-between p-5 border-b border-[#1f2c44]">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-400" /> Neuen Kanal erstellen
               </h3>
-              <button onClick={() => setIsCreateOpen(false)} className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-[#18181b]">
-                <X className="w-5 h-5" />
+              <button onClick={() => setIsCreateOpen(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-[#1a253b]">
+                <X className="w-4 h-4" />
               </button>
             </div>
             <form onSubmit={handleCreateSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Channel Type
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Kanal-Typ
                 </label>
                 <select
                   value={newChannelType}
                   onChange={(e) => setNewChannelType(Number(e.target.value))}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl px-4 py-2.5 text-sm transition-all outline-none cursor-pointer"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
                 >
-                  <option value={0}>Text Channel (#)</option>
-                  <option value={2}>Voice Channel (🔊)</option>
-                  <option value={4}>Category (📁)</option>
-                  <option value={15}>Forum Channel (💬)</option>
+                  <option value={0}>Textkanal (#)</option>
+                  <option value={2}>Sprachkanal (🔊)</option>
+                  <option value={4}>Kategorie (📁)</option>
+                  <option value={15}>Forenkanal (💬)</option>
                 </select>
               </div>
 
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Channel Name
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Kanalname
                 </label>
                 <input
                   type="text"
                   required
-                  placeholder="e.g. 💬・general-chat"
+                  placeholder="z. B. 💬・allgemein"
                   value={newChannelName}
                   onChange={(e) => setNewChannelName(e.target.value)}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all outline-none"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all outline-none"
                 />
               </div>
 
               {/* DISCORD SYMBOLS & DECORATION PRESETS */}
-              <div className="p-4 bg-[#0d0d11] border border-[#1f1f23] rounded-xl space-y-2.5">
+              <div className="p-3.5 bg-[#0d121c] border border-[#1e293b] rounded-xl space-y-2">
                 <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> Discord Channel Symbol Presets
+                  <Sparkles className="w-3.5 h-3.5" /> Symbol-Vorlagen
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {DISCORD_SYMBOL_PRESETS.map((sym) => (
@@ -345,19 +344,19 @@ export function ChannelManagerView({
                       key={sym.label}
                       type="button"
                       onClick={() => applySymbolToName(sym.prefix, setNewChannelName, newChannelName)}
-                      className="px-2.5 py-1 bg-[#18181b] hover:bg-indigo-600 text-zinc-300 hover:text-white rounded-lg text-xs transition-colors flex items-center gap-1 border border-[#27272a] cursor-pointer"
+                      className="px-2 py-1 bg-[#172033] hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors flex items-center gap-1 border border-[#243350] cursor-pointer"
                     >
                       <span>{sym.prefix}</span>
-                      <span className="text-[10px] text-zinc-500">{sym.label}</span>
+                      <span className="text-[10px] text-slate-400">{sym.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* DISCORD AESTHETIC FONT TRANSFORMERS */}
-              <div className="p-4 bg-[#0d0d11] border border-[#1f1f23] rounded-xl space-y-2.5">
+              <div className="p-3.5 bg-[#0d121c] border border-[#1e293b] rounded-xl space-y-2">
                 <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
-                  <Type className="w-3.5 h-3.5" /> Aesthetic Font Styles
+                  <Type className="w-3.5 h-3.5" /> Schriftstile
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {FONT_STYLE_PRESETS.map((font) => (
@@ -365,7 +364,7 @@ export function ChannelManagerView({
                       key={font.id}
                       type="button"
                       onClick={() => applyFontToName(font.id, setNewChannelName, newChannelName)}
-                      className="px-3 py-1 bg-[#18181b] hover:bg-indigo-600 text-zinc-300 hover:text-white rounded-lg text-xs transition-colors font-medium border border-[#27272a] cursor-pointer"
+                      className="px-2.5 py-1 bg-[#172033] hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors font-medium border border-[#243350] cursor-pointer"
                     >
                       {font.sample}
                     </button>
@@ -375,15 +374,15 @@ export function ChannelManagerView({
 
               {newChannelType !== 4 && (
                 <div>
-                  <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                    Category Parent (Optional)
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    Übergeordnete Kategorie (Optional)
                   </label>
                   <select
                     value={newParentId}
                     onChange={(e) => setNewParentId(e.target.value)}
-                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl px-4 py-2.5 text-sm transition-all outline-none cursor-pointer"
+                    className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
                   >
-                    <option value="">(No Category - Uncategorized)</option>
+                    <option value="">(Keine Kategorie - Unkategorisiert)</option>
                     {categories.map((cat) => (
                       <option key={cat.id} value={cat.id}>
                         {cat.name}
@@ -393,19 +392,19 @@ export function ChannelManagerView({
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#1e293b]">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
+                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-xl font-medium"
                 >
-                  Cancel
+                  Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/25 cursor-pointer"
                 >
-                  Create Channel
+                  Kanal erstellen
                 </button>
               </div>
             </form>
@@ -413,36 +412,36 @@ export function ChannelManagerView({
         </div>
       )}
 
-      {/* EDIT CHANNEL MODAL WITH FANCY STYLER */}
+      {/* EDIT CHANNEL MODAL */}
       {isEditOpen && selectedChannel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0a0a0e] border border-[#1f1f2a] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4">
-            <div className="flex items-center justify-between p-5 border-b border-[#1f1f23]">
-              <h3 className="text-lg font-bold text-white flex items-center gap-2">
-                <Settings className="w-5 h-5 text-indigo-400" /> Edit #{selectedChannel.name}
+          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4">
+            <div className="flex items-center justify-between p-5 border-b border-[#1f2c44]">
+              <h3 className="text-sm font-bold text-white flex items-center gap-2">
+                <Settings className="w-4 h-4 text-indigo-400" /> #{selectedChannel.name} bearbeiten
               </h3>
-              <button onClick={() => setIsEditOpen(false)} className="p-1 text-zinc-400 hover:text-white rounded-lg hover:bg-[#18181b]">
-                <X className="w-5 h-5" />
+              <button onClick={() => setIsEditOpen(false)} className="p-1 text-slate-400 hover:text-white rounded-lg hover:bg-[#1a253b]">
+                <X className="w-4 h-4" />
               </button>
             </div>
             <form onSubmit={handleEditSubmit} className="p-5 space-y-4 max-h-[85vh] overflow-y-auto">
               <div>
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                  Channel Name
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Kanalname
                 </label>
                 <input
                   type="text"
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm font-semibold transition-all outline-none"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all outline-none"
                 />
               </div>
 
               {/* DISCORD SYMBOLS & DECORATION PRESETS */}
-              <div className="p-4 bg-[#0d0d11] border border-[#1f1f23] rounded-xl space-y-2.5">
+              <div className="p-3.5 bg-[#0d121c] border border-[#1e293b] rounded-xl space-y-2">
                 <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
-                  <Sparkles className="w-3.5 h-3.5" /> Symbol Presets
+                  <Sparkles className="w-3.5 h-3.5" /> Symbol-Vorlagen
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {DISCORD_SYMBOL_PRESETS.map((sym) => (
@@ -450,19 +449,19 @@ export function ChannelManagerView({
                       key={sym.label}
                       type="button"
                       onClick={() => applySymbolToName(sym.prefix, setEditName, editName)}
-                      className="px-2.5 py-1 bg-[#18181b] hover:bg-indigo-600 text-zinc-300 hover:text-white rounded-lg text-xs transition-colors flex items-center gap-1 border border-[#27272a] cursor-pointer"
+                      className="px-2 py-1 bg-[#172033] hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors flex items-center gap-1 border border-[#243350] cursor-pointer"
                     >
                       <span>{sym.prefix}</span>
-                      <span className="text-[10px] text-zinc-500">{sym.label}</span>
+                      <span className="text-[10px] text-slate-400">{sym.label}</span>
                     </button>
                   ))}
                 </div>
               </div>
 
               {/* DISCORD AESTHETIC FONT TRANSFORMERS */}
-              <div className="p-4 bg-[#0d0d11] border border-[#1f1f23] rounded-xl space-y-2.5">
+              <div className="p-3.5 bg-[#0d121c] border border-[#1e293b] rounded-xl space-y-2">
                 <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
-                  <Type className="w-3.5 h-3.5" /> Aesthetic Font Styles
+                  <Type className="w-3.5 h-3.5" /> Schriftstile
                 </p>
                 <div className="flex flex-wrap gap-1.5">
                   {FONT_STYLE_PRESETS.map((font) => (
@@ -470,7 +469,7 @@ export function ChannelManagerView({
                       key={font.id}
                       type="button"
                       onClick={() => applyFontToName(font.id, setEditName, editName)}
-                      className="px-3 py-1 bg-[#18181b] hover:bg-indigo-600 text-zinc-300 hover:text-white rounded-lg text-xs transition-colors font-medium border border-[#27272a] cursor-pointer"
+                      className="px-2.5 py-1 bg-[#172033] hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors font-medium border border-[#243350] cursor-pointer"
                     >
                       {font.sample}
                     </button>
@@ -478,88 +477,80 @@ export function ChannelManagerView({
                 </div>
               </div>
 
+              <div>
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                  Kanalthema / Beschreibung
+                </label>
+                <textarea
+                  rows={2}
+                  placeholder="Kanalthema festlegen..."
+                  value={editTopic}
+                  onChange={(e) => setEditTopic(e.target.value)}
+                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none resize-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    Slowmode (Sekunden)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={21600}
+                    value={editSlowmode}
+                    onChange={(e) => setEditSlowmode(Number(e.target.value))}
+                    className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none font-mono"
+                  />
+                </div>
+                <div className="flex items-center gap-2 pt-6">
+                  <input
+                    type="checkbox"
+                    id="nsfw-check"
+                    checked={editNsfw}
+                    onChange={(e) => setEditNsfw(e.target.checked)}
+                    className="rounded border-[#1e293b] text-indigo-600 focus:ring-0 w-4 h-4 bg-[#0d121c]"
+                  />
+                  <label htmlFor="nsfw-check" className="text-xs font-semibold text-slate-200 cursor-pointer">
+                    NSFW (Altersbeschränkt)
+                  </label>
+                </div>
+              </div>
+
               {selectedChannel.type !== 4 && (
-                <>
-                  <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Topic
-                    </label>
-                    <textarea
-                      rows={2}
-                      placeholder="Channel topic..."
-                      value={editTopic}
-                      onChange={(e) => setEditTopic(e.target.value)}
-                      className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 placeholder-zinc-500 rounded-xl px-4 py-2.5 text-sm transition-all outline-none resize-none"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Slowmode Cooldown
-                    </label>
-                    <select
-                      value={editSlowmode}
-                      onChange={(e) => setEditSlowmode(Number(e.target.value))}
-                      className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl px-4 py-2.5 text-sm transition-all outline-none cursor-pointer"
-                    >
-                      <option value={0}>Off</option>
-                      <option value={5}>5 seconds</option>
-                      <option value={10}>10 seconds</option>
-                      <option value={15}>15 seconds</option>
-                      <option value={30}>30 seconds</option>
-                      <option value={60}>1 minute</option>
-                      <option value={300}>5 minutes</option>
-                      <option value={600}>10 minutes</option>
-                      <option value={3600}>1 hour</option>
-                    </select>
-                  </div>
-
-                  <div className="flex items-center justify-between p-3.5 bg-[#0d0d11] border border-[#1f1f23] rounded-xl">
-                    <div>
-                      <p className="text-sm font-bold text-white">NSFW Channel</p>
-                      <p className="text-xs text-zinc-400">Users must confirm age to view.</p>
-                    </div>
-                    <input
-                      type="checkbox"
-                      checked={editNsfw}
-                      onChange={(e) => setEditNsfw(e.target.checked)}
-                      className="w-5 h-5 accent-indigo-600 rounded cursor-pointer"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 block mb-1.5">
-                      Category Parent
-                    </label>
-                    <select
-                      value={editParentId || ""}
-                      onChange={(e) => setEditParentId(e.target.value || null)}
-                      className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl px-4 py-2.5 text-sm transition-all outline-none cursor-pointer"
-                    >
-                      <option value="">(No Category - Uncategorized)</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                </>
+                <div>
+                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1.5">
+                    Kategorie
+                  </label>
+                  <select
+                    value={editParentId || ""}
+                    onChange={(e) => setEditParentId(e.target.value || null)}
+                    className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
+                  >
+                    <option value="">(Keine Kategorie - Unkategorisiert)</option>
+                    {categories.map((cat) => (
+                      <option key={cat.id} value={cat.id}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               )}
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#1e293b]">
                 <button
                   type="button"
                   onClick={() => setIsEditOpen(false)}
-                  className="px-4 py-2.5 text-sm text-zinc-400 hover:text-white hover:bg-[#18181b] rounded-xl font-medium"
+                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-xl font-medium cursor-pointer"
                 >
-                  Cancel
+                  Abbrechen
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-semibold shadow-lg shadow-indigo-600/20 cursor-pointer"
+                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-indigo-600/25 cursor-pointer"
                 >
-                  Save Changes
+                  Speichern
                 </button>
               </div>
             </form>
@@ -569,3 +560,4 @@ export function ChannelManagerView({
     </div>
   );
 }
+

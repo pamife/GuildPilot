@@ -250,77 +250,77 @@ export function WelcomeView({
   const currentConfig = activeTab === "welcome" ? welcomeConfig : leaveConfig;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#1e1f22] text-zinc-200 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-[#0b0f17] text-slate-200 overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-[#2b2d31] bg-[#111214] flex flex-wrap items-center justify-between gap-4">
+      <div className="p-6 border-b border-[#1e293b] bg-[#0d121c] flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <div className="p-2 rounded-xl bg-gradient-to-br from-cyan-500/20 to-discord-brand/20 border border-cyan-500/30 text-cyan-400">
-              <Sparkles className="w-6 h-6" />
+            <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
+              <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                Welcome & Goodbye Engine
+              <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
+                Willkommens- & Abschieds-Engine
               </h1>
-              <p className="text-xs text-zinc-400">
-                Automated greeting messages with custom image cards, glow rings & auto-roles
+              <p className="text-xs text-slate-400">
+                Automatisierte Begrüßungen mit personalisierten Bildkarten, Glow-Ringen & Auto-Rollen
               </p>
             </div>
           </div>
         </div>
 
         {/* Action Buttons */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#2b2d31] hover:bg-[#35373c] text-zinc-300 hover:text-white border border-[#3f4147] transition-all cursor-pointer"
-            title="Import welcome & goodbye card settings from another server"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#111724] hover:bg-[#1a2333] text-slate-300 hover:text-white border border-[#1e293b] transition-all cursor-pointer shadow-sm"
+            title="Einstellungen von einem anderen Server importieren"
           >
-            <Download className="w-4 h-4 text-cyan-400" />
-            <span>Import from Server</span>
+            <Download className="w-4 h-4 text-indigo-400" />
+            <span>Von Server importieren</span>
           </button>
 
           <button
             onClick={handleTest}
             disabled={testing || !currentConfig.channelId}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-[#2b2d31] hover:bg-[#35373c] text-white border border-[#3f4147] transition-all disabled:opacity-50 cursor-pointer"
-            title="Send a live test message to your selected Discord channel"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-[#111724] hover:bg-[#1a2333] text-slate-200 hover:text-white border border-[#1e293b] transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+            title="Eine Testnachricht in den ausgewählten Discord-Kanal senden"
           >
             {testing ? (
-              <RefreshCw className="w-4 h-4 animate-spin text-cyan-400" />
+              <RefreshCw className="w-4 h-4 animate-spin text-indigo-400" />
             ) : (
-              <Send className="w-4 h-4 text-cyan-400" />
+              <Send className="w-4 h-4 text-indigo-400" />
             )}
-            <span>Send Test Message</span>
+            <span>Testnachricht senden</span>
           </button>
 
           <button
             onClick={handleSave}
             disabled={saving}
-            className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-discord-brand hover:bg-discord-brandHover text-white shadow-lg shadow-discord-brand/25 transition-all disabled:opacity-50"
+            className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-indigo-600 hover:bg-indigo-500 text-white shadow-md shadow-indigo-600/25 transition-all disabled:opacity-50 cursor-pointer"
           >
             {saving ? (
               <RefreshCw className="w-4 h-4 animate-spin" />
             ) : (
               <Save className="w-4 h-4" />
             )}
-            <span>Save Changes</span>
+            <span>Speichern</span>
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#2b2d31] bg-[#18191c] px-6">
+      <div className="flex border-b border-[#1e293b] bg-[#0d121c] px-6 gap-2">
         <button
           onClick={() => setActiveTab("welcome")}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
             activeTab === "welcome"
-              ? "border-cyan-400 text-cyan-400 bg-[#1e1f22]/50"
-              : "border-transparent text-zinc-400 hover:text-white"
+              ? "border-indigo-500 text-indigo-400 bg-[#111724]"
+              : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
           <UserCheck className="w-4 h-4" />
-          <span>Welcome Messages</span>
+          <span>Willkommens-Nachrichten</span>
           {welcomeConfig.enabled && (
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
           )}
@@ -328,14 +328,14 @@ export function WelcomeView({
 
         <button
           onClick={() => setActiveTab("leave")}
-          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all ${
+          className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
             activeTab === "leave"
-              ? "border-rose-400 text-rose-400 bg-[#1e1f22]/50"
-              : "border-transparent text-zinc-400 hover:text-white"
+              ? "border-rose-500 text-rose-400 bg-[#111724]"
+              : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
           <UserMinus className="w-4 h-4" />
-          <span>Goodbye Messages (Bye)</span>
+          <span>Abschieds-Nachrichten (Tschüss)</span>
           {leaveConfig.enabled && (
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
           )}
@@ -343,23 +343,23 @@ export function WelcomeView({
       </div>
 
       {/* Main Content Layout */}
-      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-y-auto divide-y lg:divide-y-0 lg:divide-x divide-[#2b2d31]">
+      <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 overflow-y-auto divide-y lg:divide-y-0 lg:divide-x divide-[#1e293b]">
         {/* Left Column: Settings Config */}
         <div className="lg:col-span-7 p-6 space-y-6 overflow-y-auto">
           {/* Discord Gateway Intent Reminder Alert */}
-          <div className="bg-amber-500/10 border border-amber-500/30 rounded-2xl p-4 flex items-start gap-3">
+          <div className="bg-amber-500/10 border border-amber-500/20 rounded-2xl p-4 flex items-start gap-3">
             <AlertCircle className="w-5 h-5 text-amber-400 shrink-0 mt-0.5" />
             <div className="text-xs space-y-1">
               <span className="font-bold text-amber-300 block">
                 Wichtiger Discord Bot Hinweis (Server Members Intent)
               </span>
-              <p className="text-zinc-300 leading-relaxed">
+              <p className="text-slate-300 leading-relaxed">
                 Damit Discord dem Bot mitteilt, wenn jemand dem Server beitritt oder ihn verlässt, muss im{" "}
                 <a
                   href="https://discord.com/developers/applications"
                   target="_blank"
                   rel="noreferrer"
-                  className="text-cyan-400 underline font-semibold"
+                  className="text-indigo-400 underline font-semibold"
                 >
                   Discord Developer Portal
                 </a>{" "}
@@ -370,18 +370,18 @@ export function WelcomeView({
           </div>
 
           {/* Main Toggle & Channel Picker */}
-          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 space-y-4">
+          <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-bold text-white block">
                   {activeTab === "welcome"
-                    ? "Enable Welcome Messages"
-                    : "Enable Goodbye Messages"}
+                    ? "Willkommens-Nachrichten aktivieren"
+                    : "Abschieds-Nachrichten aktivieren"}
                 </label>
-                <p className="text-xs text-zinc-400">
+                <p className="text-xs text-slate-400">
                   {activeTab === "welcome"
-                    ? "Automatically send greetings when new members join your server"
-                    : "Send notification messages when members leave your server"}
+                    ? "Automatisch Begrüßungen senden, sobald neue Mitglieder beitreten"
+                    : "Benachrichtigungen senden, wenn Mitglieder den Server verlassen"}
                 </p>
               </div>
 
@@ -403,8 +403,8 @@ export function WelcomeView({
                           await api.post(`/guilds/${selectedGuildId}/welcome`, updated);
                           showToast(
                             newEnabled
-                              ? "Welcome messages enabled & saved!"
-                              : "Welcome messages disabled & saved!",
+                              ? "Willkommensnachrichten aktiviert!"
+                              : "Willkommensnachrichten deaktiviert!",
                             "info"
                           );
                         } catch {}
@@ -417,8 +417,8 @@ export function WelcomeView({
                           await api.post(`/guilds/${selectedGuildId}/leave`, updated);
                           showToast(
                             newEnabled
-                              ? "Goodbye messages enabled & saved!"
-                              : "Goodbye messages disabled & saved!",
+                              ? "Abschiedsnachrichten aktiviert!"
+                              : "Abschiedsnachrichten deaktiviert!",
                             "info"
                           );
                         } catch {}
@@ -427,15 +427,15 @@ export function WelcomeView({
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-11 h-6 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
+                <div className="w-11 h-6 bg-[#1a2333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-emerald-500"></div>
               </label>
             </div>
 
             {/* Target Channel */}
-            <div className="pt-3 border-t border-[#35373c]/60">
-              <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 mb-1.5 flex items-center gap-1.5">
-                <Hash className="w-3.5 h-3.5 text-zinc-400" />
-                Target Discord Channel
+            <div className="pt-3 border-t border-[#1e293b]">
+              <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
+                <Hash className="w-3.5 h-3.5 text-slate-400" />
+                Zielkanal auf Discord
               </label>
               <select
                 value={
@@ -456,9 +456,9 @@ export function WelcomeView({
                     }));
                   }
                 }}
-                className="w-full bg-[#1e1f22] border border-[#3f4147] rounded-xl px-3 py-2 text-xs font-semibold text-white focus:outline-none focus:border-cyan-400"
+                className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl px-3 py-2 text-xs font-semibold text-slate-100 focus:outline-none focus:border-indigo-500 cursor-pointer"
               >
-                <option value="">Select a channel...</option>
+                <option value="">Kanal auswählen...</option>
                 {textChannels.map((c) => (
                   <option key={c.id} value={c.id}>
                     #{c.name}
@@ -469,12 +469,12 @@ export function WelcomeView({
           </div>
 
           {/* Text Message Configuration */}
-          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 space-y-4">
+          <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-5 space-y-4 shadow-sm">
             <div>
               <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold uppercase tracking-wider text-zinc-400 flex items-center gap-1.5">
-                  <MessageSquare className="w-3.5 h-3.5 text-zinc-400" />
-                  Message Content (Top Text)
+                <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <MessageSquare className="w-3.5 h-3.5 text-slate-400" />
+                  Nachrichtentext (Oberer Text)
                 </label>
               </div>
               <textarea
@@ -497,15 +497,15 @@ export function WelcomeView({
                     }));
                   }
                 }}
-                placeholder="Welcome {user} to {server}!"
-                className="w-full bg-[#1e1f22] border border-[#3f4147] rounded-xl p-3 text-xs font-medium text-white focus:outline-none focus:border-cyan-400 resize-none font-mono"
+                placeholder="Willkommen {user} auf {server}!"
+                className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl p-3 text-xs font-medium text-slate-100 focus:outline-none focus:border-indigo-500 resize-none font-mono"
               />
             </div>
 
             {/* Quick Placeholder Badges */}
             <div className="space-y-1.5">
-              <span className="text-[11px] text-zinc-400 font-semibold block">
-                Click to insert variables:
+              <span className="text-[11px] text-slate-400 font-semibold block">
+                Klicken, um Variable einzufügen:
               </span>
               <div className="flex flex-wrap gap-1.5">
                 {["{user}", "{username}", "{server}", "{memberCount}", "{memberOrdinal}"].map(
@@ -514,7 +514,7 @@ export function WelcomeView({
                       key={ph}
                       type="button"
                       onClick={() => insertPlaceholder(ph, "messageText")}
-                      className="px-2.5 py-1 rounded-lg bg-[#1e1f22] hover:bg-[#35373c] border border-[#3f4147] text-[11px] font-mono text-cyan-400 transition-colors"
+                      className="px-2.5 py-1 rounded-lg bg-[#0d121c] hover:bg-[#1a253a] border border-[#1e293b] text-[11px] font-mono text-indigo-400 transition-colors cursor-pointer"
                     >
                       + {ph}
                     </button>
@@ -525,18 +525,18 @@ export function WelcomeView({
           </div>
 
           {/* Card Customization */}
-          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 space-y-5">
+          <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-5 space-y-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Palette className="w-4 h-4 text-cyan-400" />
+                <Palette className="w-4 h-4 text-indigo-400" />
                 <h3 className="text-sm font-bold text-white">
-                  Image Card Styling
+                  Bildkarten-Gestaltung
                 </h3>
               </div>
 
               <label className="relative inline-flex items-center cursor-pointer">
-                <span className="text-xs font-semibold text-zinc-400 mr-2">
-                  Attach Image Card
+                <span className="text-xs font-semibold text-slate-400 mr-2">
+                  Bildkarte anhängen
                 </span>
                 <input
                   type="checkbox"
@@ -560,15 +560,15 @@ export function WelcomeView({
                   }}
                   className="sr-only peer"
                 />
-                <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-cyan-500"></div>
+                <div className="w-9 h-5 bg-[#1a2333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
               </label>
             </div>
 
             {/* Card Texts */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold text-zinc-300 block mb-1">
-                  Card Main Title
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                  Haupttitel auf Karte
                 </label>
                 <input
                   type="text"
@@ -590,13 +590,13 @@ export function WelcomeView({
                       }));
                     }
                   }}
-                  className="w-full bg-[#1e1f22] border border-[#3f4147] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-zinc-300 block mb-1">
-                  Card Subtitle
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                  Untertitel auf Karte
                 </label>
                 <input
                   type="text"
@@ -618,15 +618,15 @@ export function WelcomeView({
                       }));
                     }
                   }}
-                  className="w-full bg-[#1e1f22] border border-[#3f4147] rounded-xl px-3 py-2 text-xs text-white focus:outline-none focus:border-cyan-400"
+                  className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
 
             {/* Avatar Ring Glow Color */}
             <div className="space-y-2">
-              <label className="text-xs font-bold text-zinc-300 block">
-                Avatar Glow Ring Color
+              <label className="text-[11px] font-bold text-slate-300 block">
+                Avatar Glow-Ring Farbe
               </label>
               <div className="flex flex-wrap items-center gap-2">
                 {PRESET_RING_COLORS.map((preset) => {
@@ -651,10 +651,10 @@ export function WelcomeView({
                           }));
                         }
                       }}
-                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all ${
+                      className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                         isSelected
-                          ? "border-white text-white font-bold bg-white/10 shadow-sm"
-                          : "border-transparent text-zinc-400 hover:text-white bg-[#1e1f22]"
+                          ? "border-indigo-500 text-white font-bold bg-indigo-500/20 shadow-sm"
+                          : "border-transparent text-slate-400 hover:text-white bg-[#0d121c]"
                       }`}
                     >
                       <span
@@ -667,7 +667,7 @@ export function WelcomeView({
                 })}
 
                 {/* Custom Hex Picker */}
-                <div className="flex items-center gap-1 bg-[#1e1f22] border border-[#3f4147] rounded-lg px-2 py-0.5">
+                <div className="flex items-center gap-1 bg-[#0d121c] border border-[#1e293b] rounded-lg px-2 py-0.5">
                   <input
                     type="color"
                     value={
@@ -690,7 +690,7 @@ export function WelcomeView({
                     }}
                     className="w-5 h-5 bg-transparent border-0 cursor-pointer rounded"
                   />
-                  <span className="text-[11px] font-mono text-zinc-400">
+                  <span className="text-[11px] font-mono text-slate-400">
                     {activeTab === "welcome"
                       ? welcomeConfig.avatarRingColor
                       : leaveConfig.avatarRingColor}
@@ -702,8 +702,8 @@ export function WelcomeView({
             {/* Background Customization */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div>
-                <label className="text-xs font-bold text-zinc-300 block mb-1">
-                  Card Background Color
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                  Karten-Hintergrundfarbe
                 </label>
                 <div className="flex items-center gap-2">
                   <input
@@ -726,7 +726,7 @@ export function WelcomeView({
                         }));
                       }
                     }}
-                    className="w-8 h-8 bg-transparent border-0 cursor-pointer rounded"
+                    className="w-7 h-7 bg-transparent border-0 cursor-pointer rounded"
                   />
                   <input
                     type="text"
@@ -748,17 +748,17 @@ export function WelcomeView({
                         }));
                       }
                     }}
-                    className="flex-1 bg-[#1e1f22] border border-[#3f4147] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none font-mono"
+                    className="flex-1 bg-[#0d121c] border border-[#1e293b] rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none font-mono"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="text-xs font-bold text-zinc-300 block mb-1">
-                  Card Background Image URL (Optional)
+                <label className="text-[11px] font-bold text-slate-300 block mb-1">
+                  Karten-Hintergrundbild URL (Optional)
                 </label>
                 <div className="flex items-center gap-2">
-                  <ImageIcon className="w-4 h-4 text-zinc-400 shrink-0" />
+                  <ImageIcon className="w-4 h-4 text-slate-400 shrink-0" />
                   <input
                     type="url"
                     placeholder="https://example.com/banner.png"
@@ -780,7 +780,7 @@ export function WelcomeView({
                         }));
                       }
                     }}
-                    className="flex-1 bg-[#1e1f22] border border-[#3f4147] rounded-xl px-3 py-1.5 text-xs text-white focus:outline-none focus:border-cyan-400"
+                    className="flex-1 bg-[#0d121c] border border-[#1e293b] rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -789,16 +789,16 @@ export function WelcomeView({
 
           {/* Auto Roles (Welcome Tab Only) */}
           {activeTab === "welcome" && (
-            <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 space-y-4">
+            <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-5 space-y-4 shadow-sm">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Shield className="w-4 h-4 text-emerald-400" />
                   <h3 className="text-sm font-bold text-white">
-                    Automatic Role Assigner (Autoroles)
+                    Automatische Rollenvergabe (Autoroles)
                   </h3>
                 </div>
-                <p className="text-xs text-zinc-400">
-                  New members will automatically receive these roles when they join
+                <p className="text-xs text-slate-400">
+                  Neue Mitglieder erhalten diese Rollen automatisch beim Serverbeitritt
                 </p>
               </div>
 
@@ -812,10 +812,10 @@ export function WelcomeView({
                         key={role.id}
                         type="button"
                         onClick={() => toggleAutoRole(role.id)}
-                        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all ${
+                        className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                           isSelected
                             ? "bg-emerald-600/20 border-emerald-500 text-emerald-300 font-bold"
-                            : "bg-[#1e1f22] border-[#3f4147] text-zinc-400 hover:text-white"
+                            : "bg-[#0d121c] border-[#1e293b] text-slate-400 hover:text-white"
                         }`}
                       >
                         <span
@@ -833,16 +833,16 @@ export function WelcomeView({
 
           {/* DM Greeting (Welcome Tab Only) */}
           {activeTab === "welcome" && (
-            <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl p-5 space-y-4">
+            <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-discord-brand" />
+                  <Mail className="w-4 h-4 text-indigo-400" />
                   <div>
                     <h3 className="text-sm font-bold text-white">
-                      Send Direct Message (DM)
+                      Direktnachricht senden (DM)
                     </h3>
-                    <p className="text-xs text-zinc-400">
-                      Send a private greeting DM to new members
+                    <p className="text-xs text-slate-400">
+                      Private Willkommens-DM an neue Mitglieder verschicken
                     </p>
                   </div>
                 </div>
@@ -859,7 +859,7 @@ export function WelcomeView({
                     }
                     className="sr-only peer"
                   />
-                  <div className="w-9 h-5 bg-zinc-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-zinc-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-discord-brand"></div>
+                  <div className="w-9 h-5 bg-[#1a2333] peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-indigo-600"></div>
                 </label>
               </div>
 
@@ -874,8 +874,8 @@ export function WelcomeView({
                         dmText: e.target.value,
                       }))
                     }
-                    placeholder="Welcome to {server}, {user}!"
-                    className="w-full bg-[#1e1f22] border border-[#3f4147] rounded-xl p-3 text-xs text-white focus:outline-none focus:border-discord-brand resize-none font-mono"
+                    placeholder="Willkommen auf {server}, {user}!"
+                    className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 resize-none font-mono"
                   />
                 </div>
               )}
@@ -884,25 +884,25 @@ export function WelcomeView({
         </div>
 
         {/* Right Column: Live Discord Message Simulation Preview */}
-        <div className="lg:col-span-5 p-6 bg-[#18191c] space-y-4 flex flex-col justify-start">
+        <div className="lg:col-span-5 p-6 bg-[#0d121c] space-y-4 flex flex-col justify-start">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Eye className="w-4 h-4 text-cyan-400" />
-              <h3 className="text-xs font-bold uppercase tracking-wider text-zinc-300">
-                Live Discord Message Preview
+              <Eye className="w-4 h-4 text-indigo-400" />
+              <h3 className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                Live Discord-Vorschau
               </h3>
             </div>
             {generatingPreview && (
-              <span className="text-[11px] text-zinc-400 flex items-center gap-1">
-                <RefreshCw className="w-3 h-3 animate-spin text-cyan-400" /> Rendering...
+              <span className="text-[11px] text-slate-400 flex items-center gap-1">
+                <RefreshCw className="w-3 h-3 animate-spin text-indigo-400" /> Rendern...
               </span>
             )}
           </div>
 
           {/* Discord Message Chat Bubble Simulator */}
-          <div className="bg-[#313338] border border-[#3f4147]/60 rounded-2xl p-4 space-y-3 shadow-xl">
+          <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-4 space-y-3 shadow-md">
             {/* Top Text Content */}
-            <div className="text-sm text-zinc-200 font-sans leading-relaxed">
+            <div className="text-xs text-slate-200 font-sans leading-relaxed">
               <span className="font-semibold">
                 {activeTab === "welcome"
                   ? welcomeConfig.messageText
@@ -922,7 +922,7 @@ export function WelcomeView({
 
             {/* Generated Image Card */}
             {(activeTab === "welcome" ? welcomeConfig.sendCard : leaveConfig.sendCard) && (
-              <div className="relative rounded-xl overflow-hidden border border-[#2b2d31] bg-[#111214] flex items-center justify-center min-h-[160px] shadow-lg">
+              <div className="relative rounded-xl overflow-hidden border border-[#1e293b] bg-[#0b0f17] flex items-center justify-center min-h-[160px] shadow-sm">
                 {previewUrl ? (
                   <img
                     src={previewUrl}
@@ -930,9 +930,9 @@ export function WelcomeView({
                     className="w-full h-auto object-contain rounded-xl"
                   />
                 ) : (
-                  <div className="p-8 text-center text-zinc-500 text-xs">
-                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-cyan-400" />
-                    Generating card preview...
+                  <div className="p-8 text-center text-slate-500 text-xs">
+                    <RefreshCw className="w-5 h-5 animate-spin mx-auto mb-2 text-indigo-400" />
+                    Karten-Vorschau wird generiert...
                   </div>
                 )}
               </div>
@@ -940,21 +940,21 @@ export function WelcomeView({
 
             {/* Discord Reaction Simulation */}
             <div className="flex items-center gap-1.5 pt-1">
-              <div className="flex items-center gap-1 bg-[#2b2d31] hover:bg-[#35373c] border border-[#3f4147] rounded-lg px-2 py-0.5 text-xs text-zinc-300 select-none">
+              <div className="flex items-center gap-1 bg-[#0d121c] hover:bg-[#1a2333] border border-[#1e293b] rounded-lg px-2 py-0.5 text-xs text-slate-300 select-none">
                 <span>👋</span>
-                <span className="text-[11px] font-bold text-cyan-400">1</span>
+                <span className="text-[11px] font-bold text-indigo-400">1</span>
               </div>
-              <div className="flex items-center gap-1 bg-[#2b2d31] hover:bg-[#35373c] border border-[#3f4147] rounded-lg px-2 py-0.5 text-xs text-zinc-400 select-none">
+              <div className="flex items-center gap-1 bg-[#0d121c] hover:bg-[#1a2333] border border-[#1e293b] rounded-lg px-2 py-0.5 text-xs text-slate-400 select-none">
                 <span>😊</span>
               </div>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-[#111214] border border-[#2b2d31] text-[11px] text-zinc-400 space-y-1">
-            <p className="font-semibold text-zinc-300">💡 Pro-Tipp:</p>
+          <div className="p-3.5 rounded-xl bg-[#111724] border border-[#1e293b] text-[11px] text-slate-400 space-y-1">
+            <p className="font-semibold text-slate-300">💡 Pro-Tipp:</p>
             <p>
               Du kannst das System sofort im ausgewählten Discord-Kanal ausprobieren, indem du oben rechts auf{" "}
-              <strong className="text-cyan-400">"Send Test Message"</strong> klickst.
+              <strong className="text-indigo-400">"Testnachricht senden"</strong> klickst.
             </p>
           </div>
         </div>
