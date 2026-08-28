@@ -4,13 +4,9 @@ export const getApiBaseUrl = () => {
   if (process.env.NEXT_PUBLIC_API_URL) {
     return process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "");
   }
-  if (typeof window !== "undefined") {
-    const host = window.location.hostname;
-    const protocol = window.location.protocol;
-    return `${protocol}//${host}:3001`;
-  }
   return "http://localhost:3001";
 };
+
 
 export const getAuthToken = (): string | null => {
   if (typeof window === "undefined") return null;
