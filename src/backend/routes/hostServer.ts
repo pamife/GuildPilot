@@ -1,10 +1,12 @@
 import { Router } from "express";
+import { requireOwner } from "../middleware/authMiddleware";
 import { collectHostMetrics } from "../services/hostMonitorService";
 import {
   getLatestUpdate,
   notifyUpdate,
   markUpdateAsRead,
   checkOrTriggerUpdate,
+  forceRebuild,
   getUpdateProgress,
   updateProgressState,
   resetUpdateProgress,
@@ -12,6 +14,24 @@ import {
 import { getNextRestartTime, triggerImmediateRestart } from "../services/hourlyRestartService";
 
 const router = Router();
+
+// Strikter Schutz: Alle Host-System- und Telemetrie-Endpunkte sind OWNER ONLY
+router.use((req, res, next) => {
+  // Lokale Systemskripte (127.0.0.1) für internen Update-Fortschritt zulassen
+  const isLoopback =
+    req.ip === "127.0.0.1" ||
+    req.ip === "::1" ||
+    req.ip === "::ffff:127.0.0.1" ||
+    req.socket.remoteAddress === "127.0.0.1" ||
+    req.socket.remoteAddress === "::1";
+
+  if (isLoopback && (req.path === "/update-progress" || req.path === "/notify-update")) {
+    return next();
+  }
+
+  return requireOwner(req, res, next);
+});
+
 
 router.get("/metrics", async (req, res) => {
   try {
@@ -58,13 +78,25 @@ router.post("/reset-update-state", (req, res) => {
   res.json({ success: true, progress: resetState });
 });
 
-// POST endpoint to trigger immediate update check & install
+// POST endpoint to trigger immediate update check & install (optionally forced)
 router.post("/check-update", async (req, res) => {
   try {
-    const result = await checkOrTriggerUpdate(true);
+    const force = Boolean(req.body?.force);
+    const result = await checkOrTriggerUpdate(true, force);
     res.json(result);
   } catch (err: any) {
     res.status(500).json({ error: "Update check failed", details: err.message });
+  }
+});
+
+// POST endpoint to trigger clean rebuild of frontend & backend
+router.post("/force-rebuild", async (req, res) => {
+  try {
+    const skipGit = Boolean(req.body?.skipGit);
+    const result = await forceRebuild(skipGit);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: "Force rebuild failed", details: err.message });
   }
 });
 

@@ -22,8 +22,13 @@ import {
 import { deployTicketPanelEmbed } from "../bot/ticketHandler";
 import { getTranscriptFilePath, generateHtmlTranscript } from "../services/transcriptService";
 import { TextChannel } from "discord.js";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 
 const router = Router();
+
+// Absicherung gegen IDOR: Zugriff nur für berechtigte Nutzer dieses Servers
+router.use(requireGuildAccess("guildId"));
+
 
 // Stats
 router.get("/:guildId/tickets/stats", async (req, res) => {

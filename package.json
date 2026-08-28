@@ -13,8 +13,10 @@
     "start:frontend": "next start -H 0.0.0.0 -p 3000",
     "start": "node dist/backend/server.js",
     "prisma:generate": "prisma generate",
-    "prisma:push": "prisma db push"
+    "prisma:push": "prisma db push",
+    "test:security": "tsx scripts/test-security.ts"
   },
+
   "keywords": [
     "discord",
     "discord-bot",

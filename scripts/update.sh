@@ -12,4 +12,8 @@ echo " GuildPilot Manual Update & Build Script "
 echo "========================================="
 
 chmod +x "${SCRIPT_DIR}/auto-update.sh"
-"${SCRIPT_DIR}/auto-update.sh"
+if [ $# -eq 0 ]; then
+  "${SCRIPT_DIR}/auto-update.sh" --force
+else
+  "${SCRIPT_DIR}/auto-update.sh" "$@"
+fi

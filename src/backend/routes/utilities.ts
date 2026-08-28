@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireOwnerAuth } from "../middleware/authMiddleware";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 import {
   bulkCreateChannels,
   bulkRenameChannels,
@@ -10,7 +10,8 @@ import {
 
 const router = Router();
 
-router.use(requireOwnerAuth);
+router.use(requireGuildAccess("id"));
+
 
 router.post("/:id/bulk-channels", async (req, res) => {
   try {

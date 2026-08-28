@@ -26,9 +26,9 @@ if (-not (Test-Path "node_modules")) {
 }
 
 # Check SQLite Database
-if (-not (Test-Path "dev.db")) {
+if (-not (Test-Path "prisma\dev.db") -and -not (Test-Path "dev.db")) {
     Write-Host "[*] Initializing SQLite database dev.db (Prisma db push)..." -ForegroundColor Yellow
-    npx prisma@5.15.0 db push
+    npx prisma db push
 }
 
 Write-Host ""

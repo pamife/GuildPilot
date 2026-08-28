@@ -71,9 +71,11 @@ interface SidebarProps {
   selectedGuildId: string | null;
   onSelectGuild: (guildId: string) => void;
   botStatus: { ready: boolean; tag: string; ping: number } | null;
-  ownerUser: { username: string; avatar: string | null } | null;
+  ownerUser: { username: string; avatar: string | null; role?: string } | null;
+  isOwner?: boolean;
   onLogout: () => void;
   onRefreshGuilds?: () => void;
+  onBackToServers?: () => void;
 }
 
 interface NavCategory {
@@ -97,9 +99,12 @@ export function Sidebar({
   onSelectGuild,
   botStatus,
   ownerUser,
+  isOwner = false,
   onLogout,
   onRefreshGuilds,
+  onBackToServers,
 }: SidebarProps) {
+
   const [isServerDropdownOpen, setIsServerDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
@@ -354,6 +359,20 @@ export function Sidebar({
                 )}
               </div>
 
+              {/* Back to Server Selector Option */}
+              {onBackToServers && (
+                <button
+                  onClick={() => {
+                    setIsServerDropdownOpen(false);
+                    onBackToServers();
+                  }}
+                  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-semibold text-indigo-300 hover:text-white bg-[#151f33] hover:bg-indigo-600/30 border border-indigo-500/30 transition-all mb-1.5"
+                >
+                  <Server className="w-3.5 h-3.5" />
+                  <span>← Zur Server-Übersicht</span>
+                </button>
+              )}
+
               {guilds.length === 0 ? (
                 <div className="p-4 text-center text-xs text-slate-400">
                   Keine Server gefunden. Ist der Bot autorisiert?
@@ -481,33 +500,35 @@ export function Sidebar({
           );
         })}
 
-        {/* System & Infrastructure Section */}
-        <div className="pt-2 border-t border-[#1a2333] space-y-1">
-          <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400">
-            System
-          </div>
-          <button
-            onClick={() => onSelectView("host-server")}
-            className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-              currentView === "host-server"
-                ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-600/25"
-                : "text-slate-300 hover:text-white hover:bg-[#141c2c]"
-            }`}
-            title="Lokale Bot-Instanz, Systemlast und Protokolle"
-          >
-            <div className="flex items-center gap-3">
-              <Server
-                className={`w-4 h-4 ${
-                  currentView === "host-server" ? "text-white" : "text-emerald-400"
-                }`}
-              />
-              <span>Host-System & Logs</span>
+        {/* System & Infrastructure Section (AUSSCHLIESSLICH für OWNER sichtbar) */}
+        {isOwner && (
+          <div className="pt-2 border-t border-[#1a2333] space-y-1">
+            <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5">
+              <span>Owner System</span>
             </div>
-            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-              Live
-            </span>
-          </button>
-        </div>
+            <button
+              onClick={() => onSelectView("host-server")}
+              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
+                currentView === "host-server"
+                  ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-600/25"
+                  : "text-slate-300 hover:text-white hover:bg-[#141c2c]"
+              }`}
+              title="Lokale Bot-Instanz, Systemlast und Protokolle"
+            >
+              <div className="flex items-center gap-3">
+                <Server
+                  className={`w-4 h-4 ${
+                    currentView === "host-server" ? "text-white" : "text-emerald-400"
+                  }`}
+                />
+                <span>Host-System & Logs</span>
+              </div>
+              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                Live
+              </span>
+            </button>
+          </div>
+        )}
       </nav>
 
       {/* User & Session Footer */}
@@ -522,16 +543,20 @@ export function Sidebar({
               />
             ) : (
               <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-xs shrink-0">
-                {ownerUser?.username ? ownerUser.username.substring(0, 1).toUpperCase() : "A"}
+                {ownerUser?.username ? ownerUser.username.substring(0, 1).toUpperCase() : "U"}
               </div>
             )}
             <div className="truncate">
               <p className="text-xs font-semibold text-white truncate">
-                {ownerUser?.username || "Administrator"}
+                {ownerUser?.username || "Benutzer"}
               </p>
               <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-400" />
-                Lokaler Eigentümer
+                <span
+                  className={`w-1.5 h-1.5 rounded-full ${
+                    isOwner ? "bg-amber-400" : "bg-emerald-400"
+                  }`}
+                />
+                <span>{isOwner ? "Global Owner" : "Benutzer"}</span>
               </p>
             </div>
           </div>
@@ -548,3 +573,4 @@ export function Sidebar({
     </aside>
   );
 }
+

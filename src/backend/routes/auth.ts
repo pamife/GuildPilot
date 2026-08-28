@@ -1,12 +1,20 @@
 import { Router } from "express";
 import axios from "axios";
 import jwt from "jsonwebtoken";
-import { AuthenticatedRequest, requireOwnerAuth } from "../middleware/authMiddleware";
+import { PrismaClient } from "@prisma/client";
+import {
+  AuthenticatedRequest,
+  requireAuth,
+  isOwner,
+  getJwtSecret,
+  OWNER_DISCORD_ID,
+} from "../middleware/authMiddleware";
 
 const router = Router();
+const prisma = new PrismaClient();
 
 const getFrontendUrl = (req: any): string => {
-  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL;
+  if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL.replace(/\/$/, "");
   const host = req.headers.host ? req.headers.host.split(":")[0] : "localhost";
   const protocol = req.headers["x-forwarded-proto"] || "http";
   return `${protocol}://${host}:3000`;
@@ -28,7 +36,7 @@ router.get("/login", (req, res) => {
     return res.redirect(`${getFrontendUrl(req)}?auth_warning=missing_discord_credentials`);
   }
 
-  const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}`;
+  const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&prompt=consent`;
   res.redirect(url);
 });
 
@@ -44,10 +52,9 @@ router.get("/callback", async (req, res) => {
     const clientId = process.env.DISCORD_CLIENT_ID;
     const clientSecret = process.env.DISCORD_CLIENT_SECRET;
     const redirectUri = getRedirectUri(req);
-    const allowedUserId = process.env.ALLOWED_USER_ID;
-    const jwtSecret = process.env.JWT_SECRET || "guildpilot_super_secret_local_key_change_me";
+    const jwtSecret = getJwtSecret();
 
-    // 1. Exchange code for access token
+    // 1. Code gegen Discord-Access-Token eintauschen
     const params = new URLSearchParams({
       client_id: clientId || "",
       client_secret: clientSecret || "",
@@ -58,52 +65,101 @@ router.get("/callback", async (req, res) => {
 
     const tokenResponse = await axios.post("https://discord.com/api/oauth2/token", params, {
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      timeout: 10000,
     });
 
     const accessToken = tokenResponse.data.access_token;
+    const refreshToken = tokenResponse.data.refresh_token || null;
 
-    // 2. Fetch User Profile
+    // 2. Discord-Profil des Benutzers laden
     const userResponse = await axios.get("https://discord.com/api/users/@me", {
       headers: { Authorization: `Bearer ${accessToken}` },
+      timeout: 10000,
     });
 
-    const user = userResponse.data;
+    const discordUser = userResponse.data;
+    const isUserOwner = isOwner(discordUser.id);
+    const role = isUserOwner ? "OWNER" : "USER";
 
-    // 3. Verify single user owner ID constraint
-    if (allowedUserId && allowedUserId !== "your_discord_user_id_here" && user.id !== allowedUserId) {
-      return res.redirect(`${frontendUrl}?error=unauthorized_user`);
+    const formattedUsername = `${discordUser.username}${
+      discordUser.discriminator && discordUser.discriminator !== "0"
+        ? `#${discordUser.discriminator}`
+        : ""
+    }`;
+    const avatarUrl = discordUser.avatar
+      ? `https://cdn.discordapp.com/avatars/${discordUser.id}/${discordUser.avatar}.png`
+      : null;
+
+    // 3. Benutzer in der Datenbank speichern / aktualisieren
+    try {
+      await prisma.user.upsert({
+        where: { discordId: discordUser.id },
+        create: {
+          discordId: discordUser.id,
+          username: formattedUsername,
+          discriminator: discordUser.discriminator || "0",
+          avatar: avatarUrl,
+          role,
+          accessToken,
+          refreshToken,
+          lastLoginAt: new Date(),
+        },
+        update: {
+          username: formattedUsername,
+          discriminator: discordUser.discriminator || "0",
+          avatar: avatarUrl,
+          role,
+          accessToken,
+          refreshToken,
+          lastLoginAt: new Date(),
+        },
+      });
+    } catch (dbErr) {
+      console.warn("[Auth] User DB sync non-fatal error:", dbErr);
     }
 
-    // 4. Issue JWT Cookie
+    // 4. JWT Token ausstellen
     const payload = {
-      id: user.id,
-      username: `${user.username}${user.discriminator && user.discriminator !== '0' ? `#${user.discriminator}` : ''}`,
-      avatar: user.avatar ? `https://cdn.discordapp.com/avatars/${user.id}/${user.avatar}.png` : null,
+      id: discordUser.id,
+      username: formattedUsername,
+      avatar: avatarUrl,
+      role,
     };
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: "7d" });
 
+    const isHttps =
+      req.secure ||
+      req.headers["x-forwarded-proto"] === "https" ||
+      process.env.NODE_ENV === "production";
+
     res.cookie("guildpilot_token", token, {
       httpOnly: true,
-      secure: false, // Local dev
-      sameSite: "lax",
+      secure: isHttps,
+      sameSite: isHttps ? "none" : "lax",
       maxAge: 7 * 24 * 60 * 60 * 1000,
+      path: "/",
     });
 
-    res.redirect(frontendUrl);
-  } catch (error) {
-    console.error("OAuth error:", error);
+    // Weiterleitung zum Frontend (mit Token als Query-Param zur Ausfallsicherheit für Netlify)
+    res.redirect(`${frontendUrl}?auth=success&token=${encodeURIComponent(token)}`);
+  } catch (error: any) {
+    console.error("[OAuth] Callback error:", error.response?.data || error.message);
     res.redirect(`${frontendUrl}?error=oauth_failed`);
   }
 });
 
-router.get("/me", requireOwnerAuth, (req: AuthenticatedRequest, res) => {
-  res.json({ user: req.user });
+router.get("/me", requireAuth, (req: AuthenticatedRequest, res) => {
+  res.json({
+    user: req.user,
+    isOwner: req.user?.role === "OWNER" || isOwner(req.user?.id),
+  });
 });
 
 router.post("/logout", (req, res) => {
-  res.clearCookie("guildpilot_token");
+  res.clearCookie("guildpilot_token", { path: "/" });
   res.json({ success: true });
 });
 
 export default router;
+

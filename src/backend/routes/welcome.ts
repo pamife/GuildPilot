@@ -8,8 +8,13 @@ import {
 } from "../services/welcomeService";
 import { generateGreetingCard } from "../services/welcomeCardGenerator";
 import { sendTestWelcome, sendTestLeave } from "../bot/welcomeHandler";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 
 const router = Router();
+
+// Absicherung gegen IDOR: Zugriff nur für berechtigte Nutzer dieses Servers
+router.use(requireGuildAccess("guildId"));
+
 
 // GET all greeting settings (Welcome & Leave)
 router.get("/:guildId/welcome", async (req, res) => {

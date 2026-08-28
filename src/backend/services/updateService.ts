@@ -159,7 +159,10 @@ export function markUpdateAsRead(): boolean {
   return false;
 }
 
-export async function checkOrTriggerUpdate(installIfAvailable = true): Promise<{
+export async function checkOrTriggerUpdate(
+  installIfAvailable = true,
+  force = false
+): Promise<{
   hasUpdate: boolean;
   localCommit: string;
   remoteCommit: string;
@@ -187,16 +190,22 @@ export async function checkOrTriggerUpdate(installIfAvailable = true): Promise<{
     await execPromise("git fetch origin main", { cwd: projectDir }).catch(() => {});
 
     // Step 2: Get exact local HEAD commit hash
-    const { stdout: localOut } = await execPromise("git rev-parse HEAD", { cwd: projectDir });
-    const localCommitFull = localOut.trim();
+    let localCommitFull = "unknown";
+    try {
+      const { stdout: localOut } = await execPromise("git rev-parse HEAD", { cwd: projectDir });
+      localCommitFull = localOut.trim();
+    } catch (e) {}
     const localCommit = localCommitFull.substring(0, 7);
 
     // Step 3: Get exact remote origin/main commit hash
-    const { stdout: remoteOut } = await execPromise("git rev-parse origin/main", { cwd: projectDir });
-    const remoteCommitFull = remoteOut.trim();
+    let remoteCommitFull = localCommitFull;
+    try {
+      const { stdout: remoteOut } = await execPromise("git rev-parse origin/main", { cwd: projectDir });
+      remoteCommitFull = remoteOut.trim();
+    } catch (e) {}
     const remoteCommit = remoteCommitFull.substring(0, 7);
 
-    if (localCommitFull === remoteCommitFull) {
+    if (!force && localCommitFull !== "unknown" && remoteCommitFull !== "unknown" && localCommitFull === remoteCommitFull) {
       updateProgressState({
         isUpdating: false,
         status: "idle",
@@ -217,19 +226,23 @@ export async function checkOrTriggerUpdate(installIfAvailable = true): Promise<{
       };
     }
 
-    // Update is available!
+    // Update is available or force triggered!
+    const actionMsg = force
+      ? `Manueller Rebuild & Update erzwungen (Commit ${remoteCommit})...`
+      : `Neues Update gefunden (${remoteCommit}). Starte Prozess...`;
+
     updateProgressState({
       isUpdating: true,
       status: "running",
       step: 1,
       totalSteps: 6,
       percent: 15,
-      currentAction: `Neues Update gefunden (${remoteCommit}). Starte Prozess...`,
+      currentAction: actionMsg,
       localCommit,
       remoteCommit,
       logs: [
-        `[${new Date().toLocaleTimeString()}] 🚀 Neuer Commit auf origin/main erkannt: ${remoteCommit} (Lokaler Commit: ${localCommit}).`,
-        `[${new Date().toLocaleTimeString()}] Starte automatische Aktualisierung...`,
+        `[${new Date().toLocaleTimeString()}] 🚀 ${force ? "Erzwungener Rebuild gestartet" : `Neuer Commit auf origin/main erkannt: ${remoteCommit}`}.`,
+        `[${new Date().toLocaleTimeString()}] Starte Aktualisierung und Kompilierung...`,
       ],
     });
 
@@ -237,11 +250,12 @@ export async function checkOrTriggerUpdate(installIfAvailable = true): Promise<{
       const jsScript = path.join(projectDir, "scripts", "auto-update.js");
       const shScript = path.join(projectDir, "scripts", "auto-update.sh");
 
+      const flags = force ? " --force" : "";
       const cmd = fs.existsSync(jsScript)
-        ? `node "${jsScript}"`
+        ? `node "${jsScript}"${flags}`
         : process.platform === "win32"
-        ? `bash "${shScript}"`
-        : `"${shScript}"`;
+        ? `bash "${shScript}"${flags}`
+        : `"${shScript}"${flags}`;
 
       exec(cmd, { cwd: projectDir }, (updateErr, updateStdout, updateStderr) => {
         if (updateErr) {
@@ -261,7 +275,9 @@ export async function checkOrTriggerUpdate(installIfAvailable = true): Promise<{
         hasUpdate: true,
         localCommit,
         remoteCommit,
-        message: `Neues Update (${remoteCommit}) wird im Hintergrund installiert...`,
+        message: force
+          ? `System wird neu kompiliert und neu gestartet...`
+          : `Neues Update (${remoteCommit}) wird im Hintergrund installiert...`,
       };
     } else {
       return {
@@ -286,5 +302,57 @@ export async function checkOrTriggerUpdate(installIfAvailable = true): Promise<{
       message: `Fehler beim Prüfen auf Updates: ${err.message || err}`,
     };
   }
+}
+
+export async function forceRebuild(skipGit = false): Promise<{
+  success: boolean;
+  message: string;
+}> {
+  const { exec } = await import("child_process");
+  const projectDir = process.cwd();
+
+  const timeStr = new Date().toLocaleTimeString();
+
+  updateProgressState({
+    isUpdating: true,
+    status: "running",
+    step: 1,
+    totalSteps: 6,
+    percent: 15,
+    currentAction: "Manueller Rebuild & Cache-Bereinigung gestartet...",
+    logs: [
+      `[${timeStr}] 🔧 Manueller Rebuild angefordert (Clean Build & Restart)...`,
+      `[${timeStr}] Starte Kompilierungs-Pipeline...`,
+    ],
+  });
+
+  const jsScript = path.join(projectDir, "scripts", "auto-update.js");
+  const shScript = path.join(projectDir, "scripts", "auto-update.sh");
+
+  const flags = ` --force${skipGit ? " --skip-git" : ""}`;
+  const cmd = fs.existsSync(jsScript)
+    ? `node "${jsScript}"${flags}`
+    : process.platform === "win32"
+    ? `bash "${shScript}"${flags}`
+    : `"${shScript}"${flags}`;
+
+  exec(cmd, { cwd: projectDir }, (updateErr, updateStdout, updateStderr) => {
+    if (updateErr) {
+      console.error("[UpdateService] Force rebuild error:", updateStderr || updateErr.message);
+      updateProgressState({
+        isUpdating: false,
+        status: "error",
+        errorDetails: updateStderr || updateErr.message,
+        logs: [`[${new Date().toLocaleTimeString()}] ❌ Rebuild-Fehler: ${updateStderr || updateErr.message}`],
+      });
+    } else {
+      console.log("[UpdateService] Force rebuild completed successfully:", updateStdout);
+    }
+  });
+
+  return {
+    success: true,
+    message: "Rebuild-Prozess wurde im Hintergrund gestartet. Fortschritt wird live übertragen.",
+  };
 }
 

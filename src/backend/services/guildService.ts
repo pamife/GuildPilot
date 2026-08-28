@@ -1,4 +1,4 @@
-import { ChannelType } from "discord.js";
+import { ChannelType, PermissionsBitField } from "discord.js";
 import { discordClient, isBotReady } from "../bot/client";
 
 export async function getGuilds() {
@@ -26,6 +26,56 @@ export async function getGuilds() {
     ownerId: guild.ownerId,
   }));
 }
+
+/**
+ * Filtert Discord-Server, für die der angegebene Benutzer Verwaltungsrechte besitzt
+ */
+export async function getUserManageableGuilds(userId: string) {
+  if (!isBotReady()) return [];
+
+  const allGuilds = Array.from(discordClient.guilds.cache.values());
+  const manageableGuilds = [];
+
+  for (const guild of allGuilds) {
+    if (guild.ownerId === userId) {
+      manageableGuilds.push({
+        id: guild.id,
+        name: guild.name,
+        icon: guild.iconURL(),
+        memberCount: guild.memberCount,
+        joinedAt: guild.joinedAt,
+        ownerId: guild.ownerId,
+      });
+      continue;
+    }
+
+    try {
+      const member =
+        guild.members.cache.get(userId) ||
+        (await guild.members.fetch(userId).catch(() => null));
+
+      if (member) {
+        const hasAdmin = member.permissions.has(PermissionsBitField.Flags.Administrator);
+        const hasManageGuild = member.permissions.has(PermissionsBitField.Flags.ManageGuild);
+        if (hasAdmin || hasManageGuild) {
+          manageableGuilds.push({
+            id: guild.id,
+            name: guild.name,
+            icon: guild.iconURL(),
+            memberCount: guild.memberCount,
+            joinedAt: guild.joinedAt,
+            ownerId: guild.ownerId,
+          });
+        }
+      }
+    } catch {
+      // Ignoriere Einzelfehler
+    }
+  }
+
+  return manageableGuilds;
+}
+
 
 interface GuildDetailsCache {
   data: any;

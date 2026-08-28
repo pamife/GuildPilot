@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { requireOwnerAuth } from "../middleware/authMiddleware";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 import { getGuildRoles, createRole, updateRole, reorderRoles, deleteRole } from "../services/roleService";
 
 const router = Router();
 
-router.use(requireOwnerAuth);
+router.use(requireGuildAccess("id"));
+
 
 router.get("/:id/roles", async (req, res) => {
   try {

@@ -97,7 +97,19 @@ Gebaut mit **Next.js 14, React 18, Tailwind CSS, TypeScript, Discord.js v14, Exp
 
 ### 🖥️ 14. Host-Server & Live-Telemetrie
 - **Hardware-Monitoring:** CPU-Auslastung (pro Kern), RAM-Verbrauch, Festplattenbelegung und Netzwerktraffic.
-- **GitHub Auto-Update Engine:** 6-Schritte Update-Pipeline (Git Fetch, Backup, Git Pull, Prisma Sync, Build, PM2 Restart) mit Live-Terminal-Logs.
+- **GitHub Auto-Update Engine:** 6-Schritte Update-Pipeline (Git Fetch, Backup, Git Pull, npm install, Prisma Sync, Build, PM2 Restart) mit Live-Terminal-Logs.
+- **Hosting Environment:** Der Bot und das Webpanel laufen 24/7 produktiv auf einer **Linux (Kali Linux)** Maschine, welche Änderungen automatisch via GitHub `origin/main` synchronisiert, baut und via PM2 neustartet.
+
+---
+
+## 🤖 Wichtige AI- & Entwickler-Hinweise (Host Architecture)
+
+> [!IMPORTANT]
+> **Produktiv-Host & Continuous Deployment:**
+> - **Host OS:** Linux (Kali Linux).
+> - **Deployment:** Der Server pollt/zieht neue Commits automatisch von GitHub (`main` Branch) und führt `scripts/auto-update.js` / `scripts/auto-update.sh` aus.
+> - **Build-Integrität:** Jeder Commit auf `main` **MUSS** `npm run build` (TypeScript Backend `tsc` & Next.js Frontend `next build`) fehlerfrei bestehen.
+> - **Ports & Prozesse:** Backend läuft auf Port `3001` (`dist/backend/server.js`), Frontend läuft auf Port `3000` (`server-frontend.js`). Gesteuert via PM2 (`ecosystem.config.js`).
 - **Dienste-Status:** Überwachung von Hintergrund-Diensten wie `keep-awake`.
 
 ### 🔗 15. Einladungs-, Emoji- & Sticker-Manager

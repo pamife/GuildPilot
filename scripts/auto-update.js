@@ -7,6 +7,9 @@ const projectDir = path.resolve(__dirname, "..");
 const logsDir = path.join(projectDir, "logs");
 const updateFile = path.join(logsDir, "latest-update.json");
 
+const isForce = process.argv.includes("--force") || process.env.FORCE_REBUILD === "true";
+const skipGit = process.argv.includes("--skip-git");
+
 if (!fs.existsSync(logsDir)) {
   fs.mkdirSync(logsDir, { recursive: true });
 }
@@ -87,20 +90,37 @@ function notifyUpdate(payload) {
 }
 
 try {
-  log("Step 1/6: Fetching remote changes from GitHub...");
-  reportProgress(1, 6, 15, "Prüfe GitHub-Repository...", "Git fetch origin main gestartet...");
-  execSync("git fetch origin main", { cwd: projectDir, stdio: "inherit" });
+  let localCommit = "unknown";
+  let remoteCommit = "unknown";
 
-  const localCommit = execSync("git rev-parse HEAD", { cwd: projectDir }).toString().trim();
-  const remoteCommit = execSync("git rev-parse origin/main", { cwd: projectDir }).toString().trim();
+  try {
+    localCommit = execSync("git rev-parse HEAD", { cwd: projectDir }).toString().trim();
+  } catch (e) {}
 
-  if (localCommit === remoteCommit) {
-    log(`System is up to date at commit ${localCommit.substring(0, 7)}.`);
-    reportProgress(6, 6, 100, `System ist aktuell (Commit ${localCommit.substring(0, 7)})`, "Keine neuen Commits vorhanden.", "idle");
-    process.exit(0);
+  if (!skipGit) {
+    log("Step 1/6: Fetching remote changes from GitHub...");
+    reportProgress(1, 6, 15, "Prüfe GitHub-Repository...", "Git fetch origin main gestartet...");
+    
+    try {
+      execSync("git fetch origin main", { cwd: projectDir, stdio: "inherit" });
+      remoteCommit = execSync("git rev-parse origin/main", { cwd: projectDir }).toString().trim();
+    } catch (fetchErr) {
+      log(`Git fetch notice: ${fetchErr.message}`);
+      remoteCommit = localCommit;
+    }
+
+    if (!isForce && localCommit !== "unknown" && remoteCommit !== "unknown" && localCommit === remoteCommit) {
+      log(`System is up to date at commit ${localCommit.substring(0, 7)}.`);
+      reportProgress(6, 6, 100, `System ist aktuell (Commit ${localCommit.substring(0, 7)})`, "Keine neuen Commits vorhanden.", "idle");
+      process.exit(0);
+    }
+  } else {
+    log("Step 1/6: Skip Git pull requested. Performing force rebuild on local code...");
+    reportProgress(1, 6, 15, "Vorbereitung für Rebuild...", "Lokaler Rebuild ohne Git-Pull initiiert...");
+    remoteCommit = localCommit;
   }
 
-  log(`Updating from ${localCommit.substring(0, 7)} to ${remoteCommit.substring(0, 7)}...`);
+  log(`Updating / Rebuilding system (Local: ${localCommit.substring(0, 7)}, Target: ${remoteCommit.substring(0, 7)})...`);
 
   // Step 2: Database Backup (Safe non-blocking backup)
   log("Step 2/6: Creating Database Backup Snapshot...");
@@ -118,51 +138,67 @@ try {
     log(`Warning: Database backup skipped or failed (${backupErr.message}). Continuing update...`);
   }
 
-  // Step 3: Git Reset & Git Pull
-  log("Step 3/6: Executing git pull origin main...");
-  reportProgress(3, 6, 45, "Lade Quellcode herunter (git pull)...", `Ziel-Commit ${remoteCommit.substring(0, 7)} wird heruntergeladen...`);
-  try {
-    execSync("git reset --hard HEAD", { cwd: projectDir, stdio: "inherit", shell: true });
-    execSync("git pull origin main", { cwd: projectDir, stdio: "inherit", shell: true });
-  } catch (gitErr) {
-    reportProgress(3, 6, 45, `Git Pull fehlgeschlagen: ${gitErr.message}`, `❌ Git Pull-Fehler: ${gitErr.message}`, "error");
-    throw gitErr;
+  // Step 3: Git Reset & Git Pull (if not skipGit)
+  if (!skipGit) {
+    log("Step 3/6: Executing git pull origin main...");
+    reportProgress(3, 6, 45, "Lade Quellcode herunter (git pull)...", `Ziel-Commit ${remoteCommit.substring(0, 7)} wird synchronisiert...`);
+    try {
+      execSync("git reset --hard HEAD", { cwd: projectDir, stdio: "inherit", shell: true });
+      execSync("git pull origin main", { cwd: projectDir, stdio: "inherit", shell: true });
+    } catch (gitErr) {
+      reportProgress(3, 6, 45, `Git Pull fehlgeschlagen: ${gitErr.message}`, `❌ Git Pull-Fehler: ${gitErr.message}`, "error");
+      throw gitErr;
+    }
+  } else {
+    reportProgress(3, 6, 45, "Git-Pull übersprungen (Force Rebuild)...", "Verwende aktuellen lokalen Quellcode...");
   }
 
-  // Step 4: Prisma Generate & DB Push
-  log("Step 4/6: Synchronizing Prisma Client & Database Schema...");
-  reportProgress(4, 6, 65, "Synchronisiere Datenbank-Schema...", "Npx prisma generate & db push...");
+  // Step 4: NPM Install & Prisma Synchronization
+  log("Step 4/6: Installing dependencies and synchronizing Prisma...");
+  reportProgress(4, 6, 60, "Installiere Abhängigkeiten & Synchronisiere DB...", "npm install & Prisma generate/db push...");
   try {
+    log("Running npm install...");
+    execSync("npm install --no-audit --no-fund", { cwd: projectDir, stdio: "inherit", shell: true });
+    
+    log("Running Prisma generate & push...");
     execSync("npx prisma generate", { cwd: projectDir, stdio: "inherit", shell: true });
     execSync("npx prisma db push --accept-data-loss", { cwd: projectDir, stdio: "inherit", shell: true });
-  } catch (prismaErr) {
-    reportProgress(4, 6, 65, `Prisma Sync fehlgeschlagen: ${prismaErr.message}`, `❌ Prisma-Fehler: ${prismaErr.message}`, "error");
-    throw prismaErr;
+  } catch (depsErr) {
+    reportProgress(4, 6, 60, `Abhängigkeiten/Prisma Sync fehlgeschlagen: ${depsErr.message}`, `❌ Dependency/Prisma-Fehler: ${depsErr.message}`, "error");
+    throw depsErr;
   }
 
-  // Step 5: Build Backend & Frontend
+  // Step 5: Clean Build Backend & Frontend
   log("Step 5/6: Building production binaries (npm run build)...");
-  reportProgress(5, 6, 85, "Kompiliere Production Build (npm run build)...", "Bauen von Frontend & Backend binaries...");
+  reportProgress(5, 6, 80, "Kompiliere Production Build (npm run build)...", "Bauen von Frontend (Next.js) & Backend (TypeScript)...");
   try {
     execSync("npm run build", { cwd: projectDir, stdio: "inherit", shell: true });
   } catch (buildErr) {
-    reportProgress(5, 6, 85, `Build fehlgeschlagen: ${buildErr.message}`, `❌ Build-Fehler: ${buildErr.message}`, "error");
+    reportProgress(5, 6, 80, `Build fehlgeschlagen: ${buildErr.message}`, `❌ Build-Fehler: ${buildErr.message}`, "error");
     throw buildErr;
   }
 
   // Step 6: Restart PM2 services
   log("Step 6/6: Restarting application services...");
 
+  const finalCommit = (() => {
+    try {
+      return execSync("git rev-parse HEAD", { cwd: projectDir }).toString().trim();
+    } catch (e) {
+      return remoteCommit || localCommit;
+    }
+  })();
+
   notifyUpdate({
-    commit: remoteCommit,
-    commitShort: remoteCommit.substring(0, 7),
-    title: "GuildPilot Server Updated",
-    message: `Server successfully updated to commit ${remoteCommit.substring(0, 7)}.`,
+    commit: finalCommit,
+    commitShort: finalCommit.substring(0, 7),
+    title: "GuildPilot Server Aktualisiert & Neu Kompiliert",
+    message: `Server erfolgreich aktualisiert und neu gebaut (Commit ${finalCommit.substring(0, 7)}).`,
     status: "success",
   });
 
-  reportProgress(6, 6, 100, `Update erfolgreich abgeschlossen! (Commit ${remoteCommit.substring(0, 7)})`, "✅ UPDATE ERFOLGREICH ABGESCHLOSSEN!", "success");
-  log("✅ UPDATE COMPLETED SUCCESSFULLY!");
+  reportProgress(6, 6, 100, `Build & Update erfolgreich abgeschlossen! (Commit ${finalCommit.substring(0, 7)})`, "✅ BUILD & UPDATE ERFOLGREICH ABGESCHLOSSEN!", "success");
+  log("✅ BUILD & UPDATE COMPLETED SUCCESSFULLY!");
 
   try {
     const isWin = process.platform === "win32";
@@ -177,13 +213,13 @@ try {
       execSync(`${pm2Bin} restart all`, { cwd: projectDir, stdio: "inherit", shell: true });
     }
   } catch (pm2Err) {
-    log(`PM2 restart skipped or failed (${pm2Err.message}). Standalone mode detected.`);
+    log(`PM2 restart skipped or failed (${pm2Err.message}). Standalone/Dev mode active.`);
   }
 } catch (err) {
-  console.error("❌ UPDATE FAILED:", err.message);
+  console.error("❌ UPDATE/BUILD FAILED:", err.message);
   notifyUpdate({
-    title: "GuildPilot Update Failed",
-    message: `Update failed: ${err.message}`,
+    title: "GuildPilot Update/Build Failed",
+    message: `Update/Build failed: ${err.message}`,
     status: "error",
   });
   process.exit(1);

@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireOwnerAuth } from "../middleware/authMiddleware";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 import {
   getGuildEmojis,
   createEmoji,
@@ -12,7 +12,8 @@ import {
 
 const router = Router();
 
-router.use(requireOwnerAuth);
+router.use(requireGuildAccess("id"));
+
 
 // Emojis
 router.get("/:id/emojis", async (req, res) => {

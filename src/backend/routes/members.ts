@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { requireOwnerAuth } from "../middleware/authMiddleware";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 import {
   getGuildMembers,
   getGuildMember,
@@ -19,7 +19,8 @@ import {
 
 const router = Router();
 
-router.use(requireOwnerAuth);
+router.use(requireGuildAccess("id"));
+
 
 // Get members list with optional query and role filter
 router.get("/:id/members", async (req, res) => {

@@ -100,9 +100,41 @@ process.on("unhandledRejection", (reason, promise) => {
   console.error("[GuildPilot Server] Unhandled Rejection at:", promise, "reason:", reason);
 });
 
+const HOST = process.env.HOST || "127.0.0.1";
+
+// Security Startup Verification
+function verifySecurityConfiguration() {
+  const jwtSecret = process.env.JWT_SECRET;
+  const isProd = process.env.NODE_ENV === "production";
+
+  if (!jwtSecret || jwtSecret === "guildpilot_super_secret_local_key_change_me" || jwtSecret === "test") {
+    if (isProd) {
+      console.error(
+        "\n=================================================================" +
+        "\n[SECURITY CRITICAL ERROR] Production startup aborted!" +
+        "\nJWT_SECRET must be set to a secure, long random string in .env." +
+        "\n=================================================================\n"
+      );
+      process.exit(1);
+    } else {
+      console.warn(
+        "[Security Warning] Using development/weak JWT_SECRET. Remember to set a strong secret for public deployment!"
+      );
+    }
+  }
+
+  const clientId = process.env.DISCORD_CLIENT_ID;
+  const token = process.env.DISCORD_TOKEN;
+  if (!clientId || clientId === "your_client_id_here" || !token || token === "your_bot_token_here") {
+    console.warn("[Configuration Warning] Discord Client ID or Bot Token is not properly set in .env.");
+  }
+}
+
 // Start Server, Discord Client, and Hourly Restart Scheduler
-server.listen(Number(PORT), "0.0.0.0", async () => {
-  console.log(`[GuildPilot Backend] Running on http://0.0.0.0:${PORT}`);
+server.listen(Number(PORT), HOST, async () => {
+  verifySecurityConfiguration();
+  console.log(`[GuildPilot Backend] Running securely on http://${HOST}:${PORT}`);
   initHourlyRestartScheduler();
   await initDiscordBot();
 });
+

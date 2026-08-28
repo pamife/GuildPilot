@@ -199,6 +199,54 @@ export function HostServerView() {
     }
   };
 
+  const [rebuilding, setRebuilding] = useState(false);
+
+  const handleForceRebuild = async () => {
+    if (!confirm("Möchtest du das gesamte Projekt (Frontend & Backend) jetzt sauber neu kompilieren und die Dienste neu starten?")) return;
+    setRebuilding(true);
+    setShowLogs(true);
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
+
+    setUpdateProgress((prev: any) => ({
+      isUpdating: true,
+      step: 1,
+      totalSteps: 6,
+      percent: 15,
+      currentAction: "Manueller Rebuild (Clean Build & Restart) wird initialisiert...",
+      status: "running",
+      logs: [...(prev?.logs || []), `[${new Date().toLocaleTimeString()}] 🔧 Manueller Rebuild durch Benutzer gestartet...`],
+    }));
+
+    try {
+      const res = await fetch(`${apiUrl}/api/host-server/force-rebuild`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ skipGit: false }),
+      });
+      const data = await res.json();
+      if (data && data.message) {
+        setUpdateInfo({
+          id: `rebuild_${Date.now()}`,
+          status: "success",
+          message: data.message,
+          commitShort: "rebuild",
+          timestamp: new Date().toISOString(),
+        });
+      }
+    } catch (err: any) {
+      console.error("Force rebuild failed:", err);
+      setUpdateInfo({
+        id: `rebuild_err_${Date.now()}`,
+        status: "error",
+        message: `Force rebuild failed: ${err.message}`,
+        commitShort: "error",
+        timestamp: new Date().toISOString(),
+      });
+    } finally {
+      setRebuilding(false);
+    }
+  };
+
   const [resettingState, setResettingState] = useState(false);
 
   const handleResetUpdateState = async () => {
@@ -499,6 +547,16 @@ export function HostServerView() {
             >
               <RotateCcw className={`w-3.5 h-3.5 ${resettingState ? "animate-spin text-amber-400" : ""}`} />
               <span>Status reparieren</span>
+            </button>
+
+            <button
+              onClick={handleForceRebuild}
+              disabled={rebuilding || (updateProgress?.isUpdating && updateProgress?.percent !== 100)}
+              title="Kompiliert Frontend und Backend komplett neu und startet die Dienste neu"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0d121c] hover:bg-sky-500/20 border border-[#1e293b] hover:border-sky-500/40 text-slate-300 hover:text-sky-300 font-semibold text-xs transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+            >
+              <Wrench className={`w-3.5 h-3.5 ${rebuilding ? "animate-spin text-sky-400" : "text-sky-400"}`} />
+              <span>{rebuilding ? "Wird gebaut..." : "Neu kompilieren (Build)"}</span>
             </button>
 
             <button

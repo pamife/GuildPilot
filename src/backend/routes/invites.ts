@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { requireOwnerAuth } from "../middleware/authMiddleware";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 import { getGuildInvites, createInvite, deleteInvite } from "../services/inviteService";
 
 const router = Router();
 
-router.use(requireOwnerAuth);
+router.use(requireGuildAccess("id"));
+
 
 router.get("/:id/invites", async (req, res) => {
   try {

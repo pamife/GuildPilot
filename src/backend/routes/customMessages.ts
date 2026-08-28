@@ -9,8 +9,13 @@ import {
 } from "../services/customMessageService";
 import { discordClient, isBotReady } from "../bot/client";
 import { deployCustomMessage } from "../bot/customMessageHandler";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 
 const router = Router();
+
+// Absicherung gegen IDOR: Zugriff nur für berechtigte Nutzer dieses Servers
+router.use(requireGuildAccess("guildId"));
+
 
 // GET /api/guilds/:guildId/custom-messages - List all custom messages
 router.get("/:guildId/custom-messages", async (req, res) => {

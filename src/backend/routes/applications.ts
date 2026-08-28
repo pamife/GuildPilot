@@ -31,8 +31,13 @@ import {
 import { deployApplicationPanelEmbed, deployApplicationFormEmbed } from "../bot/applicationHandler";
 import { generateApplicationHtmlTranscript } from "../services/transcriptService";
 import { TextChannel } from "discord.js";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 
 const router = Router();
+
+// Absicherung gegen IDOR: Zugriff nur für berechtigte Nutzer dieses Servers
+router.use(requireGuildAccess("guildId"));
+
 
 // Stats & Overview
 router.get("/:guildId/applications/stats", async (req, res) => {

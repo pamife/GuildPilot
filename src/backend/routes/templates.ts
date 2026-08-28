@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { requireOwnerAuth } from "../middleware/authMiddleware";
+import {
+  AuthenticatedRequest,
+  requireAuth,
+  requireGuildAccess,
+} from "../middleware/authMiddleware";
 import {
   saveServerTemplate,
   getTemplates,
@@ -11,9 +15,9 @@ import {
 
 const router = Router();
 
-router.use(requireOwnerAuth);
+router.use(requireAuth);
 
-router.get("/", async (req, res) => {
+router.get("/", async (req: AuthenticatedRequest, res) => {
   try {
     const templates = await getTemplates();
     res.json(templates);
@@ -22,7 +26,7 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/guilds/:id/save", async (req, res) => {
+router.post("/guilds/:id/save", requireGuildAccess("id"), async (req: AuthenticatedRequest, res) => {
   try {
     const { name, description } = req.body;
     const template = await saveServerTemplate(req.params.id, name, description);
@@ -32,7 +36,7 @@ router.post("/guilds/:id/save", async (req, res) => {
   }
 });
 
-router.delete("/:templateId", async (req, res) => {
+router.delete("/:templateId", async (req: AuthenticatedRequest, res) => {
   try {
     const result = await deleteTemplate(req.params.templateId);
     res.json(result);
@@ -41,7 +45,7 @@ router.delete("/:templateId", async (req, res) => {
   }
 });
 
-router.post("/guilds/:id/apply/:templateId", async (req, res) => {
+router.post("/guilds/:id/apply/:templateId", requireGuildAccess("id"), async (req: AuthenticatedRequest, res) => {
   try {
     const result = await applyTemplate(req.params.id, req.params.templateId);
     res.json(result);
@@ -50,7 +54,7 @@ router.post("/guilds/:id/apply/:templateId", async (req, res) => {
   }
 });
 
-router.post("/guilds/:id/duplicate-channel", async (req, res) => {
+router.post("/guilds/:id/duplicate-channel", requireGuildAccess("id"), async (req: AuthenticatedRequest, res) => {
   try {
     const { channelId } = req.body;
     const result = await duplicateChannel(req.params.id, channelId);
@@ -60,7 +64,7 @@ router.post("/guilds/:id/duplicate-channel", async (req, res) => {
   }
 });
 
-router.post("/guilds/:id/duplicate-category", async (req, res) => {
+router.post("/guilds/:id/duplicate-category", requireGuildAccess("id"), async (req: AuthenticatedRequest, res) => {
   try {
     const { categoryId } = req.body;
     const result = await duplicateCategory(req.params.id, categoryId);
@@ -71,3 +75,4 @@ router.post("/guilds/:id/duplicate-category", async (req, res) => {
 });
 
 export default router;
+

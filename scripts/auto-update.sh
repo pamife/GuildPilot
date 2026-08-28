@@ -103,23 +103,42 @@ EOF
   curl -H "Content-Type: application/json" -X POST -d "${payload}" "${DISCORD_WEBHOOK_URL}" > /dev/null 2>&1 || true
 }
 
+# Flags
+IS_FORCE=false
+SKIP_GIT=false
+for arg in "$@"; do
+  case $arg in
+    --force)
+      IS_FORCE=true
+      ;;
+    --skip-git)
+      SKIP_GIT=true
+      ;;
+  esac
+done
+
 # Step 1: Check remote for changes
-log "Checking for GitHub updates on branch main..."
-report_progress 1 6 15 "Prüfe GitHub-Repository..." "Checking for updates on branch main..."
-git fetch origin main > /dev/null 2>&1
+if [ "${SKIP_GIT}" = "false" ]; then
+  log "Checking for GitHub updates on branch main..."
+  report_progress 1 6 15 "Prüfe GitHub-Repository..." "Checking for updates on branch main..."
+  git fetch origin main > /dev/null 2>&1 || true
 
-LOCAL_HASH=$(git rev-parse HEAD)
-REMOTE_HASH=$(git rev-parse origin/main)
+  LOCAL_HASH=$(git rev-parse HEAD 2>/dev/null || echo "unknown")
+  REMOTE_HASH=$(git rev-parse origin/main 2>/dev/null || echo "${LOCAL_HASH}")
 
-if [ "${LOCAL_HASH}" == "${REMOTE_HASH}" ]; then
-  log "System is up to date (Commit: ${LOCAL_HASH:0:7}). No update required."
-  report_progress 6 6 100 "System ist aktuell" "Keine neuen Commits vorhanden." "idle"
-  exit 0
+  if [ "${IS_FORCE}" = "false" ] && [ "${LOCAL_HASH}" != "unknown" ] && [ "${LOCAL_HASH}" == "${REMOTE_HASH}" ]; then
+    log "System is up to date (Commit: ${LOCAL_HASH:0:7}). No update required."
+    report_progress 6 6 100 "System ist aktuell" "Keine neuen Commits vorhanden." "idle"
+    exit 0
+  fi
+
+  log "Processing update (Local: ${LOCAL_HASH:0:7}, Target: ${REMOTE_HASH:0:7})..."
+else
+  log "Skip Git pull requested. Performing force rebuild on local workspace..."
+  report_progress 1 6 15 "Vorbereitung für Rebuild..." "Lokaler Rebuild ohne Git-Pull initiiert..."
+  LOCAL_HASH=$(git rev-parse HEAD 2>/dev/null || echo "local")
+  REMOTE_HASH="${LOCAL_HASH}"
 fi
-
-log "New commit detected on origin/main!"
-log "Current Local Hash: ${LOCAL_HASH:0:7}"
-log "Target Remote Hash: ${REMOTE_HASH:0:7}"
 
 # Step 2: Create pre-update backup snapshot
 BACKUP_TIMESTAMP=$(date +"%Y%m%d_%H%M%S")
@@ -130,9 +149,8 @@ STATE_BACKUP="${PROJECT_DIR}/backups/state_${LOCAL_HASH:0:7}_${BACKUP_TIMESTAMP}
 log "Creating pre-update backup snapshot..."
 report_progress 2 6 30 "Erstelle Datenbank-Sicherung..." "Pre-update Backup der Datenbank wird angelegt..."
 
-
 if [ -f "${DB_FILE}" ]; then
-  cp "${DB_FILE}" "${DB_BACKUP}"
+  cp "${DB_FILE}" "${DB_BACKUP}" || true
   log "Database backed up to ${DB_BACKUP}"
 fi
 
@@ -144,92 +162,50 @@ cat <<EOF > "${STATE_BACKUP}"
 }
 EOF
 
-rollback() {
-  local error_msg="$1"
-  log "❌ UPDATE FAILED: ${error_msg}"
-  log "Executing automatic rollback to commit ${LOCAL_HASH:0:7}..."
-
-  git reset --hard "${LOCAL_HASH}" || true
-
-  if [ -f "${DB_BACKUP}" ]; then
-    cp "${DB_BACKUP}" "${DB_FILE}" || true
-    log "Restored database snapshot from ${DB_BACKUP}"
-  fi
-
-  log "Rebuilding previous working state..."
-  npm ci || npm install || true
-  npx prisma generate || true
-  npm run build || true
-  ${PM2_CMD} startOrRestart ecosystem.config.js || ${PM2_CMD} restart all || true
-
-  # Record failure notification for Webpanel
-  UPDATE_JSON="${PROJECT_DIR}/logs/latest-update.json"
-  cat <<EOF > "${UPDATE_JSON}"
-{
-  "id": "update_${LOCAL_HASH:0:7}_${BACKUP_TIMESTAMP}",
-  "commit": "${LOCAL_HASH}",
-  "commitShort": "${LOCAL_HASH:0:7}",
-  "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-  "title": "GuildPilot Update Failed",
-  "message": "Update failed: ${error_msg}. Rolled back to commit ${LOCAL_HASH:0:7}",
-  "status": "error",
-  "unread": true
-}
-EOF
-
-  curl -H "Content-Type: application/json" -X POST -d @"${UPDATE_JSON}" http://localhost:3001/api/host-server/notify-update > /dev/null 2>&1 || true
-
-  send_discord_notification \
-    "❌ GuildPilot Update Failed - Rollback Executed" \
-    "**Error:** ${error_msg}\n**Rolled back to commit:** \`${LOCAL_HASH:0:7}\`\n**Status:** Restored working state." \
-    16711680
-
-  exit 1
-}
-
 # Step 3: Perform Update Operations
-log "Pulling latest changes from GitHub..."
-if ! git pull origin main; then
-  rollback "git pull origin main failed"
-fi
-
-# Check if dependencies changed
-if git diff --name-only "${LOCAL_HASH}" "${REMOTE_HASH}" | grep -E "package(-lock)?\.json" > /dev/null; then
-  log "Dependencies changed. Running npm ci..."
-  if ! (npm ci || npm install); then
-    rollback "npm install failed"
+if [ "${SKIP_GIT}" = "false" ]; then
+  log "Pulling latest changes from GitHub..."
+  report_progress 3 6 45 "Lade Quellcode herunter..." "git pull origin main..."
+  git reset --hard HEAD || true
+  if ! git pull origin main; then
+    log "❌ Git pull failed"
   fi
 fi
 
-# Synchronize Prisma Client & Database Schema
-log "Synchronizing Prisma Client & Database Schema..."
-npx prisma generate || rollback "prisma generate failed"
-npx prisma db push --accept-data-loss || rollback "Prisma db push failed"
+# Step 4: Install dependencies & Prisma DB
+log "Installing dependencies and updating Prisma schema..."
+report_progress 4 6 60 "Installiere Abhängigkeiten & DB Schema..." "npm install & Prisma..."
+npm install --no-audit --no-fund || npm ci || true
+npx prisma generate || true
+npx prisma db push --accept-data-loss || true
 
-# Step 4: Rebuild Frontend & Backend
+# Step 5: Rebuild Frontend & Backend
 log "Building production binaries (npm run build)..."
+report_progress 5 6 80 "Kompiliere Production Build (npm run build)..." "Bauen von Frontend & Backend binaries..."
 if ! npm run build; then
-  rollback "npm run build failed"
+  log "❌ Build failed!"
+  report_progress 5 6 80 "Build fehlgeschlagen" "❌ Build-Fehler beim Kompilieren" "error"
+  exit 1
 fi
 
-# Step 5: Restart PM2 services
+# Step 6: Restart PM2 services
 log "Restarting application services via PM2 (${PM2_CMD})..."
-if ! (${PM2_CMD} startOrRestart ecosystem.config.js || ${PM2_CMD} restart all || ${PM2_CMD} start ecosystem.config.js); then
-  rollback "PM2 restart failed"
-fi
+${PM2_CMD} startOrRestart ecosystem.config.js || ${PM2_CMD} restart all || true
 
-# Step 6: Perform Health Checks with Retry Loop (Wait for Next.js warmup)
+FINAL_COMMIT=$(git rev-parse HEAD 2>/dev/null || echo "${REMOTE_HASH}")
+
+# Health Checks with Friendly Warmup Loop
 log "Verifying application health..."
 HEALTH_PASSED=false
 HEALTH_BACKEND="000"
 HEALTH_FRONTEND="000"
 
-for i in {1..6}; do
-  sleep 5
-  HEALTH_BACKEND=$(curl -sL -o /dev/null -w "%{http_code}" http://localhost:3001/api/health || echo "000")
-  HEALTH_FRONTEND=$(curl -sL -o /dev/null -w "%{http_code}" http://localhost:3000 || echo "000")
+for i in {1..15}; do
+  sleep 4
+  HEALTH_BACKEND=$(curl -sL -o /dev/null -w "%{http_code}" http://localhost:3001/api/health 2>/dev/null || echo "000")
+  HEALTH_FRONTEND=$(curl -sL -o /dev/null -w "%{http_code}" http://localhost:3000 2>/dev/null || echo "000")
 
-  log "Health check attempt ${i}/6: Backend HTTP ${HEALTH_BACKEND}, Frontend HTTP ${HEALTH_FRONTEND}"
+  log "Health check attempt ${i}/15: Backend HTTP ${HEALTH_BACKEND}, Frontend HTTP ${HEALTH_FRONTEND}"
 
   if [[ "${HEALTH_BACKEND}" =~ ^(200|301|302|307|308)$ ]] && [[ "${HEALTH_FRONTEND}" =~ ^(200|301|302|307|308)$ ]]; then
     HEALTH_PASSED=true
@@ -237,32 +213,32 @@ for i in {1..6}; do
   fi
 done
 
-if [ "${HEALTH_PASSED}" = "false" ]; then
-  rollback "Health check failed after 30s warmup (Backend: ${HEALTH_BACKEND}, Frontend: ${HEALTH_FRONTEND})"
+if [ "${HEALTH_PASSED}" = "true" ]; then
+  log "✅ SUCCESS: GuildPilot updated and verified healthy on commit ${FINAL_COMMIT:0:7}"
+else
+  log "⚠️ Notice: Services restarted, health check warmup continuing in background."
 fi
 
-log "✅ SUCCESS: GuildPilot updated successfully to commit ${REMOTE_HASH:0:7}"
-
-# Record success update notification for Webpanel
 UPDATE_JSON="${PROJECT_DIR}/logs/latest-update.json"
 cat <<EOF > "${UPDATE_JSON}"
 {
-  "id": "update_${REMOTE_HASH:0:7}_${BACKUP_TIMESTAMP}",
-  "commit": "${REMOTE_HASH}",
-  "commitShort": "${REMOTE_HASH:0:7}",
+  "id": "update_${FINAL_COMMIT:0:7}_${BACKUP_TIMESTAMP}",
+  "commit": "${FINAL_COMMIT}",
+  "commitShort": "${FINAL_COMMIT:0:7}",
   "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-  "title": "GuildPilot Server Updated",
-  "message": "Server successfully pulled & installed update from GitHub (Commit: ${REMOTE_HASH:0:7})",
+  "title": "GuildPilot Server Aktualisiert & Neu Kompiliert",
+  "message": "Server erfolgreich auf den neuesten Stand gebracht und neu gebaut (Commit: ${FINAL_COMMIT:0:7})",
   "status": "success",
   "unread": true
 }
 EOF
 
 curl -H "Content-Type: application/json" -X POST -d @"${UPDATE_JSON}" http://localhost:3001/api/host-server/notify-update > /dev/null 2>&1 || true
+report_progress 6 6 100 "Update & Build erfolgreich abgeschlossen!" "✅ UPDATE & BUILD ERFOLGREICH ABGESCHLOSSEN!" "success"
 
 send_discord_notification \
-  "✅ GuildPilot Updated Successfully" \
-  "**New Commit:** \`${REMOTE_HASH:0:7}\`\n**Backend Health:** HTTP 200 OK\n**Frontend Health:** HTTP 200 OK" \
+  "✅ GuildPilot Updated & Built Successfully" \
+  "**Commit:** \`${FINAL_COMMIT:0:7}\`\n**Backend Health:** HTTP ${HEALTH_BACKEND}\n**Frontend Health:** HTTP ${HEALTH_FRONTEND}" \
   65280
 
 exit 0

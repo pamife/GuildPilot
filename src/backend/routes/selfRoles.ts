@@ -9,8 +9,13 @@ import {
   duplicateSelfRolePanel,
 } from "../services/selfRoleService";
 import { deploySelfRolePanelEmbed, refreshSelfRolePanelMessage } from "../bot/selfRoleHandler";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 
 const router = Router();
+
+// Absicherung gegen IDOR: Zugriff nur für berechtigte Nutzer dieses Servers
+router.use(requireGuildAccess("guildId"));
+
 
 // GET all panels for a guild
 router.get("/:guildId/self-roles/panels", async (req, res) => {

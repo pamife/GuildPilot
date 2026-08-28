@@ -540,4 +540,19 @@ model AutoReact {
   updatedAt  DateTime @updatedAt
 }
 
+model User {
+  id            String    @id @default(uuid())
+  discordId     String    @unique
+  username      String
+  discriminator String?   @default("0")
+  avatar        String?
+  role          String    @default("USER") // OWNER, USER
+  accessToken   String?
+  refreshToken  String?
+  lastLoginAt   DateTime  @default(now())
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+}
+
+
 

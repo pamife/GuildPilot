@@ -5,8 +5,8 @@ After=network.target
 [Service]
 Type=oneshot
 User=paul
-WorkingDirectory=/home/paul/.gemini/antigravity/scratch/GuildPilot
-ExecStart=/bin/bash /home/paul/.gemini/antigravity/scratch/GuildPilot/scripts/auto-update.sh
+WorkingDirectory=/home/paul/GuildPilot
+ExecStart=/bin/bash /home/paul/GuildPilot/scripts/auto-update.sh
 StandardOutput=journal
 StandardError=journal
 

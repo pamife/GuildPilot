@@ -1,10 +1,11 @@
 import { Router } from "express";
-import { requireOwnerAuth } from "../middleware/authMiddleware";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 import { getGuildChannels, createChannel, updateChannel, deleteChannel } from "../services/channelService";
 
 const router = Router();
 
-router.use(requireOwnerAuth);
+router.use(requireGuildAccess("id"));
+
 
 router.get("/:id/channels", async (req, res) => {
   try {

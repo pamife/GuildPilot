@@ -3,6 +3,8 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { ToastProvider, useToast } from "@/components/ToastContainer";
 import { Sidebar, ViewType } from "@/components/Sidebar";
+import { LoginView } from "@/components/views/LoginView";
+import { ServerSelectorView } from "@/components/views/ServerSelectorView";
 import { OverviewView } from "@/components/views/OverviewView";
 import { ChannelManagerView } from "@/components/views/ChannelManagerView";
 import { CategoryManagerView } from "@/components/views/CategoryManagerView";
@@ -22,21 +24,22 @@ import { AutoReactView } from "@/components/views/AutoReactView";
 import { ServerCloneView } from "@/components/views/ServerCloneView";
 import { MemberManagerView } from "@/components/views/MemberManagerView";
 import { BackupsView } from "@/components/views/BackupsView";
-import { api } from "@/lib/api";
+import { api, setAuthToken, getAuthToken } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
-import { ShieldAlert, LogIn, Radio, RefreshCw, Sparkles, CheckCircle2 } from "lucide-react";
+import { Sparkles, ArrowLeft, Crown } from "lucide-react";
+
+type ScreenMode = "servers" | "guild" | "owner";
 
 function DashboardContent() {
   const { showToast } = useToast();
 
+  const [screenMode, setScreenMode] = useState<ScreenMode>("servers");
   const [currentView, setCurrentView] = useState<ViewType>("overview");
-  const [ownerUser, setOwnerUser] = useState<any>({
-    id: "owner_local_dev",
-    username: "GuildPilot Owner (Local Mode)",
-    avatar: null,
-  });
+  const [currentUser, setCurrentUser] = useState<any>(null);
+  const [isOwner, setIsOwner] = useState<boolean>(false);
+  const [loadingAuth, setLoadingAuth] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
-  const [loadingAuth, setLoadingAuth] = useState(false);
+  const [authWarning, setAuthWarning] = useState<string | null>(null);
 
   // Data states
   const [guilds, setGuilds] = useState<any[]>([]);
@@ -52,30 +55,64 @@ function DashboardContent() {
   const [botStatus, setBotStatus] = useState<{ ready: boolean; tag: string; ping: number } | null>(null);
   const [updateNotification, setUpdateNotification] = useState<any>(null);
 
-  // Check auth status silently in background
-  const checkAuth = async () => {
+  // 1. Initial Authentication Check
+  const checkAuth = useCallback(async () => {
+    setLoadingAuth(true);
     try {
-      const res = await api.get("/auth/me", { timeout: 2500 });
+      if (typeof window !== "undefined") {
+        const params = new URLSearchParams(window.location.search);
+        const urlToken = params.get("token");
+        if (urlToken) {
+          setAuthToken(urlToken);
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+        const err = params.get("error");
+        if (err) setAuthError(err);
+        const warn = params.get("auth_warning");
+        if (warn) setAuthWarning(warn);
+      }
+
+      const res = await api.get("/auth/me", { timeout: 3500 });
       if (res.data && res.data.user) {
-        setOwnerUser(res.data.user);
+        setCurrentUser(res.data.user);
+        setIsOwner(res.data.isOwner || res.data.user.role === "OWNER");
         setAuthError(null);
+      } else {
+        setCurrentUser(null);
+        setIsOwner(false);
       }
     } catch (err: any) {
-      console.warn("Auth check warning:", err.response?.data || err.message);
+      setCurrentUser(null);
+      setIsOwner(false);
+    } finally {
+      setLoadingAuth(false);
     }
-  };
+  }, []);
 
-  // Fetch server update notification
-  const fetchUpdateNotification = async () => {
+  // 2. Fetch accessible guilds for the logged in user
+  const fetchGuilds = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const res = await api.get("/guilds");
+      setGuilds(res.data || []);
+    } catch (err: any) {
+      console.error("Failed to fetch guilds:", err);
+      showToast("Fehler beim Laden der Serverliste.", "error");
+    }
+  }, [currentUser, showToast]);
+
+  // 3. Fetch server update notification (Owner Only)
+  const fetchUpdateNotification = useCallback(async () => {
+    if (!isOwner) return;
     try {
       const res = await api.get("/host-server/updates");
       if (res.data && res.data.unread) {
         setUpdateNotification(res.data);
       }
     } catch (err) {
-      // Ignore update check error
+      // Ignoriere Update-Prüffehler
     }
-  };
+  }, [isOwner]);
 
   const handleDismissUpdate = async () => {
     try {
@@ -86,20 +123,7 @@ function DashboardContent() {
     }
   };
 
-  // Fetch guilds list
-  const fetchGuilds = async () => {
-    try {
-      const res = await api.get("/guilds");
-      setGuilds(res.data);
-      if (res.data.length > 0 && !selectedGuildId) {
-        setSelectedGuildId(res.data[0].id);
-      }
-    } catch (err: any) {
-      console.error("Failed to fetch guilds:", err);
-    }
-  };
-
-  // Fetch details for selected guild
+  // 4. Fetch details for selected guild
   const fetchGuildData = useCallback(async () => {
     if (!selectedGuildId) return;
     try {
@@ -133,20 +157,31 @@ function DashboardContent() {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   useEffect(() => {
-    if (ownerUser) {
+    if (currentUser) {
       fetchGuilds();
       fetchUpdateNotification();
     }
-  }, [ownerUser]);
+  }, [currentUser, fetchGuilds, fetchUpdateNotification]);
 
   useEffect(() => {
-    if (selectedGuildId) {
+    if (selectedGuildId && screenMode === "guild") {
       fetchGuildData();
     }
-  }, [selectedGuildId, fetchGuildData]);
+  }, [selectedGuildId, screenMode, fetchGuildData]);
+
+  // Socket.IO Room Management for Selected Guild
+  useEffect(() => {
+    if (!selectedGuildId || screenMode !== "guild") return;
+    const socket = getSocket();
+    socket.emit("joinGuild", { guildId: selectedGuildId });
+
+    return () => {
+      socket.emit("leaveGuild", { guildId: selectedGuildId });
+    };
+  }, [selectedGuildId, screenMode]);
 
   // Real-time Socket.IO Listeners
   useEffect(() => {
@@ -161,15 +196,16 @@ function DashboardContent() {
       if (data.ready) {
         fetchGuilds();
       }
-      showToast(data.ready ? `Bot ${data.tag} is online` : "Bot disconnected", data.ready ? "success" : "error");
     };
 
     const handleUpdateNotification = (data: any) => {
-      setUpdateNotification(data);
-      showToast(
-        data.message || `Server update installed (Commit: ${data.commitShort})`,
-        data.status === "error" ? "error" : "success"
-      );
+      if (isOwner) {
+        setUpdateNotification(data);
+        showToast(
+          data.message || `Server-Update installiert (Commit: ${data.commitShort})`,
+          data.status === "error" ? "error" : "success"
+        );
+      }
     };
 
     const handleUpdateNotificationRead = () => {
@@ -181,10 +217,12 @@ function DashboardContent() {
     };
 
     const handleSystemRestarting = (data: any) => {
-      showToast(data.reason || "System wird neu gestartet...", "info");
-      setTimeout(() => {
-        window.location.reload();
-      }, 3000);
+      if (isOwner) {
+        showToast(data.reason || "System wird neu gestartet...", "info");
+        setTimeout(() => {
+          window.location.reload();
+        }, 3000);
+      }
     };
 
     socket.on("botStatusChange", handleBotStatusChange);
@@ -216,7 +254,7 @@ function DashboardContent() {
     socket.on("guildDelete", (data: any) => {
       fetchGuilds();
       fetchGuildData();
-      showToast(`Bot wurde vom Server "${data.name}" entfernt. Automatisches Notfall-Backup wurde archiviert.`, "info");
+      showToast(`Bot wurde vom Server "${data?.name || ""}" entfernt.`, "info");
     });
     socket.on("backupCreated", (data: any) => {
       showToast(`Backup "${data.backupName || data.guildName}" gesichert.`, "success");
@@ -249,15 +287,20 @@ function DashboardContent() {
       socket.off("guildDelete");
       socket.off("backupCreated");
     };
-  }, [fetchGuildData, showToast]);
+  }, [fetchGuildData, fetchGuilds, isOwner, showToast]);
 
   const handleLogout = async () => {
-    await api.post("/auth/logout");
-    setOwnerUser(null);
-    setAuthError("Logged out.");
+    try {
+      await api.post("/auth/logout");
+    } catch (e) {}
+    setAuthToken(null);
+    setCurrentUser(null);
+    setIsOwner(false);
+    setSelectedGuildId(null);
+    setScreenMode("servers");
   };
 
-  // API Mutators
+  // API Mutators for selected Guild
   const handleCreateChannel = async (data: any) => {
     await api.post(`/guilds/${selectedGuildId}/channels`, data);
     fetchGuildData();
@@ -373,34 +416,91 @@ function DashboardContent() {
     return res.data;
   };
 
-  // Auth Protection Splash Screen if not logged in
-  if (!ownerUser) {
+  // 1. Loading State
+  if (loadingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-discord-darkest p-4">
-        <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl max-w-md w-full p-8 text-center shadow-2xl space-y-6">
-          <div className="w-16 h-16 bg-discord-brand/20 border border-discord-brand/40 text-discord-brand rounded-2xl flex items-center justify-center mx-auto shadow-inner">
-            <ShieldAlert className="w-8 h-8" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold text-discord-header">GuildPilot Local</h1>
-            <p className="text-sm text-discord-muted mt-2">
-              Personal Discord Server Management Dashboard. Access is restricted to the local bot owner.
-            </p>
-          </div>
-
-          <a
-            href={`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001"}/api/auth/login`}
-            className="flex items-center justify-center gap-2.5 w-full py-3 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02]"
-          >
-            <LogIn className="w-5 h-5" /> Login with Discord OAuth2
-          </a>
+      <div className="min-h-screen flex items-center justify-center bg-[#07090e] text-slate-400">
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
+          <p className="text-xs font-medium">Lade GuildPilot...</p>
         </div>
       </div>
     );
   }
 
+  // 2. Unauthenticated -> Show Modern Login Page
+  if (!currentUser) {
+    return <LoginView authWarning={authWarning} authError={authError} />;
+  }
+
+  // 3. Server Selector Screen
+  if (screenMode === "servers") {
+    return (
+      <ServerSelectorView
+        user={currentUser}
+        isOwner={isOwner}
+        guilds={guilds}
+        onSelectGuild={(id) => {
+          setSelectedGuildId(id);
+          setScreenMode("guild");
+          setCurrentView("overview");
+        }}
+        onOpenOwnerDashboard={() => {
+          setScreenMode("owner");
+          setCurrentView("host-server");
+        }}
+        onLogout={handleLogout}
+      />
+    );
+  }
+
+  // 4. Owner Dashboard Screen (Exklusiv für Owner)
+  if (screenMode === "owner" && isOwner) {
+    return (
+      <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col">
+        {/* Owner Header */}
+        <header className="border-b border-[#141b2b] bg-[#090d15]/95 px-6 h-16 flex items-center justify-between sticky top-0 z-20">
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setScreenMode("servers")}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#111724] hover:bg-[#182238] border border-[#1e2a42] text-xs font-semibold text-slate-300 hover:text-white transition-all"
+            >
+              <ArrowLeft className="w-4 h-4" />
+              <span>Server-Übersicht</span>
+            </button>
+
+            <div className="h-4 w-px bg-[#1e2a42]" />
+
+            <div className="flex items-center gap-2">
+              <Crown className="w-4 h-4 text-amber-400" />
+              <span className="text-sm font-bold text-white">Owner Control Center</span>
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/30 font-semibold">
+                Live Telemetrie
+              </span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-400">{currentUser.username}</span>
+            <button
+              onClick={handleLogout}
+              className="text-xs text-rose-400 hover:text-rose-300 px-3 py-1.5 rounded-lg bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 transition-all"
+            >
+              Abmelden
+            </button>
+          </div>
+        </header>
+
+        <main className="flex-1 overflow-y-auto bg-[#07090e]">
+          <HostServerView />
+        </main>
+      </div>
+    );
+  }
+
+  // 5. Guild Management Dashboard Screen
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0b0f17]">
+    <div className="flex h-screen overflow-hidden bg-[#07090e]">
       {/* Sidebar */}
       <Sidebar
         currentView={currentView}
@@ -409,15 +509,17 @@ function DashboardContent() {
         selectedGuildId={selectedGuildId}
         onSelectGuild={setSelectedGuildId}
         botStatus={botStatus}
-        ownerUser={ownerUser}
+        ownerUser={currentUser}
+        isOwner={isOwner}
         onLogout={handleLogout}
         onRefreshGuilds={fetchGuilds}
+        onBackToServers={() => setScreenMode("servers")}
       />
 
       {/* Main View Shell */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#0b0f17] overflow-hidden">
-        {updateNotification && updateNotification.unread && (
-          <div className="bg-gradient-to-r from-emerald-600 via-discord-brand to-emerald-700 text-white px-4 py-2.5 flex items-center justify-between text-sm font-medium shadow-lg border-b border-emerald-400/40 shrink-0 animate-in slide-in-from-top duration-300">
+      <main className="flex-1 flex flex-col min-w-0 bg-[#07090e] overflow-hidden">
+        {updateNotification && updateNotification.unread && isOwner && (
+          <div className="bg-gradient-to-r from-emerald-600 via-indigo-600 to-emerald-700 text-white px-4 py-2.5 flex items-center justify-between text-sm font-medium shadow-lg border-b border-emerald-400/40 shrink-0 animate-in slide-in-from-top duration-300">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="p-1.5 rounded-lg bg-white/20 shrink-0">
                 <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
@@ -440,7 +542,8 @@ function DashboardContent() {
             </button>
           </div>
         )}
-        {currentView === "host-server" && <HostServerView />}
+
+        {currentView === "host-server" && isOwner && <HostServerView />}
         {currentView === "members" && (
           <MemberManagerView
             selectedGuildId={selectedGuildId}
@@ -616,3 +719,4 @@ export default function Home() {
     </ToastProvider>
   );
 }
+

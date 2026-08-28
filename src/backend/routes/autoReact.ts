@@ -6,8 +6,13 @@ import {
   deleteAutoReact,
   toggleAutoReact,
 } from "../services/autoReactService";
+import { requireGuildAccess } from "../middleware/authMiddleware";
 
 const router = Router();
+
+// Absicherung gegen IDOR: Zugriff nur für berechtigte Nutzer dieses Servers
+router.use(requireGuildAccess("guildId"));
+
 
 // GET all auto-react rules for a guild
 router.get("/:guildId/auto-reacts", async (req, res) => {
