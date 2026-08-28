@@ -100,33 +100,27 @@ process.on("unhandledRejection", (reason, promise) => {
   console.error("[GuildPilot Server] Unhandled Rejection at:", promise, "reason:", reason);
 });
 
-const HOST = process.env.HOST || "127.0.0.1";
+const HOST = process.env.HOST || "0.0.0.0";
 
 // Security Startup Verification
 function verifySecurityConfiguration() {
   const jwtSecret = process.env.JWT_SECRET;
-  const isProd = process.env.NODE_ENV === "production";
+  const isDefaultSecret = !jwtSecret || jwtSecret === "guildpilot_super_secret_local_key_change_me" || jwtSecret === "test";
 
-  if (!jwtSecret || jwtSecret === "guildpilot_super_secret_local_key_change_me" || jwtSecret === "test") {
-    if (isProd) {
-      console.error(
-        "\n=================================================================" +
-        "\n[SECURITY CRITICAL ERROR] Production startup aborted!" +
-        "\nJWT_SECRET must be set to a secure, long random string in .env." +
-        "\n=================================================================\n"
-      );
-      process.exit(1);
-    } else {
-      console.warn(
-        "[Security Warning] Using development/weak JWT_SECRET. Remember to set a strong secret for public deployment!"
-      );
-    }
+  if (isDefaultSecret) {
+    console.warn(
+      "\n=================================================================" +
+      "\n[Security Notice] JWT_SECRET in .env is using default template key." +
+      "\nA secure runtime fallback key was initialized automatically." +
+      "\nFor persistent logins across restarts, set a custom JWT_SECRET in .env." +
+      "\n=================================================================\n"
+    );
   }
 
   const clientId = process.env.DISCORD_CLIENT_ID;
   const token = process.env.DISCORD_TOKEN;
   if (!clientId || clientId === "your_client_id_here" || !token || token === "your_bot_token_here") {
-    console.warn("[Configuration Warning] Discord Client ID or Bot Token is not properly set in .env.");
+    console.warn("[Configuration Notice] Discord Client ID or Bot Token is not configured in .env. Waiting for credentials.");
   }
 }
 

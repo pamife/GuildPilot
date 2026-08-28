@@ -27,15 +27,23 @@ export function isOwner(userId?: string | null): boolean {
   );
 }
 
+import crypto from "crypto";
+
+let runtimeFallbackSecret: string | null = null;
+
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
-  if (!secret || secret === "guildpilot_super_secret_local_key_change_me") {
-    if (process.env.NODE_ENV === "production") {
-      throw new Error("[SECURITY CRITICAL] In Production Mode, JWT_SECRET must be set to a secure secret.");
-    }
-    return "guildpilot_super_secret_local_key_change_me";
+  if (secret && secret.trim() !== "" && secret !== "guildpilot_super_secret_local_key_change_me" && secret !== "test") {
+    return secret;
   }
-  return secret;
+
+  if (!runtimeFallbackSecret) {
+    runtimeFallbackSecret = crypto.randomBytes(32).toString("hex");
+    console.warn(
+      "[Security Warning] Using generated runtime JWT secret. Set JWT_SECRET in .env for persistent login sessions."
+    );
+  }
+  return runtimeFallbackSecret;
 }
 
 /**
