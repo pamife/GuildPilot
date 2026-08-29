@@ -286,15 +286,15 @@ const PRESET_TEMPLATES = [
   },
 ];
 
-const PRESET_COLORS = [
-  { name: "Standard Gray", hex: "#242424" },
+export const PRESET_COLORS = [
+  { name: "Neutral Dark (Invisible Border)", hex: "#242429" },
   { name: "Discord Blurple", hex: "#5865F2" },
   { name: "Emerald Green", hex: "#23A55A" },
   { name: "Crimson Red", hex: "#F23F43" },
   { name: "Amber Gold", hex: "#F0B232" },
   { name: "Deep Violet", hex: "#9B59B6" },
   { name: "Cyan Teal", hex: "#1ABC9C" },
-  { name: "Charcoal Dark", hex: "#2B2D31" },
+  { name: "OLED Dark", hex: "#111214" },
 ];
 
 export function CustomMessagesView({
@@ -335,7 +335,7 @@ export function CustomMessagesView({
     channelId: channels.find((c) => c.type === 0)?.id || "",
     messageId: null,
     content: "",
-    accentColor: "#242424",
+    accentColor: "#242429",
     spoiler: false,
     containerConfig: [
       {
@@ -347,7 +347,7 @@ export function CustomMessagesView({
     embedConfig: {
       title: "Classic Embed Title",
       description: "Embed description formatted in markdown.",
-      color: "#242424",
+      color: "#242429",
       showTimestamp: true,
       fields: [],
     },
@@ -1806,7 +1806,7 @@ export function CustomMessagesView({
             {/* Preview Body */}
             <div className="flex-1 p-6 overflow-y-auto flex items-start justify-center bg-[#313338]/30">
               {previewTab === "visual" ? (
-                <div className="w-full max-w-xl bg-[#313338] rounded-xl p-4 shadow-2xl border border-[#2b2d31] space-y-3 font-sans">
+                <div className="w-full max-w-xl bg-[#313338] rounded-xl p-4 shadow-2xl border border-[#242429] space-y-3 font-sans">
                   {/* Discord Message Author Row */}
                   <div className="flex items-start gap-3 select-none">
                     <div className="w-10 h-10 rounded-full bg-discord-brand flex items-center justify-center font-bold text-white text-xs shrink-0 shadow">
@@ -1826,7 +1826,7 @@ export function CustomMessagesView({
                       {/* RENDER DISCORD COMPONENTS V2 CONTAINER */}
                       {currentMessage.mode === "components_v2" ? (
                         <div
-                          className="mt-2 rounded-lg bg-[#2b2d31] p-3 border-l-4 shadow-md space-y-3 transition-all"
+                          className="mt-2 rounded-lg bg-[#242429] p-3 border-l-4 shadow-md space-y-3 transition-all"
                           style={{ borderColor: currentMessage.accentColor || "#5865F2" }}
                         >
                           {currentMessage.containerConfig.map((block, bIdx) => (
@@ -1851,7 +1851,7 @@ export function CustomMessagesView({
 
                               {/* Section Block (Left Text + Right Accessory) */}
                               {block.type === "section" && (
-                                <div className="w-full flex items-center justify-between gap-4 bg-[#1e1f22]/50 p-2.5 rounded-lg border border-[#2b2d31]">
+                                <div className="w-full flex items-center justify-between gap-4 bg-[#1e1f22]/50 p-2.5 rounded-lg border border-[#242429]">
                                   <div className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed flex-1 min-w-0 pr-2">
                                     {block.content}
                                   </div>
@@ -1861,7 +1861,7 @@ export function CustomMessagesView({
                                         <img
                                           src={block.accessory.url}
                                           alt="Top-Right Thumbnail"
-                                          className="w-14 h-14 rounded-lg object-cover border border-[#2b2d31] shadow-sm"
+                                          className="w-14 h-14 rounded-lg object-cover border border-[#242429] shadow-sm"
                                         />
                                       )}
                                       {block.accessory.type === "button" && (
@@ -1897,7 +1897,7 @@ export function CustomMessagesView({
                                         key={mIdx}
                                         src={m.url}
                                         alt=""
-                                        className="rounded-lg object-cover w-full max-h-52 border border-[#2b2d31]"
+                                        className="rounded-lg object-cover w-full max-h-52 border border-[#242429]"
                                       />
                                     )
                                   ))}
@@ -1940,8 +1940,8 @@ export function CustomMessagesView({
                       ) : (
                         /* RENDER CLASSIC EMBED */
                         <div
-                          className="mt-2 rounded-lg bg-[#2b2d31] p-4 border-l-4 shadow-md space-y-2.5 font-sans"
-                          style={{ borderColor: currentMessage.embedConfig?.color || currentMessage.accentColor || "#242424" }}
+                          className="mt-2 rounded-lg bg-[#242429] p-4 border-l-4 shadow-md space-y-2.5 font-sans"
+                          style={{ borderColor: currentMessage.embedConfig?.color || currentMessage.accentColor || "#242429" }}
                         >
                           <div className="flex items-start justify-between gap-3">
                             <div className="space-y-1 flex-1 min-w-0">

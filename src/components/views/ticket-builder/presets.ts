@@ -1,4 +1,4 @@
-﻿export const PRESET_TICKET_TEMPLATES = [
+export const PRESET_TICKET_TEMPLATES = [
   {
     name: "Multi-Category Dropdown Support Hub",
     description: "Modern Components V2 layout with select menu for Technical, Billing & General Support.",
@@ -165,6 +165,49 @@
           { id: "q1", label: "User or Rule violated", placeholder: "e.g. @Spammer", style: "short" as const, required: true },
           { id: "q2", label: "Evidence or details", placeholder: "Message link or description...", style: "paragraph" as const, required: true },
         ],
+      },
+    ],
+  },
+  {
+    name: "Seamless Minimalist Desk (Invisible Border)",
+    description: "Clean seamless Components V2 design using #242429 to visually hide the side stripe.",
+    layoutMode: "components_v2" as const,
+    accentColor: "#242429",
+    spoiler: false,
+    containerConfig: [
+      {
+        id: "block-txt-header-clean",
+        type: "text" as const,
+        content: "# 🛠️ Community Service Desk\nWelcome! If you have any inquiries or require assistance from our moderators, choose a category below.",
+      },
+      { id: "block-sep-clean", type: "separator" as const, divider: true },
+      {
+        id: "block-row-buttons-clean",
+        type: "action_row" as const,
+        rowType: "buttons" as const,
+        buttons: [
+          {
+            id: "btn-open-clean",
+            style: "Secondary" as const,
+            label: "Open Support Ticket",
+            emoji: "🎫",
+            actionType: "CREATE_TICKET" as const,
+            ticketTypeId: "general",
+          },
+        ],
+      },
+    ],
+    ticketTypesConfig: [
+      {
+        id: "general",
+        name: "General Inquiries",
+        label: "General Inquiries",
+        emoji: "🎫",
+        description: "Community questions",
+        namingFormat: "ticket-{username}",
+        welcomeTitle: "👋 Welcome to your ticket!",
+        welcomeDescription: "Welcome {user}! Staff will assist you shortly.",
+        welcomeColor: "#242429",
       },
     ],
   },

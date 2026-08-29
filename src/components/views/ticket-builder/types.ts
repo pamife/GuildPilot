@@ -1,4 +1,4 @@
-﻿import {
+import {
   TicketPanelData,
   TicketPanelComponentItem,
   TicketTypeConfig,
@@ -30,6 +30,6 @@ export const PRESET_COLORS = [
   { name: "Amber Gold", hex: "#F0B232" },
   { name: "Deep Violet", hex: "#9B59B6" },
   { name: "Cyan Teal", hex: "#1ABC9C" },
-  { name: "Standard Dark", hex: "#2B2D31" },
-  { name: "Charcoal Black", hex: "#18191C" },
+  { name: "Neutral Dark (Invisible Border)", hex: "#242429" },
+  { name: "OLED Dark", hex: "#111214" },
 ];

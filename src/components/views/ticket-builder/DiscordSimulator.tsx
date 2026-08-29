@@ -102,7 +102,7 @@ export function DiscordSimulator({
       <div className="flex-1 p-6 overflow-y-auto flex items-start justify-center bg-[#313338]/30">
         {previewTab === "visual" ? (
           /* LIVE COMPONENTS V2 PANEL SIMULATOR */
-          <div className="w-full max-w-xl bg-[#313338] rounded-xl p-4 shadow-2xl border border-[#2b2d31] space-y-3 font-sans">
+          <div className="w-full max-w-xl bg-[#313338] rounded-xl p-4 shadow-2xl border border-[#242429] space-y-3 font-sans">
             <div className="flex items-start gap-3 select-none">
               <div className="w-10 h-10 rounded-full bg-indigo-600 flex items-center justify-center font-bold text-white text-xs shrink-0 shadow">
                 GP
@@ -120,7 +120,7 @@ export function DiscordSimulator({
 
                 {/* ROOT CONTAINER (Type 17) */}
                 <div
-                  className={`mt-2 rounded-lg bg-[#2b2d31] p-3.5 border-l-4 shadow-md space-y-3 transition-all ${
+                  className={`mt-2 rounded-lg bg-[#242429] p-3.5 border-l-4 shadow-md space-y-3 transition-all ${
                     panelData.spoiler ? "blur-sm hover:blur-none transition-all cursor-pointer" : ""
                   }`}
                   style={{ borderColor: panelData.accentColor || "#5865F2" }}
@@ -147,7 +147,7 @@ export function DiscordSimulator({
 
                       {/* 2. Section */}
                       {block.type === "section" && (
-                        <div className="w-full flex items-center justify-between gap-4 bg-[#1e1f22]/50 p-2.5 rounded-lg border border-[#2b2d31]">
+                        <div className="w-full flex items-center justify-between gap-4 bg-[#1e1f22]/50 p-2.5 rounded-lg border border-[#242429]">
                           <div className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed flex-1 min-w-0 pr-2">
                             {block.content}
                           </div>
@@ -157,7 +157,7 @@ export function DiscordSimulator({
                                 <img
                                   src={block.accessory.url}
                                   alt="Thumbnail"
-                                  className="w-14 h-14 rounded-lg object-cover border border-[#2b2d31] shadow-sm"
+                                  className="w-14 h-14 rounded-lg object-cover border border-[#242429] shadow-sm"
                                 />
                               )}
                               {block.accessory.type === "button" && (
@@ -185,7 +185,7 @@ export function DiscordSimulator({
                       {block.type === "action_row" && (
                         <div>
                           {block.rowType === "select" || block.selectMenu ? (
-                            <div className="w-full p-2.5 rounded bg-[#1e1f22] border border-[#2b2d31] flex items-center justify-between text-xs text-zinc-300">
+                            <div className="w-full p-2.5 rounded bg-[#1e1f22] border border-[#242429] flex items-center justify-between text-xs text-zinc-300">
                               <span>{block.selectMenu?.placeholder || "Wähle eine Kategorie..."}</span>
                               <ChevronDown className="w-4 h-4 text-zinc-400" />
                             </div>
@@ -227,7 +227,7 @@ export function DiscordSimulator({
                                 key={mIdx}
                                 src={m.url}
                                 alt=""
-                                className="rounded-lg object-cover w-full max-h-48 border border-[#2b2d31]"
+                                className="rounded-lg object-cover w-full max-h-48 border border-[#242429]"
                               />
                             )
                           ))}
@@ -241,15 +241,15 @@ export function DiscordSimulator({
           </div>
         ) : previewTab === "welcome" ? (
           /* LIVE TICKET CHANNEL SIMULATOR */
-          <div className="w-full max-w-xl bg-[#313338] rounded-xl p-4 shadow-2xl border border-[#2b2d31] space-y-3 font-sans">
-            <div className="flex items-center justify-between pb-2 border-b border-[#2b2d31]">
+          <div className="w-full max-w-xl bg-[#313338] rounded-xl p-4 shadow-2xl border border-[#242429] space-y-3 font-sans">
+            <div className="flex items-center justify-between pb-2 border-b border-[#242429]">
               <span className="text-xs font-bold text-zinc-300">
                 Vorschau für Ticket-Typ:
               </span>
               <select
                 value={previewTicketTypeIdx}
                 onChange={(e) => setPreviewTicketTypeIdx(Number(e.target.value))}
-                className="bg-[#1e1f22] border border-[#2b2d31] px-2 py-1 rounded text-xs text-white outline-none"
+                className="bg-[#1e1f22] border border-[#242429] px-2 py-1 rounded text-xs text-white outline-none"
               >
                 {panelData.ticketTypesConfig.map((t, idx) => (
                   <option key={t.id} value={idx}>
@@ -274,7 +274,7 @@ export function DiscordSimulator({
 
                 {/* Welcome Embed */}
                 <div
-                  className="rounded-lg bg-[#2b2d31] p-3.5 border-l-4 shadow space-y-2"
+                  className="rounded-lg bg-[#242429] p-3.5 border-l-4 shadow space-y-2"
                   style={{ borderColor: currentPreviewType?.welcomeColor || "#5865F2" }}
                 >
                   <h3 className="text-sm font-bold text-white">

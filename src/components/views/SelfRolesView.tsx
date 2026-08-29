@@ -96,7 +96,7 @@ interface SelfRolesViewProps {
 }
 
 const COLOR_PRESETS = [
-  "#2b2d31", // Neutral Dark (Components V2 / Seamless Look)
+  "#242429", // Neutral Dark (Components V2 / Seamless Look)
   "#5865F2", // Discord Blurple
   "#57F287", // Green
   "#FEE75C", // Yellow
@@ -1143,8 +1143,8 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
           <div className="flex-1 p-4 bg-[#0d121c] overflow-y-auto space-y-3">
             {/* Discord Live Embed / Component V2 Container */}
             <div className="bg-[#111724] rounded-2xl p-4 border border-[#1e293b] shadow-md relative space-y-3 font-sans">
-              {/* Colored Left Border (Hidden if Neutral Dark #2b2d31 or V2 layout) */}
-              {formData.embedColor && formData.embedColor.toLowerCase() !== "#2b2d31" && formData.embedColor !== "none" && formData.layoutMode === "embed" && (
+              {/* Colored Left Border (Hidden if Neutral Dark #242429 or V2 layout) */}
+              {formData.embedColor && formData.embedColor.toLowerCase() !== "#242429" && formData.embedColor.toLowerCase() !== "#2b2d31" && formData.embedColor !== "none" && formData.layoutMode === "embed" && (
                 <div
                   className="absolute top-0 bottom-0 left-0 w-1.5 rounded-l-2xl"
                   style={{ backgroundColor: formData.embedColor }}
