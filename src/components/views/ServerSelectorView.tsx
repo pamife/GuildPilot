@@ -45,9 +45,10 @@ export function ServerSelectorView({
   onOpenOwnerDashboard,
   onLogout,
 }: ServerSelectorViewProps) {
-  // Discord Bot Invite Link
+  // Discord Bot Invite Link (Exakte Berechtigungen ohne Administrator-Flag: 1616413846775)
   const clientId = process.env.NEXT_PUBLIC_DISCORD_CLIENT_ID || "1533187416230461490";
-  const botInviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=8&scope=bot%20applications.commands`;
+  const botInviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=1616413846775&scope=bot%20applications.commands`;
+
 
   return (
     <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col justify-between selection:bg-indigo-500 selection:text-white relative">
