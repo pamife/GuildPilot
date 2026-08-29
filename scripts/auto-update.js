@@ -158,7 +158,7 @@ try {
   reportProgress(4, 6, 60, "Installiere Abhängigkeiten & Synchronisiere DB...", "npm install & Prisma generate/db push...");
   try {
     log("Running npm install...");
-    execSync("npm install --no-audit --no-fund", { cwd: projectDir, stdio: "inherit", shell: true });
+    execSync("npm install --include=dev --no-audit --no-fund", { cwd: projectDir, stdio: "inherit", shell: true });
     
     log("Running Prisma generate & push...");
     execSync("npx prisma generate", { cwd: projectDir, stdio: "inherit", shell: true });

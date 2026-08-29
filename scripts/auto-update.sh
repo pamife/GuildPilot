@@ -175,7 +175,7 @@ fi
 # Step 4: Install dependencies & Prisma DB
 log "Installing dependencies and updating Prisma schema..."
 report_progress 4 6 60 "Installiere Abhängigkeiten & DB Schema..." "npm install & Prisma..."
-npm install --no-audit --no-fund || npm ci || true
+npm install --include=dev --no-audit --no-fund || npm install --no-audit --no-fund || true
 npx prisma generate || true
 npx prisma db push --accept-data-loss || true
 
