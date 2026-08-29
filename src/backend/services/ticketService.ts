@@ -81,29 +81,34 @@ export async function createTicketPanel(guildId: string, data: any) {
   const panel = await prisma.ticketPanel.create({
     data: {
       guildId,
-      name: data.name,
+      name: data.name || "General Support",
       description: data.description || null,
+      layoutMode: data.layoutMode || "components_v2",
+      accentColor: data.accentColor || data.embedColor || "#5865F2",
+      spoiler: !!data.spoiler,
+      containerConfig: typeof data.containerConfig === "object" ? JSON.stringify(data.containerConfig) : (data.containerConfig || "[]"),
+      ticketTypesConfig: typeof data.ticketTypesConfig === "object" ? JSON.stringify(data.ticketTypesConfig) : (data.ticketTypesConfig || "[]"),
       embedTitle: data.embedTitle || data.name,
       embedDescription: data.embedDescription || "Click the button below to open a support ticket.",
       embedColor: data.embedColor || "#5865F2",
       thumbnail: data.thumbnail || null,
       image: data.image || null,
-      footer: data.footer || "TheGodGen Ticket Engine",
+      footer: data.footer || "GuildPilot Ticket Engine",
       welcomeTitle: data.welcomeTitle || "👋 Welcome to your ticket!",
       welcomeDescription: data.welcomeDescription || "Support staff will be with you shortly. Use the controls below to manage this ticket.",
       welcomeColor: data.welcomeColor || "#5865F2",
       welcomeThumbnail: data.welcomeThumbnail || null,
       welcomeImage: data.welcomeImage || null,
-      welcomeFooter: data.welcomeFooter || "TheGodGen Ticket Engine",
-      reasons: JSON.stringify(data.reasons || []),
-      questions: JSON.stringify(data.questions || []),
+      welcomeFooter: data.welcomeFooter || "GuildPilot Ticket Engine",
+      reasons: typeof data.reasons === "object" ? JSON.stringify(data.reasons) : (data.reasons || "[]"),
+      questions: typeof data.questions === "object" ? JSON.stringify(data.questions) : (data.questions || "[]"),
       channelId: data.channelId || null,
       categoryId: data.categoryId || null,
       buttonText: data.buttonText || "Create Ticket",
       buttonEmoji: data.buttonEmoji || "📩",
       buttonColor: data.buttonColor || "Primary",
-      allowedRoles: JSON.stringify(data.allowedRoles || []),
-      supportRoles: JSON.stringify(data.supportRoles || []),
+      allowedRoles: typeof data.allowedRoles === "object" ? JSON.stringify(data.allowedRoles) : (data.allowedRoles || "[]"),
+      supportRoles: typeof data.supportRoles === "object" ? JSON.stringify(data.supportRoles) : (data.supportRoles || "[]"),
       maxOpenTickets: Number(data.maxOpenTickets || 1),
       autoCloseHours: Number(data.autoCloseHours || 0),
       transcriptEnabled: data.transcriptEnabled !== undefined ? Boolean(data.transcriptEnabled) : true,
@@ -118,6 +123,15 @@ export async function updateTicketPanel(panelId: string, data: any) {
   const updateData: any = {};
   if (data.name !== undefined) updateData.name = data.name;
   if (data.description !== undefined) updateData.description = data.description || null;
+  if (data.layoutMode !== undefined) updateData.layoutMode = data.layoutMode;
+  if (data.accentColor !== undefined) updateData.accentColor = data.accentColor;
+  if (data.spoiler !== undefined) updateData.spoiler = Boolean(data.spoiler);
+  if (data.containerConfig !== undefined) {
+    updateData.containerConfig = typeof data.containerConfig === "object" ? JSON.stringify(data.containerConfig) : data.containerConfig;
+  }
+  if (data.ticketTypesConfig !== undefined) {
+    updateData.ticketTypesConfig = typeof data.ticketTypesConfig === "object" ? JSON.stringify(data.ticketTypesConfig) : data.ticketTypesConfig;
+  }
   if (data.embedTitle !== undefined) updateData.embedTitle = data.embedTitle;
   if (data.embedDescription !== undefined) updateData.embedDescription = data.embedDescription;
   if (data.embedColor !== undefined) updateData.embedColor = data.embedColor;
@@ -159,6 +173,52 @@ export async function deleteTicketPanel(panelId: string) {
   });
   broadcastEvent("ticketPanelDelete", { guildId: panel.guildId, panelId: panel.id });
   return panel;
+}
+
+export async function duplicateTicketPanel(panelId: string) {
+  const existing = await getTicketPanelById(panelId);
+  if (!existing) throw new Error("Ticket panel not found");
+
+  const duplicated = await prisma.ticketPanel.create({
+    data: {
+      guildId: existing.guildId,
+      name: `${existing.name} (Copy)`,
+      description: existing.description,
+      layoutMode: existing.layoutMode,
+      accentColor: existing.accentColor,
+      spoiler: existing.spoiler,
+      containerConfig: existing.containerConfig,
+      ticketTypesConfig: existing.ticketTypesConfig,
+      embedTitle: existing.embedTitle,
+      embedDescription: existing.embedDescription,
+      embedColor: existing.embedColor,
+      thumbnail: existing.thumbnail,
+      image: existing.image,
+      footer: existing.footer,
+      welcomeTitle: existing.welcomeTitle,
+      welcomeDescription: existing.welcomeDescription,
+      welcomeColor: existing.welcomeColor,
+      welcomeThumbnail: existing.welcomeThumbnail,
+      welcomeImage: existing.welcomeImage,
+      welcomeFooter: existing.welcomeFooter,
+      reasons: existing.reasons,
+      questions: existing.questions,
+      channelId: existing.channelId,
+      categoryId: existing.categoryId,
+      buttonText: existing.buttonText,
+      buttonEmoji: existing.buttonEmoji,
+      buttonColor: existing.buttonColor,
+      allowedRoles: existing.allowedRoles,
+      supportRoles: existing.supportRoles,
+      maxOpenTickets: existing.maxOpenTickets,
+      autoCloseHours: existing.autoCloseHours,
+      transcriptEnabled: existing.transcriptEnabled,
+      messageId: null,
+    },
+  });
+
+  broadcastEvent("ticketPanelCreate", { guildId: duplicated.guildId, panelId: duplicated.id });
+  return duplicated;
 }
 
 // ==========================================
@@ -267,6 +327,16 @@ export async function getTickets(guildId: string, filters?: { status?: string; s
       },
     },
     orderBy: { createdAt: "desc" },
+  });
+}
+
+export async function getUserOpenTicketsCount(guildId: string, userId: string): Promise<number> {
+  return prisma.ticket.count({
+    where: {
+      guildId,
+      userId,
+      status: { in: ["OPEN", "CLAIMED"] },
+    },
   });
 }
 

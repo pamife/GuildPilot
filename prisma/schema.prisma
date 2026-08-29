@@ -48,6 +48,11 @@ model TicketPanel {
   guildId            String
   name               String
   description        String?
+  layoutMode         String   @default("components_v2") // components_v2, embed
+  accentColor        String?  @default("#5865F2")
+  spoiler            Boolean  @default(false)
+  containerConfig    String?  @default("[]") // JSON array of Discord Components V2 items
+  ticketTypesConfig  String?  @default("[]") // JSON array of TicketTypeConfig
   embedTitle         String?
   embedDescription   String?
   embedColor         String   @default("#5865F2")

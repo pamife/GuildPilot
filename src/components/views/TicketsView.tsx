@@ -48,8 +48,10 @@ import {
   Zap,
   MessageSquare,
   TrendingUp,
+  Copy,
 } from "lucide-react";
 import { QuickImportModal } from "../QuickImportModal";
+import { TicketPanelBuilder } from "./TicketPanelBuilder";
 
 type SubPage = "dashboard" | "analytics" | "panels" | "tickets-list" | "categories" | "settings" | "logs";
 type ModalTab = "embed" | "types" | "roles" | "welcome";
@@ -110,6 +112,10 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
 
   // Quick Import Modal state
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+
+  // Modern Discord Components V2 Ticket Panel Builder State
+  const [isBuilderOpen, setIsBuilderOpen] = useState(false);
+  const [builderPanel, setBuilderPanel] = useState<any>(null);
 
   // Panel Modal Editor states
   const [isPanelModalOpen, setIsPanelModalOpen] = useState(false);
@@ -240,103 +246,35 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
 
   // Panel Handlers
   const handleOpenCreatePanel = () => {
-    setEditingPanel(null);
-    setPanelForm({
-      name: "Support Desk",
-      description: "General support inquiries & technical help",
-      embedTitle: "📩 Support Desk",
-      embedDescription: "Click the button below or pick a reason from the dropdown menu to open a private ticket with our staff.",
-      embedColor: "#5865F2",
-      thumbnail: "",
-      image: "",
-      footer: "TheGodGen Ticket Engine",
-      welcomeTitle: "👋 Welcome to your support ticket!",
-      welcomeDescription: "A member of our support team will be with you shortly. Please describe your inquiry in detail.",
-      welcomeColor: "#5865F2",
-      welcomeThumbnail: "",
-      welcomeImage: "",
-      welcomeFooter: "TheGodGen Ticket Engine",
-      reasons: [
-        {
-          label: "🐛 Bug Report",
-          value: "bug_report",
-          emoji: "🐛",
-          description: "Report a bug or system issue",
-          questions: [
-            { id: "q1", label: "Describe the bug in detail", placeholder: "What went wrong?", style: "paragraph", required: true },
-            { id: "q2", label: "Steps to reproduce", placeholder: "1. Click X... 2. Press Y...", style: "paragraph", required: false },
-          ],
-        },
-        {
-          label: "💳 Billing & Purchases",
-          value: "billing",
-          emoji: "💳",
-          description: "Payment and package questions",
-          questions: [
-            { id: "q3", label: "Transaction ID / Receipt", placeholder: "e.g. TX-987654", style: "short", required: true },
-          ],
-        },
-      ],
-      questions: [],
-      channelId: channels[0]?.id || "",
-      categoryId: "",
-      buttonText: "Create Ticket",
-      buttonEmoji: "📩",
-      buttonColor: "Primary",
-      allowedRoles: [],
-      supportRoles: roles.slice(0, 2).map((r) => r.id),
-      maxOpenTickets: 1,
-      autoCloseHours: 0,
-      transcriptEnabled: true,
-    });
-    setActiveModalTab("embed");
-    setSelectedPreviewReasonIdx(0);
-    setPreviewTab("panel");
-    setIsPanelModalOpen(true);
+    setBuilderPanel(null);
+    setIsBuilderOpen(true);
   };
 
   const handleOpenEditPanel = (panel: any) => {
-    setEditingPanel(panel);
+    setBuilderPanel(panel);
+    setIsBuilderOpen(true);
+  };
 
-    let parsedAllowed: any[] = [];
+  const handleDuplicatePanel = async (panelId: string) => {
+    if (!selectedGuildId) return;
     try {
-      parsedAllowed = typeof panel.allowedRoles === "string" ? JSON.parse(panel.allowedRoles || "[]") : panel.allowedRoles || [];
-    } catch (e) {
-      parsedAllowed = [];
+      await api.post(`/guilds/${selectedGuildId}/tickets/panels/${panelId}/duplicate`);
+      showToast("✅ Panel successfully duplicated!", "success");
+      fetchAllData();
+    } catch (err: any) {
+      showToast(err.response?.data?.error || "Failed to duplicate panel", "error");
     }
+  };
 
-    let parsedSupport: any[] = [];
+  const handleMigratePanelToV2 = async (panelId: string) => {
+    if (!selectedGuildId) return;
     try {
-      parsedSupport = typeof panel.supportRoles === "string" ? JSON.parse(panel.supportRoles || "[]") : panel.supportRoles || [];
-    } catch (e) {
-      parsedSupport = [];
+      await api.post(`/guilds/${selectedGuildId}/tickets/panels/${panelId}/migrate-v2`);
+      showToast("🚀 Panel successfully converted to Discord Components V2!", "success");
+      fetchAllData();
+    } catch (err: any) {
+      showToast(err.response?.data?.error || "Failed to migrate panel to V2", "error");
     }
-
-    let parsedReasons: any[] = [];
-    try {
-      parsedReasons = typeof panel.reasons === "string" ? JSON.parse(panel.reasons || "[]") : panel.reasons || [];
-    } catch (e) {
-      parsedReasons = [];
-    }
-
-    let parsedQuestions: any[] = [];
-    try {
-      parsedQuestions = typeof panel.questions === "string" ? JSON.parse(panel.questions || "[]") : panel.questions || [];
-    } catch (e) {
-      parsedQuestions = [];
-    }
-
-    setPanelForm({
-      ...panel,
-      allowedRoles: parsedAllowed,
-      supportRoles: parsedSupport,
-      reasons: parsedReasons,
-      questions: parsedQuestions,
-    });
-    setActiveModalTab("embed");
-    setSelectedPreviewReasonIdx(0);
-    setPreviewTab("panel");
-    setIsPanelModalOpen(true);
   };
 
   const handleAddReason = () => {
@@ -548,6 +486,28 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
     activePreviewReason?.questions && activePreviewReason.questions.length > 0
       ? activePreviewReason.questions
       : panelForm.questions || [];
+
+  if (isBuilderOpen) {
+    return (
+      <TicketPanelBuilder
+        initialPanel={builderPanel}
+        selectedGuildId={selectedGuildId}
+        channels={channels}
+        roles={roles}
+        categories={categories}
+        botStatus={{ ready: true, tag: "GuildPilot Bot", ping: 0 }}
+        onSaveComplete={() => {
+          setIsBuilderOpen(false);
+          setBuilderPanel(null);
+          fetchAllData();
+        }}
+        onCancel={() => {
+          setIsBuilderOpen(false);
+          setBuilderPanel(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="flex flex-col h-full bg-[#0b0f17] text-slate-200 overflow-hidden font-sans select-none">
@@ -1079,11 +1039,22 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                 const supportRoleIds: string[] = JSON.parse(panel.supportRoles || "[]");
                 return (
                   <div key={panel.id} className="p-5 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-4 relative overflow-hidden shadow-2xl hover:border-discord-brand/40 transition-all">
-                    <div className="w-full h-1.5 absolute top-0 left-0" style={{ backgroundColor: panel.embedColor || "#5865F2" }} />
+                    <div className="w-full h-1.5 absolute top-0 left-0" style={{ backgroundColor: panel.accentColor || panel.embedColor || "#5865F2" }} />
                     <div className="flex items-start justify-between">
                       <div>
-                        <h3 className="text-base font-bold text-white">{panel.name}</h3>
-                        <p className="text-xs text-zinc-400 line-clamp-1">{panel.description || "No description."}</p>
+                        <div className="flex items-center gap-2">
+                          <h3 className="text-base font-bold text-white">{panel.name}</h3>
+                          {panel.layoutMode === "components_v2" ? (
+                            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/15 text-indigo-400 border border-indigo-500/30 flex items-center gap-1">
+                              <Sparkles className="w-3 h-3" /> V2
+                            </span>
+                          ) : (
+                            <span className="text-[10px] font-medium px-2 py-0.5 rounded-full bg-zinc-800 text-zinc-400 border border-zinc-700">
+                              Legacy
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-xs text-zinc-400 line-clamp-1 mt-0.5">{panel.description || "No description."}</p>
                       </div>
                       <div className="flex flex-col items-end gap-1">
                         {panel.messageId && (
@@ -1097,7 +1068,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           </span>
                         ) : (
                           <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#18181b] text-discord-brand border border-[#27272a]">
-                            {panel.buttonColor} Button
+                            {panel.buttonColor || "Primary"} Button
                           </span>
                         )}
                       </div>
@@ -1121,20 +1092,38 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                     <div className="flex items-center gap-2 pt-2">
                       <button
                         onClick={() => handleDeployPanel(panel.id)}
-                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow-lg shadow-discord-brand/20 transition-all"
+                        className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-discord-brand hover:bg-discord-brandHover text-white font-bold text-xs shadow-lg shadow-discord-brand/20 transition-all cursor-pointer"
                       >
                         <Send className="w-3.5 h-3.5" /> {panel.messageId ? "Sync / Re-deploy" : "Deploy Panel"}
                       </button>
+
+                      {panel.layoutMode !== "components_v2" && (
+                        <button
+                          onClick={() => handleMigratePanelToV2(panel.id)}
+                          className="px-2.5 py-2 rounded-xl bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/30 text-xs font-bold transition-all cursor-pointer flex items-center gap-1"
+                          title="Convert to Discord Components V2"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" /> To V2
+                        </button>
+                      )}
+
+                      <button
+                        onClick={() => handleDuplicatePanel(panel.id)}
+                        className="p-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                        title="Duplicate Panel"
+                      >
+                        <Copy className="w-4 h-4" />
+                      </button>
                       <button
                         onClick={() => handleOpenEditPanel(panel)}
-                        className="p-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-zinc-400 hover:text-white transition-colors"
-                        title="Edit Panel"
+                        className="p-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                        title="Open Designer & Builder"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeletePanel(panel.id)}
-                        className="p-2 rounded-xl bg-[#18181b] hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors"
+                        className="p-2 rounded-xl bg-[#18181b] hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
                         title="Delete Panel"
                       >
                         <Trash2 className="w-4 h-4" />

@@ -4,9 +4,11 @@ import { discordClient } from "../bot/client";
 import {
   getTicketStats,
   getTicketPanels,
+  getTicketPanelById,
   createTicketPanel,
   updateTicketPanel,
   deleteTicketPanel,
+  duplicateTicketPanel,
   getTicketCategories,
   createTicketCategory,
   deleteTicketCategory,
@@ -20,6 +22,8 @@ import {
   createTicketLog,
 } from "../services/ticketService";
 import { deployTicketPanelEmbed } from "../bot/ticketHandler";
+import { validateTicketPanelComponents } from "../utils/ticketComponentValidator";
+import { convertLegacyPanelToComponentsV2 } from "../bot/ticketComponentBuilder";
 import { getTranscriptFilePath, generateHtmlTranscript } from "../services/transcriptService";
 import { TextChannel } from "discord.js";
 import { requireGuildAccess } from "../middleware/authMiddleware";
@@ -47,6 +51,17 @@ router.get("/:guildId/tickets/panels", async (req, res) => {
     res.json(panels);
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch ticket panels" });
+  }
+});
+
+// Validate Discord Components V2 Panel
+router.post("/:guildId/tickets/panels/validate", async (req, res) => {
+  try {
+    const { containerConfig, ticketTypesConfig } = req.body;
+    const result = validateTicketPanelComponents(containerConfig || [], ticketTypesConfig || []);
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to validate panel configuration" });
   }
 });
 
@@ -83,6 +98,35 @@ router.delete("/:guildId/tickets/panels/:panelId", async (req, res) => {
     res.json(panel);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to delete panel" });
+  }
+});
+
+router.post("/:guildId/tickets/panels/:panelId/duplicate", async (req, res) => {
+  try {
+    const duplicated = await duplicateTicketPanel(req.params.panelId);
+    res.json(duplicated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to duplicate panel" });
+  }
+});
+
+router.post("/:guildId/tickets/panels/:panelId/migrate-v2", async (req, res) => {
+  try {
+    const existing = await getTicketPanelById(req.params.panelId);
+    if (!existing) return res.status(404).json({ error: "Ticket panel not found" });
+
+    const migrated = convertLegacyPanelToComponentsV2(existing);
+    const updated = await updateTicketPanel(req.params.panelId, {
+      layoutMode: "components_v2",
+      accentColor: migrated.accentColor,
+      spoiler: migrated.spoiler,
+      containerConfig: migrated.containerConfig,
+      ticketTypesConfig: migrated.ticketTypesConfig,
+    });
+
+    res.json(updated);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message || "Failed to migrate panel to V2" });
   }
 });
 
