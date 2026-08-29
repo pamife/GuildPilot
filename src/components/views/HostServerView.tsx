@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { getSocket } from "@/lib/socket";
+import { api } from "@/lib/api";
 import {
   Cpu,
   HardDrive,
@@ -82,32 +83,31 @@ export function HostServerView() {
     socket.on("updateProgress", handleUpdateProgress);
 
     // Initial fetch via API if socket has not emitted yet
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-    fetch(`${apiUrl}/api/host-server/metrics`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && !data.error) handleMetrics(data);
+    api
+      .get("/host-server/metrics")
+      .then((res) => {
+        if (res.data && !res.data.error) handleMetrics(res.data);
       })
       .catch(() => {});
 
-    fetch(`${apiUrl}/api/host-server/updates`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.commit) setUpdateInfo(data);
+    api
+      .get("/host-server/updates")
+      .then((res) => {
+        if (res.data && res.data.commit) setUpdateInfo(res.data);
       })
       .catch(() => {});
 
-    fetch(`${apiUrl}/api/host-server/update-progress`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data) setUpdateProgress(data);
+    api
+      .get("/host-server/update-progress")
+      .then((res) => {
+        if (res.data) setUpdateProgress(res.data);
       })
       .catch(() => {});
 
-    fetch(`${apiUrl}/api/host-server/hourly-restart-info`)
-      .then((res) => res.json())
-      .then((data) => {
-        if (data && data.minutesRemaining !== undefined) setHourlyRestartInfo(data);
+    api
+      .get("/host-server/hourly-restart-info")
+      .then((res) => {
+        if (res.data && res.data.minutesRemaining !== undefined) setHourlyRestartInfo(res.data);
       })
       .catch(() => {});
 
@@ -125,8 +125,7 @@ export function HostServerView() {
     if (!confirm("Bist du sicher, dass du das gesamte System jetzt neu starten möchtest? Alle Verbindungen & Caches werden neu geladen.")) return;
     setRestartingNow(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      await fetch(`${apiUrl}/api/host-server/restart-now`, { method: "POST" });
+      await api.post("/host-server/restart-now");
     } catch (e) {}
     setTimeout(() => {
       window.location.reload();
@@ -137,12 +136,11 @@ export function HostServerView() {
   useEffect(() => {
     if (!checkingUpdate && !updateProgress?.isUpdating) return;
 
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
     const interval = setInterval(() => {
-      fetch(`${apiUrl}/api/host-server/update-progress`)
-        .then((res) => res.json())
-        .then((data) => {
-          if (data) setUpdateProgress(data);
+      api
+        .get("/host-server/update-progress")
+        .then((res) => {
+          if (res.data) setUpdateProgress(res.data);
         })
         .catch(() => {});
     }, 800);
@@ -153,7 +151,6 @@ export function HostServerView() {
   const handleCheckUpdate = async () => {
     setCheckingUpdate(true);
     setShowLogs(true);
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
     // Optimistic progress state for step 1
     setUpdateProgress((prev: any) => ({
@@ -167,8 +164,8 @@ export function HostServerView() {
     }));
 
     try {
-      const res = await fetch(`${apiUrl}/api/host-server/check-update`, { method: "POST" });
-      const data = await res.json();
+      const res = await api.post("/host-server/check-update");
+      const data = res.data;
       if (data && data.message) {
         setUpdateInfo({
           id: `update_${Date.now()}`,
@@ -183,16 +180,16 @@ export function HostServerView() {
       setUpdateInfo({
         id: `update_err_${Date.now()}`,
         status: "error",
-        message: `Update check failed: ${err.message}`,
+        message: `Update check failed: ${err.response?.data?.error || err.message}`,
         commitShort: "error",
         timestamp: new Date().toISOString(),
       });
     } finally {
       // Immediately fetch current update-progress state
-      fetch(`${apiUrl}/api/host-server/update-progress`)
-        .then((res) => res.json())
-        .then((progressData) => {
-          if (progressData) setUpdateProgress(progressData);
+      api
+        .get("/host-server/update-progress")
+        .then((res) => {
+          if (res.data) setUpdateProgress(res.data);
         })
         .catch(() => {});
       setCheckingUpdate(false);
@@ -205,7 +202,6 @@ export function HostServerView() {
     if (!confirm("Möchtest du das gesamte Projekt (Frontend & Backend) jetzt sauber neu kompilieren und die Dienste neu starten?")) return;
     setRebuilding(true);
     setShowLogs(true);
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
 
     setUpdateProgress((prev: any) => ({
       isUpdating: true,
@@ -218,12 +214,8 @@ export function HostServerView() {
     }));
 
     try {
-      const res = await fetch(`${apiUrl}/api/host-server/force-rebuild`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ skipGit: false }),
-      });
-      const data = await res.json();
+      const res = await api.post("/host-server/force-rebuild", { skipGit: false });
+      const data = res.data;
       if (data && data.message) {
         setUpdateInfo({
           id: `rebuild_${Date.now()}`,
@@ -238,7 +230,7 @@ export function HostServerView() {
       setUpdateInfo({
         id: `rebuild_err_${Date.now()}`,
         status: "error",
-        message: `Force rebuild failed: ${err.message}`,
+        message: `Force rebuild failed: ${err.response?.data?.error || err.message}`,
         commitShort: "error",
         timestamp: new Date().toISOString(),
       });
@@ -252,9 +244,8 @@ export function HostServerView() {
   const handleResetUpdateState = async () => {
     setResettingState(true);
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:3001";
-      const res = await fetch(`${apiUrl}/api/host-server/reset-update-state`, { method: "POST" });
-      const data = await res.json();
+      const res = await api.post("/host-server/reset-update-state");
+      const data = res.data;
       if (data && data.progress) {
         setUpdateProgress(data.progress);
       }
@@ -265,6 +256,7 @@ export function HostServerView() {
       setResettingState(false);
     }
   };
+
   const formatBytes = (bytes: number) => {
     if (!bytes || bytes === 0) return "0 B";
     const k = 1024;
