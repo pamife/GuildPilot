@@ -14,7 +14,21 @@ const router = Router();
 const prisma = new PrismaClient();
 
 const getFrontendUrl = (req: any): string => {
+  const queryReturnTo = req.query?.return_to as string;
+  if (queryReturnTo && (queryReturnTo.startsWith("http://") || queryReturnTo.startsWith("https://"))) {
+    return queryReturnTo.replace(/\/$/, "");
+  }
+  const cookieReturnTo = req.cookies?.oauth_return_to;
+  if (cookieReturnTo && (cookieReturnTo.startsWith("http://") || cookieReturnTo.startsWith("https://"))) {
+    return cookieReturnTo.replace(/\/$/, "");
+  }
   if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL.replace(/\/$/, "");
+  if (req.headers?.referer) {
+    try {
+      const parsed = new URL(req.headers.referer);
+      return parsed.origin;
+    } catch {}
+  }
   const host = req.headers.host ? req.headers.host.split(":")[0] : "localhost";
   const protocol = req.headers["x-forwarded-proto"] || "http";
   return `${protocol}://${host}:3000`;
@@ -31,14 +45,27 @@ router.get("/login", (req, res) => {
   const clientId = process.env.DISCORD_CLIENT_ID;
   const redirectUri = encodeURIComponent(getRedirectUri(req));
   const scope = encodeURIComponent("identify guilds");
+  const returnTo = (req.query.return_to as string) || getFrontendUrl(req);
 
-  if (!clientId || clientId === "your_client_id_here") {
-    return res.redirect(`${getFrontendUrl(req)}?auth_warning=missing_discord_credentials`);
+  // Return-To URL für Callback in sicherem temporären Cookie speichern
+  if (returnTo) {
+    res.cookie("oauth_return_to", returnTo, {
+      maxAge: 10 * 60 * 1000,
+      httpOnly: true,
+      path: "/",
+      sameSite: "lax",
+    });
   }
 
-  const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&prompt=consent`;
+  if (!clientId || clientId === "your_client_id_here") {
+    return res.redirect(`${returnTo}?auth_warning=missing_discord_credentials`);
+  }
+
+  const state = encodeURIComponent(Buffer.from(JSON.stringify({ returnTo })).toString("base64"));
+  const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=code&scope=${scope}&state=${state}&prompt=consent`;
   res.redirect(url);
 });
+
 
 router.get("/callback", async (req, res) => {
   const { code } = req.query;
@@ -128,10 +155,22 @@ router.get("/callback", async (req, res) => {
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: "7d" });
 
-    const isHttps =
-      req.secure ||
-      req.headers["x-forwarded-proto"] === "https" ||
-      process.env.NODE_ENV === "production";
+    // Target Frontend URL aus State oder Cookie ermitteln
+    let targetFrontend = frontendUrl;
+    if (req.query.state && typeof req.query.state === "string") {
+      try {
+        const decodedState = JSON.parse(Buffer.from(decodeURIComponent(req.query.state), "base64").toString("utf-8"));
+        if (decodedState?.returnTo && (decodedState.returnTo.startsWith("http://") || decodedState.returnTo.startsWith("https://"))) {
+          targetFrontend = decodedState.returnTo.replace(/\/$/, "");
+        }
+      } catch (e) {}
+    }
+    if (req.cookies?.oauth_return_to && (req.cookies.oauth_return_to.startsWith("http://") || req.cookies.oauth_return_to.startsWith("https://"))) {
+      targetFrontend = req.cookies.oauth_return_to.replace(/\/$/, "");
+    }
+    res.clearCookie("oauth_return_to", { path: "/" });
+
+    const isHttps = req.secure || req.headers["x-forwarded-proto"] === "https";
 
     res.cookie("guildpilot_token", token, {
       httpOnly: true,
@@ -142,12 +181,13 @@ router.get("/callback", async (req, res) => {
     });
 
     // Weiterleitung zum Frontend (mit Token als Query-Param zur Ausfallsicherheit für Netlify)
-    res.redirect(`${frontendUrl}?auth=success&token=${encodeURIComponent(token)}`);
+    res.redirect(`${targetFrontend}?auth=success&token=${encodeURIComponent(token)}`);
   } catch (error: any) {
     console.error("[OAuth] Callback error:", error.response?.data || error.message);
     res.redirect(`${frontendUrl}?error=oauth_failed`);
   }
 });
+
 
 router.get("/me", requireAuth, (req: AuthenticatedRequest, res) => {
   res.json({

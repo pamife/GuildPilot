@@ -21,7 +21,18 @@ interface LoginViewProps {
 }
 
 export function LoginView({ authWarning, authError }: LoginViewProps) {
-  const loginUrl = `${getApiBaseUrl()}/api/auth/login`;
+  const [originUrl, setOriginUrl] = React.useState("");
+
+  React.useEffect(() => {
+    if (typeof window !== "undefined") {
+      setOriginUrl(window.location.origin);
+    }
+  }, []);
+
+  const loginUrl = `${getApiBaseUrl()}/api/auth/login${
+    originUrl ? `?return_to=${encodeURIComponent(originUrl)}` : ""
+  }`;
+
 
   const features = [
     {

@@ -33,7 +33,7 @@ let runtimeFallbackSecret: string | null = null;
 
 export function getJwtSecret(): string {
   const secret = process.env.JWT_SECRET;
-  if (secret && secret.trim() !== "" && secret !== "guildpilot_super_secret_local_key_change_me" && secret !== "test") {
+  if (secret && secret.trim() !== "") {
     return secret;
   }
 
@@ -45,6 +45,7 @@ export function getJwtSecret(): string {
   }
   return runtimeFallbackSecret;
 }
+
 
 /**
  * Extracts and verifies JWT from Cookie or Authorization header

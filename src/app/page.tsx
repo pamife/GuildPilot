@@ -72,7 +72,7 @@ function DashboardContent() {
         if (warn) setAuthWarning(warn);
       }
 
-      const res = await api.get("/auth/me", { timeout: 3500 });
+      const res = await api.get("/auth/me", { timeout: 5000 });
       if (res.data && res.data.user) {
         setCurrentUser(res.data.user);
         setIsOwner(res.data.isOwner || res.data.user.role === "OWNER");
@@ -82,11 +82,13 @@ function DashboardContent() {
         setIsOwner(false);
       }
     } catch (err: any) {
+      console.warn("[GuildPilot Auth] Check /auth/me error:", err?.response?.data || err?.message);
       setCurrentUser(null);
       setIsOwner(false);
     } finally {
       setLoadingAuth(false);
     }
+
   }, []);
 
   // 2. Fetch accessible guilds for the logged in user
