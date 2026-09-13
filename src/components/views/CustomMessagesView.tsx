@@ -36,6 +36,7 @@ import {
   RotateCcw,
   Wand2,
   Download,
+  Smile,
 } from "lucide-react";
 import { useToast } from "../ToastContainer";
 import { api } from "@/lib/api";
@@ -52,6 +53,13 @@ interface Role {
   name: string;
   color: string;
   position: number;
+}
+
+interface GuildEmoji {
+  id: string;
+  name: string;
+  url?: string;
+  animated?: boolean;
 }
 
 export type ActionType =
@@ -149,9 +157,58 @@ export interface CustomMessageData {
 interface CustomMessagesViewProps {
   channels: Channel[];
   roles?: Role[];
+  emojis?: GuildEmoji[];
   selectedGuildId: string | null;
   botStatus: { ready: boolean; tag: string; ping: number } | null;
   guilds?: any[];
+}
+
+function toDiscordEmojiMarkup(emoji: GuildEmoji): string {
+  return `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.id}>`;
+}
+
+function GuildEmojiPicker({
+  emojis,
+  onSelect,
+}: {
+  emojis: GuildEmoji[];
+  onSelect: (emoji: string) => void;
+}) {
+  if (emojis.length === 0) return null;
+
+  return (
+    <details className="relative shrink-0">
+      <summary
+        className="list-none p-1.5 rounded-lg bg-[#0e0f15] border border-[#27272a] text-zinc-400 hover:text-white hover:border-discord-brand cursor-pointer"
+        title="Server-Emoji auswählen"
+      >
+        <Smile className="w-3.5 h-3.5" />
+      </summary>
+      <div className="absolute right-0 top-full mt-1 z-50 w-64 max-h-44 overflow-y-auto rounded-xl border border-[#34343a] bg-[#111218] p-2 shadow-2xl">
+        <p className="px-1 pb-2 text-[10px] font-bold uppercase tracking-wider text-zinc-500">Servereigene Emojis</p>
+        <div className="grid grid-cols-8 gap-1">
+          {emojis.map((emoji) => (
+            <button
+              key={emoji.id}
+              type="button"
+              onClick={(event) => {
+                onSelect(toDiscordEmojiMarkup(emoji));
+                event.currentTarget.closest("details")?.removeAttribute("open");
+              }}
+              className="flex h-7 w-7 items-center justify-center rounded-md hover:bg-[#27272a]"
+              title={`:${emoji.name}:`}
+            >
+              {emoji.url ? (
+                <img src={emoji.url} alt={`:${emoji.name}:`} className="h-5 w-5 object-contain" />
+              ) : (
+                <span className="text-[9px] text-zinc-300">:{emoji.name.slice(0, 2)}:</span>
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    </details>
+  );
 }
 
 const PRESET_TEMPLATES = [
@@ -300,6 +357,7 @@ export const PRESET_COLORS = [
 export function CustomMessagesView({
   channels,
   roles = [],
+  emojis = [],
   selectedGuildId,
   botStatus,
   guilds = [],
@@ -355,6 +413,21 @@ export function CustomMessagesView({
   });
 
   const textChannels = channels.filter((c) => c.type === 0);
+
+  const renderButtonEmoji = (emoji?: string) => {
+    if (!emoji) return null;
+    const customEmoji = /^<a?:([a-zA-Z0-9_]+):(\d{17,20})>$/.exec(emoji.trim());
+    if (!customEmoji) return <span>{emoji}</span>;
+
+    const guildEmoji = emojis.find((item) => item.id === customEmoji[2]);
+    return (
+      <img
+        src={guildEmoji?.url || `https://cdn.discordapp.com/emojis/${customEmoji[2]}.webp?size=48&quality=lossless`}
+        alt={`:${customEmoji[1]}:`}
+        className="h-4 w-4 object-contain"
+      />
+    );
+  };
 
   // Keep Raw JSON text synced when currentMessage changes (if not editing JSON directly)
   useEffect(() => {
@@ -1453,17 +1526,27 @@ export function CustomMessagesView({
                                         </select>
                                       </div>
                                       <div className="col-span-3">
-                                        <input
-                                          type="text"
-                                          value={block.accessory?.emoji || ""}
-                                          onChange={(e) =>
-                                            updateBlock(idx, {
-                                              accessory: { ...block.accessory, type: "button", emoji: e.target.value },
-                                            })
-                                          }
-                                          placeholder="Emoji 😀"
-                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-center text-white outline-none"
-                                        />
+                                        <div className="flex items-center gap-1">
+                                          <input
+                                            type="text"
+                                            value={block.accessory?.emoji || ""}
+                                            onChange={(e) =>
+                                              updateBlock(idx, {
+                                                accessory: { ...block.accessory, type: "button", emoji: e.target.value },
+                                              })
+                                            }
+                                            placeholder="Emoji 😀"
+                                            className="min-w-0 flex-1 bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-center text-white outline-none"
+                                          />
+                                          <GuildEmojiPicker
+                                            emojis={emojis}
+                                            onSelect={(emoji) =>
+                                              updateBlock(idx, {
+                                                accessory: { ...block.accessory, type: "button", emoji },
+                                              })
+                                            }
+                                          />
+                                        </div>
                                       </div>
                                     </div>
 
@@ -1569,7 +1652,7 @@ export function CustomMessagesView({
                               <div className="space-y-2">
                                 {(block.buttons || []).map((btn, bIdx) => (
                                   <div key={btn.id || bIdx} className="grid grid-cols-12 gap-2 items-center bg-[#14151b] p-2.5 rounded-lg border border-[#27272a]">
-                                    <div className="col-span-4">
+                                    <div className="col-span-3">
                                       <input
                                         type="text"
                                         value={btn.label}
@@ -1599,7 +1682,7 @@ export function CustomMessagesView({
                                         <option value="Link">Link (URL)</option>
                                       </select>
                                     </div>
-                                    <div className="col-span-1">
+                                    <div className="col-span-2 flex items-center gap-1">
                                       <input
                                         type="text"
                                         value={btn.emoji || ""}
@@ -1609,8 +1692,16 @@ export function CustomMessagesView({
                                           updateBlock(idx, { buttons: nextBtns });
                                         }}
                                         placeholder="😀"
-                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-1 py-1.5 rounded-lg text-xs text-center text-white outline-none"
+                                        className="min-w-0 flex-1 bg-[#0e0f15] border border-[#27272a] px-1 py-1.5 rounded-lg text-xs text-center text-white outline-none"
                                         title="Emoji"
+                                      />
+                                      <GuildEmojiPicker
+                                        emojis={emojis}
+                                        onSelect={(emoji) => {
+                                          const nextBtns = [...(block.buttons || [])];
+                                          nextBtns[bIdx] = { ...nextBtns[bIdx], emoji };
+                                          updateBlock(idx, { buttons: nextBtns });
+                                        }}
                                       />
                                     </div>
                                     <div className="col-span-3">
@@ -1915,7 +2006,7 @@ export function CustomMessagesView({
                                               : "bg-[#5865F2] text-white"
                                           }`}
                                         >
-                                          {block.accessory.emoji && <span>{block.accessory.emoji}</span>}
+                                          {renderButtonEmoji(block.accessory.emoji)}
                                           <span>{block.accessory.label || "Action"}</span>
                                           {block.accessory.style === "Link" && <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />}
                                         </button>
@@ -1964,7 +2055,7 @@ export function CustomMessagesView({
                                           : "bg-[#5865F2] hover:bg-[#5865F2]/90 text-white"
                                       }`}
                                     >
-                                      {btn.emoji && <span>{btn.emoji}</span>}
+                                      {renderButtonEmoji(btn.emoji)}
                                       <span>{btn.label || "Button"}</span>
                                       {btn.style === "Link" && <ExternalLink className="w-3 h-3 ml-0.5 opacity-70" />}
                                     </button>

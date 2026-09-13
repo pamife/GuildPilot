@@ -590,6 +590,7 @@ function DashboardContent() {
           <CustomMessagesView
             channels={channels}
             roles={roles}
+            emojis={emojis}
             selectedGuildId={selectedGuildId}
             botStatus={botStatus}
             guilds={guilds}
