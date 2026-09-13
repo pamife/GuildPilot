@@ -53,6 +53,73 @@ function getButtonStyleNumber(styleName?: string | number): number {
   }
 }
 
+function getButtonActions(buttonData: any): any[] {
+  if (Array.isArray(buttonData?.actions)) return buttonData.actions;
+  if (buttonData?.actionData) return [buttonData.actionData];
+  return [];
+}
+
+function isLinkButton(buttonData: any): boolean {
+  const actions = getButtonActions(buttonData);
+  return (
+    buttonData?.style === "Link" ||
+    buttonData?.style === 5 ||
+    buttonData?.actionType === "LINK" ||
+    buttonData?.actionData?.actionType === "LINK" ||
+    actions[0]?.actionType === "LINK"
+  );
+}
+
+function getButtonUrl(buttonData: any): string | undefined {
+  const actions = getButtonActions(buttonData);
+  const candidates = [
+    buttonData?.url,
+    buttonData?.actionData?.url,
+    actions.find((action: any) => action?.actionType === "LINK")?.url,
+  ];
+
+  const url = candidates.find((candidate) => isValidUrl(candidate));
+  return url?.trim();
+}
+
+function buildButtonPayload(buttonData: any, customId: string) {
+  const linkButton = isLinkButton(buttonData);
+  const url = getButtonUrl(buttonData);
+
+  if (linkButton && !url) {
+    throw new Error(`Der Link-Button „${buttonData?.label || "Button"}“ benötigt eine gültige HTTP- oder HTTPS-URL.`);
+  }
+
+  const buttonPayload: any = {
+    type: 2,
+    style: linkButton ? 5 : getButtonStyleNumber(buttonData?.style),
+    disabled: !!buttonData?.disabled,
+  };
+
+  const label = buttonData?.label ? String(buttonData.label).trim().substring(0, 80) : "";
+  if (label) buttonPayload.label = label;
+
+  if (buttonData?.emoji) {
+    const parsedEmoji = parseAndValidateEmoji(buttonData.emoji);
+    if (parsedEmoji) buttonPayload.emoji = parsedEmoji;
+  }
+
+  // Discord requires every button to have at least a label or an emoji.
+  if (!buttonPayload.label && !buttonPayload.emoji) {
+    buttonPayload.label = "Button";
+  }
+
+  if (linkButton) {
+    // Link buttons require a URL and must never contain a custom_id.
+    buttonPayload.url = url;
+  } else {
+    // Interactive buttons require a custom_id and must never contain a URL.
+    buttonPayload.custom_id = customId.substring(0, 100);
+  }
+
+  return buttonPayload;
+}
+
 /**
  * Builds an official Discord Components V2 payload adhering strictly to Discord API rules:
  * Rule 1: Never mix Components V1 and Components V2 patterns.
@@ -167,29 +234,8 @@ export function buildComponentsV2Payload(data: any) {
             }
           } else if (item.accessory.type === "button" || item.accessory.type === 2) {
             const btnData = item.accessory;
-            const isLink = btnData.style === "Link" || btnData.style === 5 || btnData.actionType === "LINK";
-            const styleNum = isLink ? 5 : getButtonStyleNumber(btnData.style);
             const btnId = btnData.id || `sec_btn_${item.id || Date.now()}`;
-
-            const buttonPayload: any = {
-              type: 2,
-              style: styleNum,
-              label: btnData.label ? String(btnData.label).substring(0, 80) : undefined,
-              disabled: !!btnData.disabled,
-            };
-
-            if (isLink && btnData.url && isValidUrl(btnData.url)) {
-              buttonPayload.url = btnData.url.trim();
-            } else {
-              buttonPayload.custom_id = `cmsg_btn:${messageDbId}:${btnId}`;
-            }
-
-            if (btnData.emoji) {
-              const parsedEmoji = parseAndValidateEmoji(btnData.emoji);
-              if (parsedEmoji) buttonPayload.emoji = parsedEmoji;
-            }
-
-            sectionPayload.accessory = buttonPayload;
+            sectionPayload.accessory = buildButtonPayload(btnData, `cmsg_btn:${messageDbId}:${btnId}`);
           }
         }
 
@@ -206,29 +252,8 @@ export function buildComponentsV2Payload(data: any) {
         const validButtons: any[] = [];
 
         for (const btnData of buttons.slice(0, 5)) {
-          const isLink = btnData.style === "Link" || btnData.style === 5 || btnData.actionType === "LINK";
-          const styleNum = isLink ? 5 : getButtonStyleNumber(btnData.style);
           const btnId = btnData.id || `btn_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-
-          const buttonPayload: any = {
-            type: 2,
-            style: styleNum,
-            label: btnData.label ? String(btnData.label).substring(0, 80) : undefined,
-            disabled: !!btnData.disabled,
-          };
-
-          if (isLink && btnData.url && isValidUrl(btnData.url)) {
-            buttonPayload.url = btnData.url.trim();
-          } else {
-            buttonPayload.custom_id = `cmsg_btn:${messageDbId}:${btnId}`;
-          }
-
-          if (btnData.emoji) {
-            const parsedEmoji = parseAndValidateEmoji(btnData.emoji);
-            if (parsedEmoji) buttonPayload.emoji = parsedEmoji;
-          }
-
-          validButtons.push(buttonPayload);
+          validButtons.push(buildButtonPayload(btnData, `cmsg_btn:${messageDbId}:${btnId}`));
         }
 
         if (validButtons.length > 0) {

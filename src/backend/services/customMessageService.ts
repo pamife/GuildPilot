@@ -26,7 +26,8 @@ export async function createCustomMessage(guildId: string, data: any) {
       messageId: data.messageId || null,
       content: data.content || null,
       flags: data.flags !== undefined ? data.flags : 32768,
-      accentColor: data.accentColor || "#5865F2",
+      // `null` intentionally disables the optional Components V2 accent bar.
+      accentColor: data.accentColor === undefined ? "#5865F2" : (data.accentColor || null),
       spoiler: !!data.spoiler,
       containerConfig: typeof data.containerConfig === "object" ? JSON.stringify(data.containerConfig) : (data.containerConfig || "[]"),
       embedConfig: typeof data.embedConfig === "object" ? JSON.stringify(data.embedConfig) : (data.embedConfig || "{}"),

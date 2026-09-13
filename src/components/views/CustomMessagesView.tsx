@@ -122,7 +122,7 @@ export interface CustomMessageData {
   messageId?: string | null;
   content?: string;
   flags?: number;
-  accentColor?: string;
+  accentColor?: string | null;
   spoiler?: boolean;
   containerConfig: ComponentItem[];
   embedConfig?: {
@@ -751,12 +751,31 @@ export function CustomMessagesView({
     if (!activeButtonTarget) return;
     const { blockIndex, buttonIndex, isSectionAccessory, buttonData, actions } = activeButtonTarget;
 
+    const linkActions = actions.filter((action) => action.actionType === "LINK");
+    if (linkActions.length > 0 && actions.length > 1) {
+      showToast("Ein Link-Button kann nicht mit weiteren Aktionen kombiniert werden.", "error");
+      return;
+    }
+
+    if (linkActions.length === 1) {
+      try {
+        const url = new URL(linkActions[0].url || "");
+        if (url.protocol !== "http:" && url.protocol !== "https:") throw new Error();
+      } catch {
+        showToast("Bitte gib für den Link-Button eine gültige HTTP- oder HTTPS-URL ein.", "error");
+        return;
+      }
+    }
+
     const updatedBtn = {
       ...buttonData,
       actions: actions,
       // For backwards compatibility, set primary action
       actionType: actions[0]?.actionType || "EPHEMERAL_REPLY",
       actionData: actions[0] || undefined,
+      // Discord link buttons use a URL instead of an interaction custom_id.
+      style: linkActions.length === 1 ? "Link" : (buttonData.style === "Link" ? "Primary" : buttonData.style),
+      url: linkActions.length === 1 ? linkActions[0].url?.trim() : (buttonData.style === "Link" ? undefined : buttonData.url),
     };
 
     if (blockIndex !== undefined) {
@@ -1101,8 +1120,24 @@ export function CustomMessagesView({
 
                     {/* Accent Color Palette */}
                     <div className="space-y-2">
-                      <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Accent Border Color</label>
-                      <div className="flex items-center gap-2 flex-wrap">
+                      <div className="flex items-center justify-between gap-3">
+                        <label className="text-[11px] font-bold text-zinc-400 uppercase tracking-wider block">Accent Border Color</label>
+                        <label className="flex items-center gap-2 cursor-pointer text-[11px] text-zinc-400">
+                          <input
+                            type="checkbox"
+                            checked={currentMessage.accentColor !== null}
+                            onChange={(e) =>
+                              setCurrentMessage({
+                                ...currentMessage,
+                                accentColor: e.target.checked ? "#5865F2" : null,
+                              })
+                            }
+                            className="rounded border-[#27272a] bg-[#14151b] text-discord-brand focus:ring-0"
+                          />
+                          <span>Accent-Farbe anzeigen</span>
+                        </label>
+                      </div>
+                      <div className={`flex items-center gap-2 flex-wrap transition-opacity ${currentMessage.accentColor === null ? "opacity-40 pointer-events-none" : ""}`}>
                         {PRESET_COLORS.map((c) => (
                           <button
                             key={c.hex}
@@ -1826,8 +1861,10 @@ export function CustomMessagesView({
                       {/* RENDER DISCORD COMPONENTS V2 CONTAINER */}
                       {currentMessage.mode === "components_v2" ? (
                         <div
-                          className="mt-2 rounded-lg bg-[#242429] p-3 border-l-4 shadow-md space-y-3 transition-all"
-                          style={{ borderColor: currentMessage.accentColor || "#5865F2" }}
+                          className={`mt-2 rounded-lg bg-[#242429] p-3 shadow-md space-y-3 transition-all ${
+                            currentMessage.accentColor === null ? "" : "border-l-4"
+                          }`}
+                          style={currentMessage.accentColor === null ? undefined : { borderColor: currentMessage.accentColor || "#5865F2" }}
                         >
                           {currentMessage.containerConfig.map((block, bIdx) => (
                             <div key={block.id || bIdx} className="space-y-2">
