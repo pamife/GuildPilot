@@ -430,13 +430,18 @@ export function CustomMessagesView({
   };
 
   const renderTextWithGuildEmojis = (text: string) => {
+    const displayText = text
+      .replace(/`:([a-zA-Z0-9_]{2,32}):`/g, (match, name: string) => {
+        return emojis.some((item) => item.name.toLowerCase() === name.toLowerCase()) ? `:${name}:` : match;
+      })
+      .replace(/`(<a?:[a-zA-Z0-9_]+:\d{17,20}>)`/g, "$1");
     const parts: React.ReactNode[] = [];
     const emojiPattern = /<(a?):([a-zA-Z0-9_]+):(\d{17,20})>|:([a-zA-Z0-9_]{2,32}):/g;
     let cursor = 0;
     let match: RegExpExecArray | null;
 
-    while ((match = emojiPattern.exec(text)) !== null) {
-      if (match.index > cursor) parts.push(text.slice(cursor, match.index));
+    while ((match = emojiPattern.exec(displayText)) !== null) {
+      if (match.index > cursor) parts.push(displayText.slice(cursor, match.index));
 
       const emojiId = match[3];
       const emojiName = match[2] || match[4];
@@ -463,8 +468,8 @@ export function CustomMessagesView({
       cursor = emojiPattern.lastIndex;
     }
 
-    if (cursor < text.length) parts.push(text.slice(cursor));
-    return parts.length > 0 ? parts : text;
+    if (cursor < displayText.length) parts.push(displayText.slice(cursor));
+    return parts.length > 0 ? parts : displayText;
   };
 
   // Keep Raw JSON text synced when currentMessage changes (if not editing JSON directly)

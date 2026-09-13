@@ -56,12 +56,26 @@ function formatDiscordApiError(error: any): string {
 }
 
 function replaceGuildEmojiShortcodes(text: string, emojiMarkupByName: Map<string, string>): string {
-  // The prefix prevents matching the `:name:` portion inside an already valid
-  // Discord custom emoji such as <:name:id> or <a:name:id>.
-  return text.replace(/(^|[^<\w]):([a-zA-Z0-9_]{2,32}):/g, (match, prefix: string, name: string) => {
-    const markup = emojiMarkupByName.get(name.toLowerCase());
-    return markup ? `${prefix}${markup}` : match;
-  });
+  // Discord never renders emojis inside inline code. If the complete inline
+  // code token is only an emoji, remove its backticks so it can render.
+  const withoutEmojiOnlyCode = text
+    .replace(/`:([a-zA-Z0-9_]{2,32}):`/g, (match, name: string) => {
+      return emojiMarkupByName.get(name.toLowerCase()) || match;
+    })
+    .replace(/`(<a?:[a-zA-Z0-9_]+:\d{17,20}>)`/g, "$1");
+
+  // Keep genuine inline/fenced code untouched. In normal Markdown segments,
+  // the prefix prevents matching inside an already valid <:name:id> value.
+  return withoutEmojiOnlyCode
+    .split(/(```[\s\S]*?```|`[^`\n]*`)/g)
+    .map((segment) => {
+      if (segment.startsWith("`")) return segment;
+      return segment.replace(/(^|[^<\w]):([a-zA-Z0-9_]{2,32}):/g, (match, prefix: string, name: string) => {
+        const markup = emojiMarkupByName.get(name.toLowerCase());
+        return markup ? `${prefix}${markup}` : match;
+      });
+    })
+    .join("");
 }
 
 async function resolveGuildEmojiShortcodes(data: any, guild: Guild): Promise<any> {
