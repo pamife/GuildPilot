@@ -429,6 +429,44 @@ export function CustomMessagesView({
     );
   };
 
+  const renderTextWithGuildEmojis = (text: string) => {
+    const parts: React.ReactNode[] = [];
+    const emojiPattern = /<(a?):([a-zA-Z0-9_]+):(\d{17,20})>|:([a-zA-Z0-9_]{2,32}):/g;
+    let cursor = 0;
+    let match: RegExpExecArray | null;
+
+    while ((match = emojiPattern.exec(text)) !== null) {
+      if (match.index > cursor) parts.push(text.slice(cursor, match.index));
+
+      const emojiId = match[3];
+      const emojiName = match[2] || match[4];
+      const guildEmoji = emojiId
+        ? emojis.find((item) => item.id === emojiId)
+        : emojis.find((item) => item.name.toLowerCase() === emojiName.toLowerCase());
+
+      if (guildEmoji || emojiId) {
+        const resolvedId = guildEmoji?.id || emojiId;
+        const animated = guildEmoji?.animated || match[1] === "a";
+        parts.push(
+          <img
+            key={`${match.index}-${resolvedId}`}
+            src={guildEmoji?.url || `https://cdn.discordapp.com/emojis/${resolvedId}.${animated ? "gif" : "webp"}?size=48&quality=lossless`}
+            alt={`:${emojiName}:`}
+            title={`:${emojiName}:`}
+            className="mx-0.5 inline-block h-5 w-5 align-text-bottom object-contain"
+          />
+        );
+      } else {
+        parts.push(match[0]);
+      }
+
+      cursor = emojiPattern.lastIndex;
+    }
+
+    if (cursor < text.length) parts.push(text.slice(cursor));
+    return parts.length > 0 ? parts : text;
+  };
+
   // Keep Raw JSON text synced when currentMessage changes (if not editing JSON directly)
   useEffect(() => {
     try {
@@ -1964,15 +2002,15 @@ export function CustomMessagesView({
                                 <div className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed">
                                   {block.content?.split("\n").map((line, lIdx) => {
                                     if (line.startsWith("# ")) {
-                                      return <h1 key={lIdx} className="text-lg font-bold text-white my-1">{line.replace("# ", "")}</h1>;
+                                      return <h1 key={lIdx} className="text-lg font-bold text-white my-1">{renderTextWithGuildEmojis(line.replace("# ", ""))}</h1>;
                                     }
                                     if (line.startsWith("### ")) {
-                                      return <h3 key={lIdx} className="text-sm font-bold text-white my-1">{line.replace("### ", "")}</h3>;
+                                      return <h3 key={lIdx} className="text-sm font-bold text-white my-1">{renderTextWithGuildEmojis(line.replace("### ", ""))}</h3>;
                                     }
                                     if (line.startsWith("> ")) {
-                                      return <blockquote key={lIdx} className="border-l-2 border-zinc-500 pl-2 text-zinc-400 italic my-1">{line.replace("> ", "")}</blockquote>;
+                                      return <blockquote key={lIdx} className="border-l-2 border-zinc-500 pl-2 text-zinc-400 italic my-1">{renderTextWithGuildEmojis(line.replace("> ", ""))}</blockquote>;
                                     }
-                                    return <p key={lIdx}>{line}</p>;
+                                    return <p key={lIdx}>{renderTextWithGuildEmojis(line)}</p>;
                                   })}
                                 </div>
                               )}
@@ -1981,7 +2019,7 @@ export function CustomMessagesView({
                               {block.type === "section" && (
                                 <div className="w-full flex items-center justify-between gap-4 bg-[#1e1f22]/50 p-2.5 rounded-lg border border-[#242429]">
                                   <div className="text-sm text-zinc-200 whitespace-pre-wrap leading-relaxed flex-1 min-w-0 pr-2">
-                                    {block.content}
+                                    {renderTextWithGuildEmojis(block.content || "")}
                                   </div>
                                   {block.accessory && (
                                     <div className="ml-auto shrink-0 flex items-center justify-end">

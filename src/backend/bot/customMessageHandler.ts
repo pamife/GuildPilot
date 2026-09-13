@@ -55,6 +55,78 @@ function formatDiscordApiError(error: any): string {
   return details.length > 0 ? `${baseMessage} – ${details.slice(0, 5).join("; ")}` : baseMessage;
 }
 
+function replaceGuildEmojiShortcodes(text: string, emojiMarkupByName: Map<string, string>): string {
+  // The prefix prevents matching the `:name:` portion inside an already valid
+  // Discord custom emoji such as <:name:id> or <a:name:id>.
+  return text.replace(/(^|[^<\w]):([a-zA-Z0-9_]{2,32}):/g, (match, prefix: string, name: string) => {
+    const markup = emojiMarkupByName.get(name.toLowerCase());
+    return markup ? `${prefix}${markup}` : match;
+  });
+}
+
+async function resolveGuildEmojiShortcodes(data: any, guild: Guild): Promise<any> {
+  const fetchedEmojis = await guild.emojis.fetch().catch(() => guild.emojis.cache);
+  const emojiMarkupByName = new Map<string, string>();
+
+  for (const emoji of fetchedEmojis.values()) {
+    if (!emoji.name) continue;
+    emojiMarkupByName.set(
+      emoji.name.toLowerCase(),
+      `<${emoji.animated ? "a" : ""}:${emoji.name}:${emoji.id}>`
+    );
+  }
+
+  if (emojiMarkupByName.size === 0) return data;
+
+  const nonRenderedKeys = new Set([
+    "id",
+    "guildId",
+    "channelId",
+    "messageId",
+    "roleId",
+    "targetCustomMessageId",
+    "customId",
+    "url",
+    "authorUrl",
+    "authorIcon",
+    "thumbnail",
+    "image",
+    "footerIcon",
+  ]);
+
+  const transform = (value: any, key?: string): any => {
+    if (typeof value === "string") {
+      return key && nonRenderedKeys.has(key)
+        ? value
+        : replaceGuildEmojiShortcodes(value, emojiMarkupByName);
+    }
+    if (Array.isArray(value)) return value.map((item) => transform(item));
+    if (!value || typeof value !== "object" || value instanceof Date) return value;
+
+    return Object.fromEntries(
+      Object.entries(value).map(([childKey, childValue]) => [childKey, transform(childValue, childKey)])
+    );
+  };
+
+  const transformConfig = (value: any) => {
+    if (typeof value !== "string") return transform(value);
+    try {
+      return transform(JSON.parse(value));
+    } catch {
+      return value;
+    }
+  };
+
+  return {
+    ...data,
+    name: typeof data.name === "string" ? replaceGuildEmojiShortcodes(data.name, emojiMarkupByName) : data.name,
+    content: typeof data.content === "string" ? replaceGuildEmojiShortcodes(data.content, emojiMarkupByName) : data.content,
+    containerConfig: transformConfig(data.containerConfig),
+    embedConfig: transformConfig(data.embedConfig),
+    componentsConfig: transformConfig(data.componentsConfig),
+  };
+}
+
 function getButtonStyleNumber(styleName?: string | number): number {
   if (typeof styleName === "number") return styleName;
   switch (styleName) {
@@ -533,8 +605,9 @@ export async function deployCustomMessage(
     throw new Error("The target channel was not found or is not a text-based channel.");
   }
 
-  // 3. Build Payload
-  const payload = buildCustomMessagePayload(messageRecord);
+  // 3. Resolve :emoji_name: aliases against this guild, then build payload.
+  const resolvedMessageRecord = await resolveGuildEmojiShortcodes(messageRecord, guild);
+  const payload = buildCustomMessagePayload(resolvedMessageRecord);
 
   let sentMessage;
   const existingMessageId = messageRecord.messageId;
@@ -620,10 +693,12 @@ export async function handleCustomMessageInteraction(client: Client, interaction
     // Find the button in containerConfig or componentsConfig
     let targetButton: any = null;
 
-    if (customMessage.mode === "components_v2" || !customMessage.mode) {
-      const containerItems: any[] = typeof customMessage.containerConfig === "string"
-        ? JSON.parse(customMessage.containerConfig || "[]")
-        : (customMessage.containerConfig || []);
+    const resolvedCustomMessage = await resolveGuildEmojiShortcodes(customMessage, interaction.guild);
+
+    if (resolvedCustomMessage.mode === "components_v2" || !resolvedCustomMessage.mode) {
+      const containerItems: any[] = typeof resolvedCustomMessage.containerConfig === "string"
+        ? JSON.parse(resolvedCustomMessage.containerConfig || "[]")
+        : (resolvedCustomMessage.containerConfig || []);
 
       for (const item of containerItems) {
         if (item.type === "action_row" && Array.isArray(item.buttons)) {
@@ -640,9 +715,9 @@ export async function handleCustomMessageInteraction(client: Client, interaction
         }
       }
     } else {
-      const rows: any[] = typeof customMessage.componentsConfig === "string"
-        ? JSON.parse(customMessage.componentsConfig || "[]")
-        : (customMessage.componentsConfig || []);
+      const rows: any[] = typeof resolvedCustomMessage.componentsConfig === "string"
+        ? JSON.parse(resolvedCustomMessage.componentsConfig || "[]")
+        : (resolvedCustomMessage.componentsConfig || []);
 
       for (const row of rows) {
         if (Array.isArray(row.buttons)) {
@@ -725,9 +800,10 @@ export async function handleCustomMessageInteraction(client: Client, interaction
         if (act.targetCustomMessageId) {
           const linkedMsg = await getCustomMessageById(act.targetCustomMessageId);
           if (linkedMsg) {
-            const payload = linkedMsg.mode === "embed"
-              ? buildClassicEmbedPayload(linkedMsg)
-              : buildCustomMessagePayload(linkedMsg);
+            const resolvedLinkedMsg = await resolveGuildEmojiShortcodes(linkedMsg, interaction.guild);
+            const payload = resolvedLinkedMsg.mode === "embed"
+              ? buildClassicEmbedPayload(resolvedLinkedMsg)
+              : buildCustomMessagePayload(resolvedLinkedMsg);
             try {
               await interaction.user.send(payload);
               ephemeralMessages.push("📩 Sent you the requested message in your DMs!");
@@ -754,9 +830,10 @@ export async function handleCustomMessageInteraction(client: Client, interaction
         if (act.targetCustomMessageId) {
           const linkedMsg = await getCustomMessageById(act.targetCustomMessageId);
           if (linkedMsg) {
-            const rawPayload = linkedMsg.mode === "embed"
-              ? buildClassicEmbedPayload(linkedMsg)
-              : buildCustomMessagePayload(linkedMsg);
+            const resolvedLinkedMsg = await resolveGuildEmojiShortcodes(linkedMsg, interaction.guild);
+            const rawPayload = resolvedLinkedMsg.mode === "embed"
+              ? buildClassicEmbedPayload(resolvedLinkedMsg)
+              : buildCustomMessagePayload(resolvedLinkedMsg);
 
             linkedReplyPayload = {
               ...rawPayload,
