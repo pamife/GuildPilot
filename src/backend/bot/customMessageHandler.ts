@@ -25,9 +25,34 @@ function isValidUrl(str?: string | null): boolean {
 
 function hexToInt(hexStr?: string | null): number | undefined {
   if (!hexStr) return undefined;
-  const clean = hexStr.replace("#", "").trim();
-  const num = parseInt(clean, 16);
-  return isNaN(num) ? undefined : num;
+  const clean = hexStr.trim().replace(/^#/, "");
+  if (!/^[0-9a-fA-F]{6}$/.test(clean)) return undefined;
+  return parseInt(clean, 16);
+}
+
+function formatDiscordApiError(error: any): string {
+  const rawError = error?.rawError;
+  const details: string[] = [];
+
+  const collectErrors = (value: any, path: string[] = []) => {
+    if (!value || typeof value !== "object") return;
+
+    if (Array.isArray(value._errors)) {
+      for (const item of value._errors) {
+        if (item?.message) {
+          details.push(`${path.join(".") || "payload"}: ${item.message}`);
+        }
+      }
+    }
+
+    for (const [key, child] of Object.entries(value)) {
+      if (key !== "_errors") collectErrors(child, [...path, key]);
+    }
+  };
+
+  collectErrors(rawError?.errors);
+  const baseMessage = rawError?.message || error?.message || String(error);
+  return details.length > 0 ? `${baseMessage} – ${details.slice(0, 5).join("; ")}` : baseMessage;
 }
 
 function getButtonStyleNumber(styleName?: string | number): number {
@@ -78,7 +103,7 @@ function getButtonUrl(buttonData: any): string | undefined {
     actions.find((action: any) => action?.actionType === "LINK")?.url,
   ];
 
-  const url = candidates.find((candidate) => isValidUrl(candidate));
+  const url = candidates.find((candidate) => isValidUrl(candidate) && candidate.trim().length <= 512);
   return url?.trim();
 }
 
@@ -239,8 +264,14 @@ export function buildComponentsV2Payload(data: any) {
           }
         }
 
-        if (sectionComponents.length > 0 || sectionPayload.accessory) {
+        if (sectionComponents.length > 0 && sectionPayload.accessory) {
           containerComponents.push(sectionPayload);
+        } else if (sectionComponents.length > 0) {
+          // A Discord Section requires an accessory. Preserve its text as a
+          // regular Text Display when an image URL/accessory is incomplete.
+          containerComponents.push(...sectionComponents);
+        } else if (sectionPayload.accessory) {
+          throw new Error("Eine Components-v2-Section mit Button oder Thumbnail benötigt einen Textinhalt.");
         }
         break;
       }
@@ -272,8 +303,18 @@ export function buildComponentsV2Payload(data: any) {
     const fallbackText = data.content || (data.name ? `# ${data.name}` : "Hello from GuildPilot!");
     containerComponents.push({
       type: 10,
-      content: fallbackText,
+      content: String(fallbackText).substring(0, 4000),
     });
+  }
+
+  const totalComponentCount = 1 + containerComponents.reduce((count, component) => {
+    const children = Array.isArray(component.components) ? component.components.length : 0;
+    const accessory = component.accessory ? 1 : 0;
+    return count + 1 + children + accessory;
+  }, 0);
+
+  if (totalComponentCount > 40) {
+    throw new Error(`Die Nachricht enthält ${totalComponentCount} Components. Discord erlaubt maximal 40 pro Nachricht.`);
   }
 
   // Build Root Container (Type 17)
@@ -502,10 +543,18 @@ export async function deployCustomMessage(
     try {
       const existingMessage = await channel.messages.fetch(existingMessageId).catch(() => null);
       if (existingMessage) {
-        sentMessage = await existingMessage.edit(payload);
+        const editPayload = messageRecord.mode === "components_v2" || !messageRecord.mode
+          ? {
+              ...payload,
+              // Required when converting a legacy message to Components V2.
+              content: null,
+              embeds: [],
+            }
+          : payload;
+        sentMessage = await existingMessage.edit(editPayload);
       }
     } catch (e) {
-      console.warn("[CustomMessage] Editing existing message failed, creating new message:", e);
+      console.warn("[CustomMessage] Editing existing message failed, creating new message:", formatDiscordApiError(e));
     }
   }
 
@@ -513,13 +562,14 @@ export async function deployCustomMessage(
     try {
       sentMessage = await channel.send(payload);
     } catch (sendErr: any) {
-      console.error("[CustomMessage] Error sending message:", sendErr?.rawError || sendErr?.message || sendErr);
+      const discordError = formatDiscordApiError(sendErr);
+      console.error("[CustomMessage] Error sending message:", discordError);
       if (sendErr.code === 50013) {
         throw new Error(`The bot is missing permissions to send messages in #${channel.name}.`);
       } else if (sendErr.code === 50001) {
         throw new Error(`The bot does not have access to view channel #${channel.name}.`);
       } else {
-        throw new Error(`Discord API Error: ${sendErr.rawError?.message || sendErr.message || sendErr}`);
+        throw new Error(`Discord API Error: ${discordError}`);
       }
     }
   }
