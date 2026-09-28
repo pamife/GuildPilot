@@ -21,10 +21,14 @@ secrets.env
 # Runtime logs & backups
 /logs/
 /backups/
+/data/
+/transcripts/
 
 # SQLite database
 /prisma/*.db
 /prisma/*.db-journal
+*.db-wal
+*.db-shm
 dev.db
 
 # Debug logs
