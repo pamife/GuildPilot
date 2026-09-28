@@ -6,7 +6,7 @@ import http from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import { initSocketIO } from "./socket/socketManager";
-import { initDiscordBot } from "./bot/client";
+import { initDiscordBot, isBotReady } from "./bot/client";
 
 import authRoutes from "./routes/auth";
 import guildRoutes from "./routes/guilds";
@@ -26,27 +26,21 @@ import autoReactRoutes from "./routes/autoReact";
 import serverCloneRoutes from "./routes/serverClone";
 import memberRoutes from "./routes/members";
 import backupRoutes from "./routes/backups";
+import { getAllowedOrigins } from "./config/runtime";
 
 const app = express();
 const server = http.createServer(app);
 
 const PORT = process.env.PORT || 3001;
 
-// CORS setup for web dashboard & Cloudflare Tunnel
-const allowedOrigins = [
-  "http://localhost:3000",
-  "http://127.0.0.1:3000",
-  process.env.NEXT_PUBLIC_API_URL,
-  process.env.FRONTEND_URL,
-].filter(Boolean) as string[];
+const allowedOrigins = getAllowedOrigins();
 
 app.use(
   cors({
     origin: (origin, callback) => {
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
-      // Allow origin for tunneled requests
-      return callback(null, true);
+      return callback(null, false);
     },
     credentials: true,
   })
@@ -78,6 +72,9 @@ app.use("/api/host-server", hostServerRoutes);
 
 // Root route: Redirect to Next.js Frontend Dashboard
 app.get("/", (req, res) => {
+  if (process.env.FRONTEND_URL) {
+    return res.redirect(process.env.FRONTEND_URL);
+  }
   const host = req.headers.host ? req.headers.host.split(":")[0] : "localhost";
   res.redirect(`http://${host}:3000`);
 });
@@ -86,7 +83,12 @@ import { initHourlyRestartScheduler } from "./services/hourlyRestartService";
 
 // Base Health Check
 app.get("/api/health", (req, res) => {
-  res.json({ status: "ok", name: "GuildPilot Backend", timestamp: new Date() });
+  res.json({
+    status: "ok",
+    name: "GuildPilot Backend",
+    botConnected: isBotReady(),
+    timestamp: new Date(),
+  });
 });
 
 // Initialize Socket.IO

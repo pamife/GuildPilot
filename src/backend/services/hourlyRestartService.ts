@@ -1,6 +1,7 @@
 import { broadcastEvent } from "../socket/socketManager";
 import { resetUpdateProgress, checkOrTriggerUpdate } from "./updateService";
 import { exec } from "child_process";
+import { isDockerDeployment } from "../config/runtime";
 
 let nextRestartTimestamp: Date = getNextHourlyTimestamp();
 let restartTimer: NodeJS.Timeout | null = null;
@@ -32,6 +33,10 @@ export function triggerImmediateRestart(reason = "Automatischer stündlicher Neu
   });
 
   setTimeout(() => {
+    if (isDockerDeployment) {
+      console.log("[HourlyRestart] Docker übernimmt den Neustart des Backend-Containers.");
+      process.exit(0);
+    }
     try {
       exec("pm2 restart all", (err) => {
         if (err) {
@@ -47,6 +52,10 @@ export function triggerImmediateRestart(reason = "Automatischer stündlicher Neu
 }
 
 export function initHourlyRestartScheduler(): void {
+  if (isDockerDeployment) {
+    console.log("[HourlyRestart] In Docker deaktiviert; Restart-Policy und Deployments übernehmen Neustarts.");
+    return;
+  }
   scheduleNextHourlyRestart();
   console.log(`[HourlyRestart] ⏰ Stündlicher Auto-Neustart aktiviert. Nächster regulärer Neustart um ${nextRestartTimestamp.toLocaleTimeString()}`);
 

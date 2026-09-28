@@ -10,6 +10,7 @@ import {
   getJwtSecret,
   checkUserGuildPermission,
 } from "../middleware/authMiddleware";
+import { getAllowedOrigins } from "../config/runtime";
 
 let io: SocketIOServer | null = null;
 let telemetryTimer: NodeJS.Timeout | null = null;
@@ -69,8 +70,10 @@ export function initSocketIO(server: HTTPServer) {
     pingTimeout: 5000,
     cors: {
       origin: (origin, callback) => {
-        // Erlaube Dashboard & Tunnel-Verbindungen
-        callback(null, true);
+        if (!origin || getAllowedOrigins().includes(origin)) {
+          return callback(null, true);
+        }
+        return callback(new Error("Origin is not allowed by Socket.IO CORS"));
       },
       credentials: true,
     },

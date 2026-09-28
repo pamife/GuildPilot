@@ -3,8 +3,6 @@ import jwt from "jsonwebtoken";
 import { PermissionsBitField } from "discord.js";
 import { discordClient, isBotReady } from "../bot/client";
 
-export const OWNER_DISCORD_ID = "821748338898501693";
-
 export interface AuthUser {
   id: string;
   username: string;
@@ -19,11 +17,10 @@ export interface AuthenticatedRequest extends Request {
 export function isOwner(userId?: string | null): boolean {
   if (!userId) return false;
   const configuredOwnerId = process.env.ALLOWED_USER_ID || process.env.OWNER_ID;
-  return (
-    userId === OWNER_DISCORD_ID ||
-    (Boolean(configuredOwnerId) &&
+  return Boolean(
+    configuredOwnerId &&
       configuredOwnerId !== "your_discord_user_id_here" &&
-      userId === configuredOwnerId)
+      userId === configuredOwnerId
   );
 }
 
@@ -92,7 +89,7 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
 }
 
 /**
- * Middleware: Requires global OWNER privileges (Discord ID: 821748338898501693)
+ * Middleware: Requires the owner configured through ALLOWED_USER_ID.
  */
 export function requireOwner(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const user = req.user || extractAuthUser(req);

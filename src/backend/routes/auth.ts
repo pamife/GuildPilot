@@ -7,31 +7,29 @@ import {
   requireAuth,
   isOwner,
   getJwtSecret,
-  OWNER_DISCORD_ID,
 } from "../middleware/authMiddleware";
+import { getAllowedOrigins, isAllowedOrigin } from "../config/runtime";
 
 const router = Router();
 const prisma = new PrismaClient();
 
 const getFrontendUrl = (req: any): string => {
   const queryReturnTo = req.query?.return_to as string;
-  if (queryReturnTo && (queryReturnTo.startsWith("http://") || queryReturnTo.startsWith("https://"))) {
+  if (queryReturnTo && isAllowedOrigin(queryReturnTo)) {
     return queryReturnTo.replace(/\/$/, "");
   }
   const cookieReturnTo = req.cookies?.oauth_return_to;
-  if (cookieReturnTo && (cookieReturnTo.startsWith("http://") || cookieReturnTo.startsWith("https://"))) {
+  if (cookieReturnTo && isAllowedOrigin(cookieReturnTo)) {
     return cookieReturnTo.replace(/\/$/, "");
   }
   if (process.env.FRONTEND_URL) return process.env.FRONTEND_URL.replace(/\/$/, "");
   if (req.headers?.referer) {
     try {
       const parsed = new URL(req.headers.referer);
-      return parsed.origin;
+      if (isAllowedOrigin(parsed.origin)) return parsed.origin;
     } catch {}
   }
-  const host = req.headers.host ? req.headers.host.split(":")[0] : "localhost";
-  const protocol = req.headers["x-forwarded-proto"] || "http";
-  return `${protocol}://${host}:3000`;
+  return getAllowedOrigins()[0] || "http://localhost:3000";
 };
 
 const getRedirectUri = (req: any): string => {
@@ -106,6 +104,10 @@ router.get("/callback", async (req, res) => {
 
     const discordUser = userResponse.data;
     const isUserOwner = isOwner(discordUser.id);
+    if (!isUserOwner) {
+      console.warn(`[Auth] Login rejected for Discord user ${discordUser.id}.`);
+      return res.redirect(`${frontendUrl}?error=access_denied`);
+    }
     const role = isUserOwner ? "OWNER" : "USER";
 
     const formattedUsername = `${discordUser.username}${
@@ -160,12 +162,12 @@ router.get("/callback", async (req, res) => {
     if (req.query.state && typeof req.query.state === "string") {
       try {
         const decodedState = JSON.parse(Buffer.from(decodeURIComponent(req.query.state), "base64").toString("utf-8"));
-        if (decodedState?.returnTo && (decodedState.returnTo.startsWith("http://") || decodedState.returnTo.startsWith("https://"))) {
+        if (decodedState?.returnTo && isAllowedOrigin(decodedState.returnTo)) {
           targetFrontend = decodedState.returnTo.replace(/\/$/, "");
         }
       } catch (e) {}
     }
-    if (req.cookies?.oauth_return_to && (req.cookies.oauth_return_to.startsWith("http://") || req.cookies.oauth_return_to.startsWith("https://"))) {
+    if (req.cookies?.oauth_return_to && isAllowedOrigin(req.cookies.oauth_return_to)) {
       targetFrontend = req.cookies.oauth_return_to.replace(/\/$/, "");
     }
     res.clearCookie("oauth_return_to", { path: "/" });

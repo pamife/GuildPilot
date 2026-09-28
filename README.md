@@ -97,20 +97,20 @@ Gebaut mit **Next.js 14, React 18, Tailwind CSS, TypeScript, Discord.js v14, Exp
 
 ### 🖥️ 14. Host-Server & Live-Telemetrie
 - **Hardware-Monitoring:** CPU-Auslastung (pro Kern), RAM-Verbrauch, Festplattenbelegung und Netzwerktraffic.
-- **GitHub Auto-Update Engine:** 6-Schritte Update-Pipeline (Git Fetch, Backup, Git Pull, npm install, Prisma Sync, Build, PM2 Restart) mit Live-Terminal-Logs.
-- **Hosting Environment:** Der Bot und das Webpanel laufen 24/7 produktiv auf einer **Linux (Kali Linux)** Maschine, welche Änderungen automatisch via GitHub `origin/main` synchronisiert, baut und via PM2 neustartet.
+- **Docker-Betrieb:** Das produktive Deployment nutzt getrennte, nicht privilegierte Container für Backend/Bot und Frontend.
+- **Legacy-Betrieb:** Die bisherige PM2/systemd-Aktualisierungslogik bleibt für bestehende Installationen erhalten, ist innerhalb von Docker jedoch deaktiviert.
 
 ---
 
 ## 🤖 Wichtige AI- & Entwickler-Hinweise (Host Architecture)
 
 > [!IMPORTANT]
-> **Produktiv-Host & Continuous Deployment:**
-> - **Host OS:** Linux (Kali Linux).
-> - **Deployment:** Der Server pollt/zieht neue Commits automatisch von GitHub (`main` Branch) und führt `scripts/auto-update.js` / `scripts/auto-update.sh` aus.
+> **Produktiv-Host & Deployment:**
+> - **Host OS:** Debian 13 mit Docker Compose.
+> - **Deployment:** Docker ist der primäre Produktionsweg. GitHub Actions oder automatisches Deployment sind noch nicht aktiviert.
 > - **Build-Integrität:** Jeder Commit auf `main` **MUSS** `npm run build` (TypeScript Backend `tsc` & Next.js Frontend `next build`) fehlerfrei bestehen.
-> - **Ports & Prozesse:** Backend läuft auf Port `3001` (`dist/backend/server.js`), Frontend läuft auf Port `3000` (`server-frontend.js`). Gesteuert via PM2 (`ecosystem.config.js`).
-- **Dienste-Status:** Überwachung von Hintergrund-Diensten wie `keep-awake`.
+> - **Ports & Prozesse:** Intern bleiben Backend `3001` und Frontend `3000`; Docker veröffentlicht standardmäßig `3101` und `3100`.
+> - **Legacy:** PM2, Kali- und systemd-Dateien sind nur noch für ältere Bare-Metal-Installationen vorgesehen.
 
 ### 🔗 15. Einladungs-, Emoji- & Sticker-Manager
 - **Invite-Generator:** Einladungslinks mit maximalen Nutzungen, Ablaufzeiten und temporärer Mitgliedschaft erstellen.
@@ -169,7 +169,7 @@ DATABASE_URL="file:./dev.db"
 
 # Server Ports (Optional)
 PORT=3001
-NEXT_PUBLIC_API_URL=http://localhost:3001/api
+NEXT_PUBLIC_API_URL=http://localhost:3001
 ```
 
 ### 4. Datenbank initialisieren
@@ -188,19 +188,111 @@ npm run dev
 
 ---
 
-## 🚀 Produktionsbetrieb & Deployment
+## 🐳 Produktionsbetrieb mit Docker auf Debian
 
-### Build erstellen
+Docker Compose startet zwei Container aus einem Multi-Stage-Build:
+
+- `guildpilot-frontend`: Next.js Standalone, intern Port `3000`, Host-Port `3100`
+- `guildpilot-backend`: Express, Socket.IO, Discord-Bot und Prisma, intern Port `3001`, Host-Port `3101`
+
+Beide Container laufen als unprivilegierter Benutzer, ohne Docker-Socket und mit `restart: unless-stopped`. PM2, systemd, Keep-Awake und die frühere GitHub-Auto-Update-Engine werden im Container nicht benötigt.
+
+### Installation
+
 ```bash
-npm run build
+sudo mkdir -p /opt/stacks/guildpilot
+sudo chown -R "$USER:$USER" /opt/stacks/guildpilot
+git clone https://github.com/pamife/GuildPilot.git /opt/stacks/guildpilot
+cd /opt/stacks/guildpilot
+cp .env.example .env
+chmod 600 .env
+mkdir -p data/backups transcripts logs
 ```
 
-### Starten mit PM2 (Empfohlen für Server / VPS)
-```bash
-pm2 start ecosystem.config.js
-# oder direkt:
-npm start
+Trage anschließend die echten Werte in `.env` ein. Die Datei ist durch `.gitignore` und `.dockerignore` ausgeschlossen.
+
+```env
+DISCORD_TOKEN=
+DISCORD_CLIENT_ID=
+DISCORD_CLIENT_SECRET=
+DISCORD_REDIRECT_URI=http://100.97.89.86:3101/api/auth/callback
+ALLOWED_USER_ID=
+JWT_SECRET=
+FRONTEND_URL=http://100.97.89.86:3100
+CORS_ORIGINS=http://100.97.89.86:3100,http://192.168.178.176:3100
+NEXT_PUBLIC_API_URL=http://100.97.89.86:3101
+DATABASE_URL=file:/data/guildpilot.db
 ```
+
+`JWT_SECRET` muss ein eigener, langer Zufallswert sein. Keine Beispielwerte als echte Zugangsdaten verwenden. Der exakte Discord-OAuth-Redirect lautet:
+
+```text
+http://100.97.89.86:3101/api/auth/callback
+```
+
+### Build und Start
+
+```bash
+cd /opt/stacks/guildpilot
+docker compose config
+docker compose build
+docker compose up -d
+docker compose ps
+```
+
+Beim Start legt das Backend vor jeder Schema-Synchronisierung ein Backup einer vorhandenen Datenbank unter `data/backups/` an und führt anschließend `prisma db push --skip-generate` ohne destructive Flags aus.
+
+### Aufrufen und überwachen
+
+- Dashboard: `http://100.97.89.86:3100`
+- Backend-Healthcheck: `http://100.97.89.86:3101/api/health`
+- Uptime Kuma kann den Backend-Healthcheck oder zusätzlich das Frontend überwachen.
+
+```bash
+docker compose logs -f
+docker compose logs -f backend
+docker compose logs -f frontend
+```
+
+### Stoppen
+
+```bash
+docker compose down
+```
+
+Die Daten bleiben dabei in `data/` und `transcripts/` erhalten.
+
+### Aktualisieren
+
+```bash
+cd /opt/stacks/guildpilot
+git pull --ff-only
+docker compose build
+docker compose up -d
+docker compose ps
+```
+
+### SQLite sichern und wiederherstellen
+
+Vor einem manuellen Backup sollte der Backend-Container kurz gestoppt werden, damit die SQLite-Datei konsistent kopiert wird:
+
+```bash
+docker compose stop backend
+cp -a data/guildpilot.db "data/backups/guildpilot-$(date -u +%Y%m%dT%H%M%SZ).db"
+docker compose start backend
+```
+
+Wiederherstellung aus einem geprüften Backup:
+
+```bash
+docker compose down
+cp -a data/backups/GEPRUEFTES_BACKUP.db data/guildpilot.db
+docker compose up -d
+```
+
+### Legacy-Betrieb
+
+`ecosystem.config.js`, `server-frontend.js`, `scripts/auto-update.*` und `systemd/` bleiben für bestehende PM2-/Bare-Metal-Installationen erhalten. Für das Docker-Deployment sind sie nicht aktiv. Der frühere Kali-spezifische Betrieb ist damit als Legacy markiert.
 
 ---
 

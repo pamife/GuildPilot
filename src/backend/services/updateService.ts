@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { broadcastEvent } from "../socket/socketManager";
+import { isDockerDeployment } from "../config/runtime";
 
 export interface UpdateNotification {
   id: string;
@@ -168,6 +169,14 @@ export async function checkOrTriggerUpdate(
   remoteCommit: string;
   message: string;
 }> {
+  if (isDockerDeployment) {
+    return {
+      hasUpdate: false,
+      localCommit: "container",
+      remoteCommit: "container",
+      message: "Docker-Deployment: Updates werden auf dem Host mit git pull und docker compose build/up eingespielt.",
+    };
+  }
   const { exec } = await import("child_process");
   const util = await import("util");
   const execPromise = util.promisify(exec);
@@ -308,6 +317,12 @@ export async function forceRebuild(skipGit = false): Promise<{
   success: boolean;
   message: string;
 }> {
+  if (isDockerDeployment) {
+    return {
+      success: false,
+      message: "Docker-Deployment: Rebuild auf dem Host mit docker compose build und docker compose up -d ausführen.",
+    };
+  }
   const { exec } = await import("child_process");
   const projectDir = process.cwd();
 

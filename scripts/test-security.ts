@@ -1,16 +1,16 @@
 import axios from "axios";
 import jwt from "jsonwebtoken";
 
-const API_BASE = "http://127.0.0.1:3001/api";
+const API_BASE = process.env.API_BASE_URL || "http://127.0.0.1:3001/api";
 const JWT_SECRET = process.env.JWT_SECRET || "test";
-const OWNER_ID = "821748338898501693";
+const OWNER_ID = process.env.ALLOWED_USER_ID || "999888777666555444";
 const FAKE_USER_ID = "111222333444555666";
 
 async function waitForServer() {
-  console.log("Warte auf Backend-Verbindung auf http://127.0.0.1:3001/api/health...");
+  console.log(`Warte auf Backend-Verbindung auf ${API_BASE}/health...`);
   for (let i = 0; i < 20; i++) {
     try {
-      const res = await axios.get("http://127.0.0.1:3001/api/health", { timeout: 1000 });
+      const res = await axios.get(`${API_BASE}/health`, { timeout: 1000 });
       if (res.status === 200) {
         console.log("✅ Backend Server ist online & erreichbar.\n");
         return true;
@@ -128,7 +128,7 @@ async function runSecurityTests() {
     }
   });
 
-  // 4. Owner Tests (Discord ID: 821748338898501693)
+  // 4. Owner Tests (Discord ID from ALLOWED_USER_ID)
   const ownerToken = jwt.sign(
     { id: OWNER_ID, username: "OwnerAccount#0001", avatar: null },
     JWT_SECRET,
