@@ -730,18 +730,30 @@ async function handleTicketCloseExecute(
     return interaction.editReply({ content: "❌ Ticket record not found." });
   }
 
-  const channel = interaction.channel as TextChannel;
+  await closeTicket(ticket, interaction.channel as TextChannel | null, interaction.user, closeReason, interaction);
+}
+
+export async function closeTicket(
+  ticket: NonNullable<Awaited<ReturnType<typeof getTicketById>>>,
+  channel: TextChannel | null,
+  actor: { id: string; tag: string },
+  closeReason: string,
+  interaction?: ButtonInteraction | ChatInputCommandInteraction
+) {
+  if (ticket.status === "CLOSED") {
+    await interaction?.editReply({ content: "This ticket is already closed." });
+    return;
+  }
+
   if (channel) {
-    await channel.permissionOverwrites.edit(ticket.userId, {
-      SendMessages: false,
-    }).catch(() => {});
+    await channel.permissionOverwrites.edit(ticket.userId, { SendMessages: false });
   }
 
   const now = new Date();
 
   await updateTicketStatus(ticket.id, "CLOSED", {
-    closedByUserId: interaction.user.id,
-    closedByTag: interaction.user.tag,
+    closedByUserId: actor.id,
+    closedByTag: actor.tag,
     closeReason,
     closedTimestamp: now,
   });
@@ -751,14 +763,14 @@ async function handleTicketCloseExecute(
     ticketId: ticket.id,
     ticketNumber: ticket.ticketNumber,
     action: "CLOSED",
-    executorId: interaction.user.id,
-    executorTag: interaction.user.tag,
-    details: `Ticket #${ticket.ticketNumber} closed by ${interaction.user.tag} (Reason: ${closeReason})`,
+    executorId: actor.id,
+    executorTag: actor.tag,
+    details: `Ticket #${ticket.ticketNumber} closed by ${actor.tag} (Reason: ${closeReason})`,
   });
 
   const closedEmbed = new EmbedBuilder()
     .setTitle(`Ticket #${ticket.ticketNumber} Closed`)
-    .setDescription(`Closed by ${interaction.user}.\nUse the buttons below to reopen or permanently delete.`)
+    .setDescription(`Closed by <@${actor.id}>.\nUse the buttons below to reopen or permanently delete.`)
     .setColor("#ED4245")
     .setTimestamp();
 
@@ -768,17 +780,22 @@ async function handleTicketCloseExecute(
     new ButtonBuilder().setCustomId(`ticket_delete:${ticket.id}`).setLabel("Delete").setEmoji("🗑").setStyle(ButtonStyle.Danger)
   );
 
-  await interaction.editReply({
-    embeds: [closedEmbed],
-    components: [row],
-  });
+  const message = { embeds: [closedEmbed], components: [row] };
+  if (interaction) {
+    await interaction.editReply(message);
+  } else if (channel) {
+    await channel.send(message).catch((error) => {
+      console.error("[TicketHandler] Error posting ticket close message:", error);
+    });
+  }
 
   // Post Ticket Log Embed to Log Channel matching attached screenshot!
   const settings = await getTicketSettings(ticket.guildId);
-  if (settings.logChannelId && interaction.guild) {
-    const logChannel = (await interaction.guild.channels.fetch(settings.logChannelId).catch(() => null)) as TextChannel;
+  const guild = interaction?.guild ?? channel?.guild;
+  if (settings.logChannelId && guild) {
+    const logChannel = (await guild.channels.fetch(settings.logChannelId).catch(() => null)) as TextChannel;
     if (logChannel && logChannel.isTextBased()) {
-      await sendTicketCloseLogEmbed(logChannel, ticket, interaction.user, closeReason, now);
+      await sendTicketCloseLogEmbed(logChannel, ticket, actor, closeReason, now);
     }
   }
 }

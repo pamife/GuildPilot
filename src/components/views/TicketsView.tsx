@@ -440,17 +440,24 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
   };
 
   // Ticket Action Handler
+  const [pendingTicketAction, setPendingTicketAction] = useState<string | null>(null);
+
   const handleTicketAction = async (ticketId: string, action: string) => {
+    if (!selectedGuildId || pendingTicketAction) return;
+    if (action === "close" && !window.confirm("Ticket schließen? Der Ersteller kann danach im Discord-Kanal nicht mehr schreiben.")) return;
+    setPendingTicketAction(ticketId);
     try {
       await api.post(`/guilds/${selectedGuildId}/tickets/${ticketId}/action`, { action });
-      showToast(`Action '${action}' executed successfully.`, "success");
+      showToast(action === "close" ? "Ticket geschlossen." : `Action '${action}' executed successfully.`, "success");
       if (selectedTicket && selectedTicket.id === ticketId) {
         const updated = await api.get(`/guilds/${selectedGuildId}/tickets/${ticketId}`);
         setSelectedTicket(updated.data);
       }
       fetchAllData();
     } catch (err: any) {
-      showToast("Action execution failed.", "error");
+      showToast(err.response?.data?.error || "Action execution failed.", "error");
+    } finally {
+      setPendingTicketAction(null);
     }
   };
 
@@ -1249,6 +1256,16 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           >
                             <FileText className="w-3.5 h-3.5" /> Transcript
                           </a>
+                          {ticket.status !== "CLOSED" && (
+                            <button
+                              type="button"
+                              onClick={() => handleTicketAction(ticket.id, "close")}
+                              disabled={pendingTicketAction !== null}
+                              className="px-3 py-1 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-xs font-semibold flex items-center gap-1 disabled:opacity-50"
+                            >
+                              <Lock className="w-3.5 h-3.5" /> Schließen
+                            </button>
+                          )}
                           <button
                             onClick={() => setSelectedTicket(ticket)}
                             className="px-3 py-1 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-white text-xs font-semibold transition-colors flex items-center gap-1"
@@ -2476,18 +2493,19 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
             </div>
 
             <div className="flex flex-wrap gap-2 pt-2">
-              <button
+              {selectedTicket.status !== "CLOSED" ? <button
                 onClick={() => handleTicketAction(selectedTicket.id, "close")}
+                disabled={pendingTicketAction !== null}
                 className="px-3.5 py-2 rounded-xl bg-rose-500/20 hover:bg-rose-500/30 text-rose-400 text-xs font-bold transition-all flex items-center gap-1.5"
               >
-                <Lock className="w-3.5 h-3.5" /> Close Ticket
-              </button>
-              <button
+                <Lock className="w-3.5 h-3.5" /> Ticket schließen
+              </button> : <button
                 onClick={() => handleTicketAction(selectedTicket.id, "reopen")}
+                disabled={pendingTicketAction !== null}
                 className="px-3.5 py-2 rounded-xl bg-emerald-500/20 hover:bg-emerald-500/30 text-emerald-400 text-xs font-bold transition-all flex items-center gap-1.5"
               >
                 <Unlock className="w-3.5 h-3.5" /> Reopen Ticket
-              </button>
+              </button>}
               <a
                 href={`/api/guilds/${selectedGuildId}/tickets/transcripts/${selectedTicket.id}/download`}
                 target="_blank"
@@ -2498,6 +2516,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               </a>
               <button
                 onClick={() => handleTicketAction(selectedTicket.id, "transcript")}
+                disabled={pendingTicketAction !== null}
                 className="px-3.5 py-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-bold transition-all flex items-center gap-1.5"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Re-generate

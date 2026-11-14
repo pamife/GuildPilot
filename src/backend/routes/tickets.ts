@@ -21,12 +21,12 @@ import {
   updateTicketSettings,
   createTicketLog,
 } from "../services/ticketService";
-import { deployTicketPanelEmbed } from "../bot/ticketHandler";
+import { closeTicket, deployTicketPanelEmbed } from "../bot/ticketHandler";
 import { validateTicketPanelComponents } from "../utils/ticketComponentValidator";
 import { convertLegacyPanelToComponentsV2 } from "../bot/ticketComponentBuilder";
 import { getTranscriptFilePath, generateHtmlTranscript } from "../services/transcriptService";
-import { TextChannel } from "discord.js";
-import { requireGuildAccess } from "../middleware/authMiddleware";
+import { ChannelType, DiscordAPIError, RESTJSONErrorCodes, TextChannel } from "discord.js";
+import { AuthenticatedRequest, requireGuildAccess } from "../middleware/authMiddleware";
 
 const router = Router();
 
@@ -223,33 +223,45 @@ router.post("/:guildId/tickets/:ticketId/action", async (req, res) => {
   try {
     const { action } = req.body;
     const ticket = await getTicketById(req.params.ticketId);
-    if (!ticket) return res.status(404).json({ error: "Ticket not found" });
+    if (!ticket || ticket.guildId !== req.params.guildId) {
+      return res.status(404).json({ error: "Ticket not found" });
+    }
 
-    if (action === "close") {
-      await updateTicketStatus(ticket.id, "CLOSED", {
-        closedByUserId: "dashboard_owner",
-        closedByTag: "Dashboard Owner",
+    if (action === "close" || action === "reopen") {
+      const closing = action === "close";
+      if (closing ? ticket.status === "CLOSED" : ticket.status !== "CLOSED") {
+        return res.json({ success: true, ticket });
+      }
+
+      const user = (req as AuthenticatedRequest).user;
+      if (!user) return res.status(401).json({ error: "Authentication required" });
+
+      const channel = await discordClient.channels.fetch(ticket.channelId).catch((error) => {
+        if (error instanceof DiscordAPIError && error.code === RESTJSONErrorCodes.UnknownChannel) {
+          return null;
+        }
+        throw error;
       });
-      await createTicketLog({
-        guildId: ticket.guildId,
-        ticketId: ticket.id,
-        ticketNumber: ticket.ticketNumber,
-        action: "CLOSED",
-        executorId: "dashboard",
-        executorTag: "Dashboard",
-        details: "Ticket closed via Webpanel",
-      });
-    } else if (action === "reopen") {
-      await updateTicketStatus(ticket.id, "OPEN");
-      await createTicketLog({
-        guildId: ticket.guildId,
-        ticketId: ticket.id,
-        ticketNumber: ticket.ticketNumber,
-        action: "REOPENED",
-        executorId: "dashboard",
-        executorTag: "Dashboard",
-        details: "Ticket reopened via Webpanel",
-      });
+      if (channel && (channel.type !== ChannelType.GuildText || channel.guildId !== ticket.guildId)) {
+        return res.status(409).json({ error: "Ticket channel does not match this server" });
+      }
+
+      if (closing) {
+        await closeTicket(ticket, channel, { id: user.id, tag: user.username }, "Closed via Webpanel");
+      } else {
+        if (!channel) return res.status(409).json({ error: "Der Discord-Kanal dieses Tickets wurde gelöscht." });
+        await channel.permissionOverwrites.edit(ticket.userId, { SendMessages: true, ViewChannel: true });
+        await updateTicketStatus(ticket.id, "OPEN");
+        await createTicketLog({
+          guildId: ticket.guildId,
+          ticketId: ticket.id,
+          ticketNumber: ticket.ticketNumber,
+          action: "REOPENED",
+          executorId: user.id,
+          executorTag: user.username,
+          details: "Ticket reopened via Webpanel",
+        });
+      }
     } else if (action === "delete") {
       await createTicketLog({
         guildId: ticket.guildId,
