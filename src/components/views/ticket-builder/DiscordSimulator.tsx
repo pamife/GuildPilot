@@ -285,20 +285,12 @@ export function DiscordSimulator({
                     {currentPreviewType?.welcomeDescription || "Support staff will be with you shortly."}
                   </p>
 
-                  <div className="grid grid-cols-3 gap-2 pt-2 text-[11px] text-zinc-400">
-                    <div>
-                      <span className="font-bold text-zinc-300 block">Creator</span>
-                      @MaxMustermann
+                  {currentPreviewType && (
+                    <div className="pt-1 text-xs text-zinc-300">
+                      <span className="block font-bold">Ticket-Typ</span>
+                      {currentPreviewType.emoji} {currentPreviewType.name}
                     </div>
-                    <div>
-                      <span className="font-bold text-zinc-300 block">Ticket Type</span>
-                      {currentPreviewType?.name || "General"}
-                    </div>
-                    <div>
-                      <span className="font-bold text-zinc-300 block">Status</span>
-                      <span className="text-emerald-400 font-bold">🟢 Open</span>
-                    </div>
-                  </div>
+                  )}
                 </div>
 
                 {/* Ticket Controls Row */}
@@ -311,6 +303,9 @@ export function DiscordSimulator({
                   </button>
                   <button className="px-2.5 py-1 rounded bg-[#4e5058] text-white text-xs font-semibold flex items-center gap-1">
                     ➕ Add User
+                  </button>
+                  <button className="px-2.5 py-1 rounded bg-[#4e5058] text-white text-xs font-semibold flex items-center gap-1">
+                    ➖ Remove User
                   </button>
                   <button className="px-2.5 py-1 rounded bg-[#4e5058] text-white text-xs font-semibold flex items-center gap-1">
                     📄 Transcript

@@ -8,6 +8,7 @@ import {
   Message,
   ChannelType,
   PermissionFlagsBits,
+  OverwriteType,
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
@@ -188,6 +189,57 @@ export async function deployTicketPanelEmbed(client: Client, panelId: string): P
 }
 
 // Slash Command Handler
+function readTicketConfig(value: string | null | undefined): unknown[] {
+  try {
+    const parsed: unknown = JSON.parse(value || "[]");
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+async function requireTicketSupport(
+  interaction: ButtonInteraction | ChatInputCommandInteraction | ModalSubmitInteraction,
+  ticket: Awaited<ReturnType<typeof getTicketByChannelId>>
+) {
+  if (!ticket || ticket.guildId !== interaction.guildId || ticket.channelId !== interaction.channelId) {
+    await interaction.reply({ content: "❌ Diese Aktion ist nur im zugehörigen Ticket-Kanal verfügbar.", ephemeral: true });
+    return false;
+  }
+
+  const member = interaction.member;
+  if (member && interaction.user.id !== ticket.userId) {
+    const isManager = interaction.memberPermissions?.has(PermissionFlagsBits.ManageGuild);
+    if (isManager) return true;
+
+    const settings = await getTicketSettings(ticket.guildId);
+    const panel = ticket.panel;
+    const supportRoles = new Set([
+      ...readTicketConfig(settings.defaultSupportRoles),
+      ...readTicketConfig(panel?.supportRoles),
+    ]);
+    if (interaction.channel?.type === ChannelType.GuildText) {
+      for (const config of [...readTicketConfig(panel?.ticketTypesConfig), ...readTicketConfig(panel?.reasons)]) {
+        const roles = (config as { supportRoles?: string[] } | null)?.supportRoles;
+        if (!Array.isArray(roles)) continue;
+        for (const roleId of roles) {
+          const overwrite = interaction.channel.permissionOverwrites.cache.get(roleId);
+          if (overwrite?.type === OverwriteType.Role && overwrite.allow.has(PermissionFlagsBits.ManageChannels)) {
+            supportRoles.add(roleId);
+          }
+        }
+      }
+    }
+    const memberRoleIds = Array.isArray(member.roles) ? member.roles : member.roles.cache.keys();
+    for (const roleId of memberRoleIds) {
+      if (supportRoles.has(roleId)) return true;
+    }
+  }
+
+  await interaction.reply({ content: "❌ Diese Aktion ist dem Support-Team vorbehalten und für das eigene Ticket gesperrt.", ephemeral: true });
+  return false;
+}
+
 async function handleSlashCommandInteraction(interaction: ChatInputCommandInteraction) {
   if (interaction.commandName !== "ticket") return;
 
@@ -199,6 +251,7 @@ async function handleSlashCommandInteraction(interaction: ChatInputCommandIntera
   }
 
   if (subcommand === "add") {
+    if (!await requireTicketSupport(interaction, ticket)) return;
     const targetUser = interaction.options.getUser("user", true);
     const channel = interaction.channel as TextChannel;
     if (channel && ticket) {
@@ -215,9 +268,13 @@ async function handleSlashCommandInteraction(interaction: ChatInputCommandIntera
       await interaction.reply({ content: `✅ Added ${targetUser} to the ticket.` });
     }
   } else if (subcommand === "remove") {
+    if (!await requireTicketSupport(interaction, ticket)) return;
     const targetUser = interaction.options.getUser("user", true);
     const channel = interaction.channel as TextChannel;
     if (channel && ticket) {
+      if (targetUser.id === ticket.userId || targetUser.id === interaction.client.user.id) {
+        return interaction.reply({ content: "❌ Ticketersteller und Bot können nicht entfernt werden.", ephemeral: true });
+      }
       await channel.permissionOverwrites.delete(targetUser.id);
       await createTicketLog({
         guildId: ticket.guildId,
@@ -234,7 +291,7 @@ async function handleSlashCommandInteraction(interaction: ChatInputCommandIntera
     const reason = interaction.options.getString("reason") || "Resolved";
     await handleTicketCloseExecute(interaction as any, ticket!.id, reason);
   } else if (subcommand === "claim") {
-    await handleTicketClaim(interaction as any, ticket!.id);
+    await handleTicketClaim(interaction, ticket!.id);
   } else if (subcommand === "reopen") {
     await handleTicketReopen(interaction as any, ticket!.id);
   } else if (subcommand === "transcript") {
@@ -584,7 +641,7 @@ async function handleTicketOpen(
           PermissionFlagsBits.ReadMessageHistory,
           PermissionFlagsBits.AttachFiles,
           PermissionFlagsBits.EmbedLinks,
-          PermissionFlagsBits.ManageChannels,
+          ...(allSupportRoles.includes(roleId) ? [PermissionFlagsBits.ManageChannels] : []),
         ],
       });
     }
@@ -631,33 +688,27 @@ async function handleTicketOpen(
 
   const welcomeEmbed = new EmbedBuilder()
     .setTitle(welcomeTitle)
-    .setDescription(welcomeDesc)
-    .addFields(
-      { name: "Creator", value: `<@${interaction.user.id}> (${interaction.user.tag})`, inline: true },
-      { name: "Panel", value: `${panel.name}`, inline: true },
-      { name: "Status", value: "🟢 Open", inline: true }
-    )
+    .setDescription(welcomeDesc.substring(0, 4096))
     .setTimestamp();
 
   if (welcomeColorHex !== "none") welcomeEmbed.setColor(welcomeColorHex as `#${string}`);
 
   if (selectedReason?.name || selectedReason?.label) {
     welcomeEmbed.addFields({
-      name: "Ticket Type",
-      value: `${selectedReason.emoji || "🎫"} **${selectedReason.name || selectedReason.label}**`,
-      inline: false,
+      name: "Ticket-Typ",
+      value: `${selectedReason.emoji || "🎫"} ${selectedReason.name || selectedReason.label}`.substring(0, 1024),
     });
   }
 
-  if (formAnswers && formAnswers.length > 0) {
-    const formattedAnswers = formAnswers
-      .map((fa) => `**${fa.label}**:\n${fa.answer}`)
+  const answeredQuestions = formAnswers?.filter(({ answer }) => answer.trim()) ?? [];
+  if (answeredQuestions.length > 0) {
+    const formattedAnswers = answeredQuestions
+      .map(({ label, answer }) => `**${label}**\n${answer.trim()}`)
       .join("\n\n");
 
     welcomeEmbed.addFields({
-      name: "📋 Submitted Intake Information",
-      value: formattedAnswers.substring(0, 1024),
-      inline: false,
+      name: "Antworten",
+      value: formattedAnswers.length > 1024 ? `${formattedAnswers.substring(0, 1023)}…` : formattedAnswers,
     });
   }
 
@@ -878,15 +929,14 @@ async function sendTicketCloseLogEmbed(
   }
 }
 
-async function handleTicketClaim(interaction: ButtonInteraction, ticketId: string) {
-  if (!interaction.deferred && !interaction.replied) {
-    await interaction.deferReply();
+async function handleTicketClaim(interaction: ButtonInteraction | ChatInputCommandInteraction, ticketId: string) {
+  const ticket = await getTicketById(ticketId);
+  if (!await requireTicketSupport(interaction, ticket) || !ticket) return;
+  if (ticket.status !== "OPEN") {
+    return interaction.reply({ content: "❌ Nur offene, noch nicht übernommene Tickets können übernommen werden.", ephemeral: true });
   }
 
-  const ticket = await getTicketById(ticketId);
-  if (!ticket) {
-    return interaction.editReply({ content: "❌ Ticket not found." });
-  }
+  await interaction.deferReply();
 
   await updateTicketStatus(ticket.id, "CLAIMED", {
     claimedByUserId: interaction.user.id,
@@ -1013,13 +1063,15 @@ async function handleTicketDelete(interaction: ButtonInteraction, ticketId: stri
 }
 
 async function handleTicketAddUserPrompt(interaction: ButtonInteraction, ticketId: string) {
+  if (!await requireTicketSupport(interaction, await getTicketById(ticketId))) return;
+
   const modal = new ModalBuilder()
     .setCustomId(`ticket_adduser_modal:${ticketId}`)
     .setTitle("Add User to Ticket");
 
   const userInput = new TextInputBuilder()
     .setCustomId("user_id")
-    .setLabel("User ID or Tag")
+    .setLabel("Discord User ID")
     .setStyle(TextInputStyle.Short)
     .setPlaceholder("e.g. 123456789012345678")
     .setRequired(true);
@@ -1031,13 +1083,15 @@ async function handleTicketAddUserPrompt(interaction: ButtonInteraction, ticketI
 }
 
 async function handleTicketRemUserPrompt(interaction: ButtonInteraction, ticketId: string) {
+  if (!await requireTicketSupport(interaction, await getTicketById(ticketId))) return;
+
   const modal = new ModalBuilder()
     .setCustomId(`ticket_remuser_modal:${ticketId}`)
     .setTitle("Remove User from Ticket");
 
   const userInput = new TextInputBuilder()
     .setCustomId("user_id")
-    .setLabel("User ID or Tag")
+    .setLabel("Discord User ID")
     .setStyle(TextInputStyle.Short)
     .setPlaceholder("e.g. 123456789012345678")
     .setRequired(true);
@@ -1134,7 +1188,7 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
 
     const formAnswers = allQuestions.map((q: any, idx: number) => ({
       label: q.label,
-      answer: interaction.fields.getTextInputValue(`q_${idx}`) || "N/A",
+      answer: interaction.fields.getTextInputValue(`q_${idx}`),
     }));
 
     await handleTicketOpen(interaction, panel, selectedReason, formAnswers);
@@ -1144,8 +1198,14 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
     const channel = interaction.channel as TextChannel;
     const ticket = await getTicketById(ticketId);
 
+    if (!await requireTicketSupport(interaction, ticket)) return;
+
     if (channel && ticket) {
-      await channel.permissionOverwrites.edit(userIdInput, {
+      const member = /^\d{17,20}$/.test(userIdInput)
+        ? await channel.guild.members.fetch(userIdInput).catch(() => null)
+        : null;
+      if (!member) return interaction.reply({ content: "❌ Bitte gib die ID eines Servermitglieds ein.", ephemeral: true });
+      await channel.permissionOverwrites.edit(member, {
         ViewChannel: true,
         SendMessages: true,
       });
@@ -1168,7 +1228,13 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
     const channel = interaction.channel as TextChannel;
     const ticket = await getTicketById(ticketId);
 
+    if (!await requireTicketSupport(interaction, ticket)) return;
+
     if (channel && ticket) {
+      const overwrite = channel.permissionOverwrites.cache.get(userIdInput);
+      if (overwrite?.type !== OverwriteType.Member || userIdInput === ticket.userId || userIdInput === interaction.client.user.id) {
+        return interaction.reply({ content: "❌ Dieses Mitglied kann nicht aus dem Ticket entfernt werden.", ephemeral: true });
+      }
       await channel.permissionOverwrites.delete(userIdInput);
 
       await createTicketLog({
