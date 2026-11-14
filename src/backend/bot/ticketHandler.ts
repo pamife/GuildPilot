@@ -142,11 +142,13 @@ export function setupTicketInteractions(client: Client) {
       }
     } catch (err) {
       console.error("[TicketHandler] Interaction error:", err);
-      if (interaction.isRepliable() && !interaction.replied && !interaction.deferred) {
-        await interaction.reply({
-          content: "❌ An error occurred while processing this ticket action.",
-          ephemeral: true,
-        }).catch(() => {});
+      if (interaction.isRepliable() && !interaction.replied) {
+        const content = "❌ An error occurred while processing this ticket action.";
+        if (interaction.deferred) {
+          await interaction.editReply({ content }).catch(() => {});
+        } else {
+          await interaction.reply({ content, ephemeral: true }).catch(() => {});
+        }
       }
     }
   });
@@ -544,11 +546,21 @@ async function handleTicketOpen(
   // Category Target
   const categoryId = selectedReason?.categoryId || panel.categoryId || settings.defaultCategoryId || undefined;
 
-  // Build permission overwrites for creator and supporter/additional roles
+  // Grant the bot access to post and manage messages in the private channel.
   const permissionOverwrites: any[] = [
     {
       id: interaction.guild.id,
       deny: [PermissionFlagsBits.ViewChannel],
+    },
+    {
+      id: interaction.client.user.id,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AttachFiles,
+      ],
     },
     {
       id: interaction.user.id,
