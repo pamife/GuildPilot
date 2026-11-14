@@ -1,8 +1,19 @@
 import fs from "fs";
 import path from "path";
-import { TextChannel, Collection, Message } from "discord.js";
+import { TextChannel, Collection, ComponentType, Message, MessageFlags } from "discord.js";
 
 const TRANSCRIPTS_DIR = path.join(process.cwd(), "transcripts");
+
+function transcriptMessageText(message: Message) {
+  if (!message.flags.has(MessageFlags.IsComponentsV2)) return message.content;
+  return message.components.flatMap(component => {
+    const children = component.type === ComponentType.Container ? component.components : [component];
+    return children.flatMap(child => {
+      if (child.type === ComponentType.Section) return child.components.map(text => text.content);
+      return child.type === ComponentType.TextDisplay ? [child.content] : [];
+    });
+  }).join("\n");
+}
 
 function ensureTranscriptsDir() {
   if (!fs.existsSync(TRANSCRIPTS_DIR)) {
@@ -143,7 +154,7 @@ export async function generateHtmlTranscript(
     const timestamp = msg.createdAt.toLocaleString();
     const isBot = msg.author.bot;
 
-    let contentHtml = formatDiscordText(msg.content, channel.guild);
+    let contentHtml = formatDiscordText(transcriptMessageText(msg), channel.guild);
 
     // Format attachments
     let attachmentsHtml = "";
@@ -515,7 +526,7 @@ export async function generateApplicationHtmlTranscript(
           .map((msg) => {
             const author = msg.author.globalName || msg.author.username;
             const isBot = msg.author.bot;
-            const content = formatDiscordText(msg.content, channel.guild);
+            const content = formatDiscordText(transcriptMessageText(msg), channel.guild);
             return `
               <div class="transcript-message">
                 <img class="avatar" src="${msg.author.displayAvatarURL({ extension: "png" })}" alt="${author}" />

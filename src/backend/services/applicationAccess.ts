@@ -4,7 +4,6 @@ import { discordClient } from "../bot/client";
 import { isOwner } from "../middleware/authMiddleware";
 
 export const applicationDb = new PrismaClient();
-export const noMentions = { parse: [] as [], repliedUser: false };
 
 export function readStrings(value: string | null | undefined): string[] {
   try {

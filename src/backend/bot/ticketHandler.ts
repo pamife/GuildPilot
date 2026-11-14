@@ -8,6 +8,7 @@ import {
   ModalSubmitInteraction,
   ChatInputCommandInteraction,
   Message,
+  ComponentType,
   ChannelType,
   PermissionFlagsBits,
   OverwriteType,
@@ -28,6 +29,7 @@ import {
   SlashCommandBuilder,
   InteractionContextType,
 } from "discord.js";
+import { applicationMessage } from "./applicationComponents";
 import {
   getTicketPanelById,
   getTicketByChannelId,
@@ -780,13 +782,14 @@ export async function createApplicationTicket(guild: Guild, user: User, applicat
 
 export async function postApplicationTicketWelcome(channel: TextChannel, ticketId: string, userId: string, appNumber: number) {
   const existing = await channel.messages.fetch({ limit: 20 });
-  if (existing.some(msg => msg.author.id === channel.client.user.id && msg.components.some(row =>
-    "components" in row && row.components.some(component => "customId" in component && component.customId === `ticket_close:${ticketId}`)
-  ))) return;
+  if (existing.some(msg => msg.author.id === channel.client.user.id && msg.components.some(component => {
+    const rows = component.type === ComponentType.Container ? component.components : [component];
+    return rows.some(row => row.type === ComponentType.ActionRow && row.components.some(button =>
+      button.type === ComponentType.Button && button.customId === `ticket_close:${ticketId}`));
+  }))) return;
   await channel.send({
-    content: `<@${userId}> This ticket is linked to application #${appNumber}.`,
+    ...applicationMessage(`## Application #${appNumber}\n<@${userId}> This private ticket is linked to your application.`, [ticketControlRow(ticketId)]),
     allowedMentions: { parse: [], users: [userId] },
-    components: [ticketControlRow(ticketId)],
     nonce: ticketId.replace(/-/g, "").slice(0, 24), enforceNonce: true,
   });
 }

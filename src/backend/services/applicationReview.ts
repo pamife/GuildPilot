@@ -3,12 +3,13 @@ import {
   Guild, GuildMember, OverwriteType, PermissionFlagsBits, RESTJSONErrorCodes, TextChannel,
 } from "discord.js";
 import { createHash } from "node:crypto";
+import { applicationMessage, applicationMessageEdit } from "../bot/applicationComponents";
 import { discordClient } from "../bot/client";
 import { createApplicationTicket, postApplicationTicketWelcome } from "../bot/ticketHandler";
 import { broadcastApplicationEvent } from "../socket/socketManager";
 import { generateApplicationHtmlTranscript } from "./transcriptService";
 import { getOpenApplicationTickets } from "./ticketService";
-import { applicationDb as db, applicationMember, canReview, noMentions, readStrings, reviewerRoles, serializeApplication } from "./applicationAccess";
+import { applicationDb as db, applicationMember, canReview, readStrings, reviewerRoles, serializeApplication } from "./applicationAccess";
 import {
   ApplicationExecutor, decisionStatuses, getApplicationById, handleRoleAssignments, updateApplicationStatus,
 } from "./applicationService";
@@ -130,16 +131,23 @@ function reviewHeader(app: ReviewedApplication, showDelivery = true) {
 }
 
 function reviewParts(app: ReviewedApplication) {
-  const fileLinks = (files: ReviewedApplication["files"]) => files.map(file => `${file.name} · <${applicationFileUrl(app, file.id)}>`);
+  const textParts = (text: string) => splitApplicationText(text).map(body => ({ body, rows: [] }));
+  const fileLinks = (files: ReviewedApplication["files"]) => files.map(file => {
+    const url = applicationFileUrl(app, file.id);
+    return url.length <= 512 ? {
+      body: file.name,
+      rows: [appRow(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Download attachment").setURL(url))],
+    } : { body: `${file.name} · <${url}>`, rows: [] };
+  });
   const answers = app.answers.flatMap((answer, index) => {
     const files = app.files.filter(file => !file.followupId && file.position === (answer.position ?? index));
     const text = `**Question ${index + 1} — ${answer.questionLabel}**\n${answer.value || (files.length ? "" : "Skipped")}`;
-    return [...splitApplicationText(text), ...fileLinks(files)];
+    return [...textParts(text), ...fileLinks(files)];
   });
   const replies = app.followups.filter(followup => followup.answeredAt)
     .sort((a, b) => a.answeredAt!.getTime() - b.answeredAt!.getTime())
     .flatMap(followup => [
-      ...splitApplicationText(`**Applicant reply**\nQuestion: ${followup.question}\n${followup.answer || ""}`),
+      ...textParts(`**Applicant reply**\nQuestion: ${followup.question}\n${followup.answer || ""}`),
       ...fileLinks(app.files.filter(file => file.followupId === followup.id)),
     ]);
   return [...answers, ...replies];
@@ -158,11 +166,12 @@ async function postReview(app: ReviewedApplication, guild: Guild, retry: boolean
     });
     let messageId = app.reviewMessageId;
     let posted = app.reviewParts;
-    const payload = { content: reviewHeader(app), components: reviewControls(app), allowedMentions: noMentions };
+    const header = reviewHeader(app);
+    const controls = reviewControls(app);
     if (messageId && channel.id !== channelId) messageId = null;
     if (messageId) {
       try {
-        await channel.messages.edit(messageId, payload);
+        await channel.messages.edit(messageId, applicationMessageEdit(channel.messages, header, controls));
       } catch (error) {
         if (!unknownDiscordMessage(error)) throw error;
         messageId = null;
@@ -171,7 +180,7 @@ async function postReview(app: ReviewedApplication, guild: Guild, retry: boolean
     if (!messageId) {
       if (app.reviewMessageId && !retry) throw new ApplicationError("Review message was deleted. Retry delivery from the web panel.");
       if (channelId !== targetId) channel = await privateReviewChannel(guild, targetId, allowed);
-      const message = await channel.send({ ...payload, ...messageNonce(`${app.id}:review:${app.reviewMessageId ?? "new"}:${channel.id}`) });
+      const message = await channel.send({ ...applicationMessage(header, controls), ...messageNonce(`${app.id}:review:${app.reviewMessageId ?? "new"}:${channel.id}`) });
       messageId = message.id;
       posted = 0;
       await db.application.update({ where: { id: app.id }, data: {
@@ -181,8 +190,7 @@ async function postReview(app: ReviewedApplication, guild: Guild, retry: boolean
     const parts = reviewParts(app);
     for (let index = posted; index < parts.length; index++) {
       await channel.send({
-        content: `Application #${app.appNumber} · Part ${index + 1}\n${parts[index]}`,
-        allowedMentions: noMentions,
+        ...applicationMessage(`### Application #${app.appNumber} · Part ${index + 1}\n${parts[index].body}`, parts[index].rows),
         ...messageNonce(`${messageId}:part:${index}`),
       });
       await db.application.update({ where: { id: app.id }, data: { reviewParts: index + 1 } });
@@ -207,8 +215,7 @@ export async function deliverApplicationSubmission(id: string, guild: Guild) {
     await deliver(id, "Submission DM", async () => {
       const user = await discordClient.users.fetch(app.userId);
       await user.send({
-        content: `${guild.name} · Application #${app.appNumber}\nYour application is with the server team. I’ll message you here when there’s an update.`,
-        allowedMentions: noMentions,
+        ...applicationMessage(`## ${guild.name} · Application #${app.appNumber}\nYour application is with the server team. I’ll message you here when there’s an update.`),
         ...messageNonce(`${id}:submitted`),
       });
     }, "Could not deliver the submission confirmation.");
@@ -252,11 +259,9 @@ export async function runApplicationReview(guildId: string, appId: string, userI
         applicationId: app.id, question: body, requestedBy: member.id,
       } }) : undefined;
       warn(await deliver(app.id, "Team DM", async () => {
-        await (await user()).send({
-          content: `${header}\n\n${body}`,
-          components: followup ? [appRow(appButton(`app_dm:reply:${followup.id}`, "Reply", ButtonStyle.Primary))] : [],
-          allowedMentions: noMentions,
-        });
+        await (await user()).send(applicationMessage(`## ${header}\n\n${body}`,
+          followup ? [appRow(appButton(`app_dm:reply:${followup.id}`, "Reply", ButtonStyle.Primary))] : [],
+        ));
       }, "Could not deliver the team’s DM."));
       if (followup && warnings.length) await db.appFollowup.delete({ where: { id: followup.id } });
       await recordReviewHistory(app, executor, warnings.length ? "DM_FAILED" : "DM_SENT", body);
@@ -274,16 +279,16 @@ export async function runApplicationReview(guildId: string, appId: string, userI
       } });
       warn(await deliver(app.id, "Status DM", async () => {
         const dm = await (await user()).createDM();
-        const payload = { content: `${header}\n${step} · ${percent}%`, allowedMentions: noMentions };
+        const body = `## ${header}\n${step} · ${percent}%`;
         if (app.statusDmId) {
           try {
-            await dm.messages.edit(app.statusDmId, payload);
+            await dm.messages.edit(app.statusDmId, applicationMessageEdit(dm.messages, body));
             return;
           } catch (error) {
             if (!(error instanceof DiscordAPIError)) throw error;
           }
         }
-        const message = await dm.send(payload);
+        const message = await dm.send(applicationMessage(body));
         await db.application.update({ where: { id: app.id }, data: { statusDmId: message.id } });
       }, "Status saved. Discord could not deliver the DM."));
     } else if (input.action === "ticket") {
@@ -292,7 +297,9 @@ export async function runApplicationReview(guildId: string, appId: string, userI
       warn(ticket.warning);
       if (ticket.created || !delivery(app)["Ticket DM"]?.ok || app.channelId !== ticket.channel.id) {
         warn(await deliver(app.id, "Ticket DM", async () => {
-          await (await user()).send({ content: `${header}\nYour private ticket: ${ticketUrl}`, allowedMentions: noMentions });
+          await (await user()).send(applicationMessage(`## ${header}\nYour private ticket is open.`, [
+            appRow(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Open ticket").setURL(ticketUrl!)),
+          ]));
         }, "The ticket is open. Discord could not send the applicant its link."));
       }
       if (ticket.created) await recordReviewHistory(app, executor, "TICKET_OPENED", `Ticket #${ticket.number}`);
@@ -316,7 +323,7 @@ export async function runApplicationReview(guildId: string, appId: string, userI
         const message = `${header}\nYour application was ${status === "WAITLISTED" ? "placed on the waitlist" : status === "ACCEPTED" ? "accepted" : "declined"}.`
           + (custom ? `\n${custom}` : "") + (reason ? `\n\nReason: ${reason}` : "");
         warn(await deliver(app.id, "Decision DM", async () => {
-          await (await user()).send({ content: message, allowedMentions: noMentions });
+          await (await user()).send(applicationMessage(`## ${message}`));
         }, "Decision saved. Discord could not deliver the DM."));
       }
     } else if (input.action !== "retry_review") {

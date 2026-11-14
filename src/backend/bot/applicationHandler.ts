@@ -1,236 +1,129 @@
 import {
   Client,
-  EmbedBuilder,
+  CheckboxBuilder, ContainerBuilder, MediaGalleryBuilder, SectionBuilder, TextDisplayBuilder, ThumbnailBuilder,
   ActionRowBuilder,
   ButtonBuilder,
   ButtonStyle,
   StringSelectMenuBuilder,
   StringSelectMenuOptionBuilder,
-  TextChannel,
-  ChannelType,
   Interaction,
+  InteractionReplyOptions,
   ButtonInteraction, ModalSubmitInteraction, ModalBuilder, TextInputBuilder, TextInputStyle, MessageFlags, LabelBuilder,
 } from "discord.js";
 import { getAppPanelById, getAppFormById, updateAppPanel, updateAppForm } from "../services/applicationService";
-import { noMentions, readStrings } from "../services/applicationAccess";
-import { ApplicationError, requireApplicationReviewer, runApplicationReview } from "../services/applicationReview";
+import { readStrings } from "../services/applicationAccess";
+import { ApplicationError, appRow, requireApplicationReviewer, runApplicationReview, unknownDiscordMessage } from "../services/applicationReview";
 import { handleApplicationDmInteraction, offerApplication, setupApplicationDmMessages } from "./applicationDm";
 
-function buildEmbedHelper(config: {
-  title?: string;
-  description?: string;
-  color?: string;
-  authorName?: string;
-  authorIcon?: string;
-  authorUrl?: string;
-  thumbnail?: string;
-  image?: string;
-  footer?: string;
-  footerIcon?: string;
-  showTimestamp?: boolean;
-  fields?: any[];
-}): EmbedBuilder {
-  const embed = new EmbedBuilder();
+import { ApplicationActionRow, applicationMessage, applicationMessageEdit } from "./applicationComponents";
+import { parseAndValidateEmoji } from "../utils/emojiValidator";
 
-  if (config.title) embed.setTitle(config.title);
-  if (config.description) embed.setDescription(config.description);
-  if (config.color && config.color !== "none") embed.setColor(config.color as `#${string}`);
+type PanelLayout = Pick<NonNullable<Awaited<ReturnType<typeof getAppPanelById>>>,
+  "embedTitle" | "embedDescription" | "embedColor" | "embedAuthorName" | "embedAuthorUrl" |
+  "embedAuthorIcon" | "thumbnail" | "image" | "footer" | "footerIcon" | "showTimestamp" | "embedFields" | "name">;
 
-  if (config.authorName) {
-    embed.setAuthor({
-      name: config.authorName,
-      iconURL: config.authorIcon || undefined,
-      url: config.authorUrl || undefined,
-    });
-  }
-
-  if (config.thumbnail) embed.setThumbnail(config.thumbnail);
-  if (config.image) embed.setImage(config.image);
-
-  if (config.footer) {
-    embed.setFooter({
-      text: config.footer,
-      iconURL: config.footerIcon || undefined,
-    });
-  }
-
-  if (config.showTimestamp !== false) {
-    embed.setTimestamp();
-  }
-
-  if (Array.isArray(config.fields) && config.fields.length > 0) {
-    config.fields.forEach((f) => {
-      if (f.name && f.value) {
-        embed.addFields({ name: f.name, value: f.value, inline: Boolean(f.inline) });
-      }
-    });
-  }
-
-  return embed;
+function addPanelText(container: ContainerBuilder, content: string, icon?: string | null) {
+  const text = new TextDisplayBuilder().setContent(content);
+  if (icon && /^https?:\/\//i.test(icon)) {
+    container.addSectionComponents(new SectionBuilder().addTextDisplayComponents(text)
+      .setThumbnailAccessory(new ThumbnailBuilder().setURL(icon)));
+  } else container.addTextDisplayComponents(text);
 }
 
-function safeSetEmoji(builder: any, emojiInput?: string | null): boolean {
-  return false;
+function panelContainer(panel: PanelLayout, fallback: string) {
+  const container = new ContainerBuilder();
+  if (/^#[a-f0-9]{6}$/i.test(panel.embedColor)) container.setAccentColor(Number.parseInt(panel.embedColor.slice(1), 16));
+  const author = panel.embedAuthorName?.slice(0, 256);
+  const authorText = author && panel.embedAuthorUrl && /^https?:\/\//i.test(panel.embedAuthorUrl)
+    ? `[${author}](<${panel.embedAuthorUrl}>)` : author;
+  if (authorText) addPanelText(container, authorText, panel.embedAuthorIcon);
+  addPanelText(container, `## ${(panel.embedTitle || panel.name).slice(0, 256)}`, panel.thumbnail);
+  container.addTextDisplayComponents(new TextDisplayBuilder().setContent((panel.embedDescription || fallback).slice(0, 4000)));
+  let fields: unknown;
+  try { fields = JSON.parse(panel.embedFields); } catch { fields = []; }
+  if (Array.isArray(fields)) {
+    const text = fields.filter(field => typeof field?.name === "string" && typeof field?.value === "string")
+      .map(field => `**${field.name}**\n${field.value}`).join("\n\n");
+    if (text) container.addTextDisplayComponents(new TextDisplayBuilder().setContent(text.slice(0, 4000)));
+  }
+  if (panel.image && /^https?:\/\//i.test(panel.image)) {
+    container.addMediaGalleryComponents(new MediaGalleryBuilder().addItems(item => item.setURL(panel.image!)));
+  }
+  const footer = [panel.footer, panel.showTimestamp ? `<t:${Math.floor(Date.now() / 1000)}:f>` : ""].filter(Boolean).join(" · ");
+  if (footer) addPanelText(container, `-# ${footer.slice(0, 2000)}`, panel.footerIcon);
+  return container;
 }
 
-export async function deployApplicationPanelEmbed(client: Client, panelId: string): Promise<string> {
-  const panel = await getAppPanelById(panelId);
-  if (!panel || !panel.channelId) throw new Error("Panel or target channel missing.");
+type FormPanelButton = { id: string; label: string; buttonColor: string; isOpen: boolean; emoji?: string | null };
 
-  const channel = (await client.channels.fetch(panel.channelId).catch(() => null)) as TextChannel;
-  if (!channel || channel.guild?.id !== panel.guildId || !channel.isTextBased()) throw new Error("Could not access target channel on Discord");
+function formButton(form: FormPanelButton) {
+  const style = form.buttonColor === "Secondary" ? ButtonStyle.Secondary
+    : form.buttonColor === "Success" ? ButtonStyle.Success
+    : form.buttonColor === "Danger" ? ButtonStyle.Danger : ButtonStyle.Primary;
+  const button = new ButtonBuilder().setCustomId(`app_apply:${form.id}`)
+    .setLabel(form.label.slice(0, 80)).setStyle(style).setDisabled(!form.isOpen);
+  const emoji = parseAndValidateEmoji(form.emoji ?? undefined);
+  if (emoji) button.setEmoji(emoji);
+  return button;
+}
 
-  let parsedFields: any[] = [];
-  try {
-    parsedFields = JSON.parse(panel.embedFields || "[]");
-  } catch (e) {}
-
-  const embed = buildEmbedHelper({
-    title: panel.embedTitle || panel.name,
-    description: panel.embedDescription || "Select an application position from the dropdown menu below to submit your application.",
-    color: panel.embedColor || "#5865F2",
-    authorName: panel.embedAuthorName || undefined,
-    authorIcon: panel.embedAuthorIcon || undefined,
-    authorUrl: panel.embedAuthorUrl || undefined,
-    thumbnail: panel.thumbnail || undefined,
-    image: panel.image || undefined,
-    footer: panel.footer || "GuildPilot Applications System",
-    footerIcon: panel.footerIcon || undefined,
-    showTimestamp: panel.showTimestamp !== false,
-    fields: parsedFields,
-  });
-
-  const components: any[] = [];
-  const forms: any[] = panel.forms || [];
-
-  if (forms.length > 0) {
-    if (panel.displayType === "dropdown") {
-      const selectMenu = new StringSelectMenuBuilder()
-        .setCustomId(`app_select_form:${panel.id}`)
-        .setPlaceholder("Select an application position...");
-
-      forms.forEach((f: any) => {
-        const option = new StringSelectMenuOptionBuilder()
-          .setLabel(f.name.substring(0, 100))
-          .setValue(f.id)
-          .setDescription((f.description || "Submit application for this position").substring(0, 100));
-
-        const hasEmoji = safeSetEmoji(option, f.emoji) || safeSetEmoji(option, f.buttonEmoji);
-        if (!hasEmoji) {
-          safeSetEmoji(option, "📝");
-        }
-
-        selectMenu.addOptions(option);
-      });
-
-      components.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(selectMenu));
-    } else {
-      const row = new ActionRowBuilder<ButtonBuilder>();
-      forms.slice(0, 5).forEach((f: any) => {
-        const btnStyle =
-          f.buttonColor === "Secondary"
-            ? ButtonStyle.Secondary
-            : f.buttonColor === "Success"
-            ? ButtonStyle.Success
-            : f.buttonColor === "Danger"
-            ? ButtonStyle.Danger
-            : ButtonStyle.Primary;
-
-        const button = new ButtonBuilder()
-          .setCustomId(`app_apply:${f.id}`)
-          .setLabel(f.name.substring(0, 80))
-          .setStyle(btnStyle)
-          .setDisabled(!f.isOpen);
-
-        safeSetEmoji(button, f.emoji) || safeSetEmoji(button, f.buttonEmoji);
-
-        row.addComponents(button);
-      });
-
-      components.push(row);
-    }
+async function publishPanel(client: Client, panel: PanelLayout & { guildId: string; channelId: string | null; messageId: string | null },
+  fallback: string, rows: ApplicationActionRow[]) {
+  if (!panel.channelId) throw new Error("Panel target channel is missing.");
+  const channel = await client.channels.fetch(panel.channelId);
+  if (!channel || channel.isDMBased() || !channel.isSendable() || channel.guildId !== panel.guildId) {
+    throw new Error("Could not access target channel on Discord.");
   }
-
-  let message: any = null;
   if (panel.messageId) {
-    const existingMsg = await channel.messages.fetch(panel.messageId).catch(() => null);
-    if (existingMsg) {
-      message = await existingMsg.edit({ embeds: [embed], components, allowedMentions: noMentions });
-      return existingMsg.id;
+    try {
+      const existing = await channel.messages.fetch(panel.messageId);
+      return await existing.edit(applicationMessageEdit(existing, panelContainer(panel, fallback), rows));
+    } catch (error) {
+      if (!unknownDiscordMessage(error)) throw error;
     }
   }
+  return channel.send(applicationMessage(panelContainer(panel, fallback), rows));
+}
 
-  if (!message) {
-    message = await channel.send({ embeds: [embed], components, allowedMentions: noMentions });
+export async function deployApplicationPanel(client: Client, panelId: string): Promise<string> {
+  const panel = await getAppPanelById(panelId);
+  if (!panel) throw new Error("Application panel not found.");
+  const rows: ApplicationActionRow[] = [];
+  if (panel.displayType === "dropdown") {
+    for (let start = 0; start < Math.min(panel.forms.length, 125); start += 25) {
+      const menu = new StringSelectMenuBuilder()
+        .setCustomId(start ? `app_select_form:${panel.id}:${start}` : `app_select_form:${panel.id}`)
+        .setPlaceholder("Select an application position…");
+      for (const form of panel.forms.slice(start, start + 25)) {
+        const option = new StringSelectMenuOptionBuilder().setLabel(form.name.slice(0, 100)).setValue(form.id)
+          .setDescription((form.description || "Submit application for this position").slice(0, 100));
+        const emoji = parseAndValidateEmoji(form.emoji || form.buttonEmoji || "📝");
+        if (emoji) option.setEmoji(emoji);
+        menu.addOptions(option);
+      }
+      rows.push(new ActionRowBuilder<StringSelectMenuBuilder>().addComponents(menu));
+    }
+  } else {
+    // Leave room for the title, author and footer sections with thumbnail accessories.
+    for (let start = 0; start < Math.min(panel.forms.length, 20); start += 5) {
+      rows.push(appRow(...panel.forms.slice(start, start + 5).map(form => formButton({
+        ...form, label: form.name, emoji: form.emoji || form.buttonEmoji,
+      }))));
+    }
   }
-
+  const message = await publishPanel(client, panel, "Select an application position below.", rows);
   await updateAppPanel(panel.id, { messageId: message.id });
   return message.id;
 }
 
-export async function deployApplicationFormEmbed(client: Client, formId: string): Promise<string> {
+export async function deployApplicationForm(client: Client, formId: string): Promise<string> {
   const form = await getAppFormById(formId);
-  if (!form) throw new Error("Application form not found");
-
-  if (form.panelId) {
-    return await deployApplicationPanelEmbed(client, form.panelId);
-  }
-
-  if (!form.channelId) throw new Error("Target channel ID is not configured for this form");
-
-  const channel = (await client.channels.fetch(form.channelId).catch(() => null)) as TextChannel;
-  if (!channel || channel.guild?.id !== form.guildId || !channel.isTextBased()) throw new Error("Could not access target channel on Discord");
-
-  let parsedFields: any[] = [];
-  try {
-    parsedFields = JSON.parse(form.embedFields || "[]");
-  } catch (e) {}
-
-  const embed = buildEmbedHelper({
-    title: form.embedTitle || form.name,
-    description: form.embedDescription || "Click the button below to submit your application.",
-    color: form.embedColor || "#5865F2",
-    authorName: form.embedAuthorName || undefined,
-    authorIcon: form.embedAuthorIcon || undefined,
-    authorUrl: form.embedAuthorUrl || undefined,
-    thumbnail: form.thumbnail || undefined,
-    image: form.image || undefined,
-    footer: form.footer || "GuildPilot Applications System",
-    footerIcon: form.footerIcon || undefined,
-    showTimestamp: form.showTimestamp !== false,
-    fields: parsedFields,
-  });
-
-  const btnStyle =
-    form.buttonColor === "Secondary"
-      ? ButtonStyle.Secondary
-      : form.buttonColor === "Success"
-      ? ButtonStyle.Success
-      : form.buttonColor === "Danger"
-      ? ButtonStyle.Danger
-      : ButtonStyle.Primary;
-
-  const button = new ButtonBuilder()
-    .setCustomId(`app_apply:${form.id}`)
-    .setLabel(form.buttonText || "Apply Now")
-    .setStyle(btnStyle)
-    .setDisabled(!form.isOpen);
-
-  safeSetEmoji(button, form.emoji) || safeSetEmoji(button, form.buttonEmoji);
-
-  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(button);
-
-  if (form.messageId) {
-    const existingMsg = await channel.messages.fetch(form.messageId).catch(() => null);
-    if (existingMsg) {
-      await existingMsg.edit({ embeds: [embed], components: [row], allowedMentions: noMentions });
-      return existingMsg.id;
-    }
-  }
-
-  const newMsg = await channel.send({ embeds: [embed], components: [row], allowedMentions: noMentions });
-  await updateAppForm(form.id, { messageId: newMsg.id });
-  return newMsg.id;
+  if (!form) throw new Error("Application form not found.");
+  if (form.panelId) return deployApplicationPanel(client, form.panelId);
+  const row = appRow(formButton({ ...form, label: form.buttonText || "Apply Now", emoji: form.emoji || form.buttonEmoji }));
+  const message = await publishPanel(client, form, "Apply by direct message.", [row]);
+  await updateAppForm(form.id, { messageId: message.id });
+  return message.id;
 }
 
 const reviewLabels: Record<string, string> = {
@@ -254,10 +147,11 @@ export function setupApplicationInteractions(client: Client) {
       const content = error instanceof ApplicationError ? error.message : "The application action failed. Try again.";
       if (!(error instanceof ApplicationError)) console.error("[Applications] Interaction failed:", error);
       if (!(interaction.isButton() || interaction.isStringSelectMenu() || interaction.isModalSubmit())) return;
-      const response = { content, allowedMentions: noMentions, flags: interaction.inGuild() ? MessageFlags.Ephemeral as const : undefined };
+      const response: InteractionReplyOptions = { ...applicationMessage(content), flags: interaction.inGuild()
+        ? [MessageFlags.IsComponentsV2, MessageFlags.Ephemeral] : [MessageFlags.IsComponentsV2] };
       if (interaction.deferred || interaction.replied) {
         if (interaction.inGuild() && /^app_(apply|select_form|dm|review|ctrl|modal):/.test(interaction.customId)) {
-          await interaction.editReply({ content, components: [], allowedMentions: noMentions }).catch(console.error);
+          await interaction.editReply(applicationMessageEdit(interaction.webhook, content)).catch(console.error);
         } else {
           await interaction.followUp(response).catch(console.error);
         }
@@ -278,22 +172,22 @@ async function handleReviewInteraction(interaction: ButtonInteraction | ModalSub
     }
     const modal = new ModalBuilder().setCustomId(`app_modal:${action}:${id}`).setTitle(reviewLabels[action]);
     const input = (key: string, label: string, required: boolean, max: number, style = TextInputStyle.Short) =>
-      new ActionRowBuilder<TextInputBuilder>().addComponents(new TextInputBuilder()
-        .setCustomId(key).setLabel(label).setStyle(style).setRequired(required).setMaxLength(max));
+      new LabelBuilder().setLabel(label).setTextInputComponent(new TextInputBuilder()
+        .setCustomId(key).setStyle(style).setRequired(required).setMaxLength(max));
     if (action === "dm") {
-      modal.addComponents(input("message", "Message to the applicant", true, 1500, TextInputStyle.Paragraph),
-        input("reply", "Require a reply? (yes or no)", false, 3));
+      modal.addLabelComponents(input("message", "Message to the applicant", true, 1500, TextInputStyle.Paragraph),
+        new LabelBuilder().setLabel("Request a reply").setCheckboxComponent(new CheckboxBuilder().setCustomId("reply_requested")));
     } else if (action === "progress") {
       const steps = readStrings(app.form?.statusSteps);
       if (steps.length) {
-        modal.addComponents(new LabelBuilder().setLabel("Status step").setStringSelectMenuComponent(
+        modal.addLabelComponents(new LabelBuilder().setLabel("Status step").setStringSelectMenuComponent(
           new StringSelectMenuBuilder().setCustomId("step_select").setRequired(true).addOptions(
             steps.map(step => ({ label: step, value: step, default: step === app.progressStep })),
           ),
         ));
-      } else modal.addComponents(input("step", "Status step", true, 100));
-      modal.addComponents(input("percent", "Progress (0 to 100)", true, 3));
-    } else modal.addComponents(input("reason", "Decision reason (optional)", false, 1500, TextInputStyle.Paragraph));
+      } else modal.addLabelComponents(input("step", "Status step", true, 100));
+      modal.addLabelComponents(input("percent", "Progress (0 to 100)", true, 3));
+    } else modal.addLabelComponents(input("reason", "Decision reason (optional)", false, 1500, TextInputStyle.Paragraph));
     await interaction.showModal(modal);
     return;
   }
@@ -302,9 +196,9 @@ async function handleReviewInteraction(interaction: ButtonInteraction | ModalSub
   if (interaction.isModalSubmit()) {
     const fields = interaction.fields;
     if (action === "dm") {
-      const reply = fields.getTextInputValue("reply").trim().toLowerCase();
-      if (reply && reply !== "yes" && reply !== "no") throw new ApplicationError("Enter yes or no to request a reply.");
-      input = { action, message: fields.getTextInputValue("message"), replyRequested: reply === "yes" };
+      const replyRequested = fields.fields.has("reply_requested")
+        ? fields.getCheckbox("reply_requested") : fields.getTextInputValue("reply").trim().toLowerCase() === "yes";
+      input = { action, message: fields.getTextInputValue("message"), replyRequested };
     } else if (action === "progress") {
       const step = fields.fields.has("step_select")
         ? fields.getStringSelectValues("step_select")[0] : fields.getTextInputValue("step");
@@ -314,8 +208,8 @@ async function handleReviewInteraction(interaction: ButtonInteraction | ModalSub
     } else throw new ApplicationError("Unknown review action.");
   }
   const result = await runApplicationReview(guildId, id, interaction.user.id, input, channelId ?? undefined);
-  await interaction.editReply({
-    content: [result.ticketUrl ? `Ticket: ${result.ticketUrl}` : "Application updated.", ...result.warnings].join("\n"),
-    allowedMentions: noMentions,
-  });
+  await interaction.editReply(applicationMessageEdit(interaction.webhook,
+    [result.ticketUrl ? "The private ticket is open." : "Application updated.", ...result.warnings].join("\n"),
+    result.ticketUrl ? [appRow(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Open ticket").setURL(result.ticketUrl))] : [],
+  ));
 }

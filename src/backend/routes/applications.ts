@@ -27,7 +27,7 @@ import {
   updateApplicationSettings,
   getApplicationLogs,
 } from "../services/applicationService";
-import { deployApplicationPanelEmbed, deployApplicationFormEmbed } from "../bot/applicationHandler";
+import { deployApplicationPanel, deployApplicationForm } from "../bot/applicationHandler";
 import { generateApplicationHtmlTranscript } from "../services/transcriptService";
 import { AuthenticatedRequest, requireAuth } from "../middleware/authMiddleware";
 import { GuildMember, ChannelType } from "discord.js";
@@ -271,7 +271,7 @@ router.patch("/:guildId/applications/panels/:panelId", async (req, res) => {
     let syncedLive = false;
     if (panel.messageId && panel.channelId) {
       try {
-        await deployApplicationPanelEmbed(discordClient, panel.id);
+        await deployApplicationPanel(discordClient, panel.id);
         syncedLive = true;
       } catch (syncErr) {
         console.warn(`[Application System] Live sync error for panel ${panel.id}:`, syncErr);
@@ -294,7 +294,7 @@ router.delete("/:guildId/applications/panels/:panelId", async (req, res) => {
 
 router.post("/:guildId/applications/panels/:panelId/deploy", async (req, res) => {
   try {
-    const messageId = await deployApplicationPanelEmbed(discordClient, req.params.panelId);
+    const messageId = await deployApplicationPanel(discordClient, req.params.panelId);
     await updateAppPanel(req.params.panelId, { messageId });
     res.json({ success: true, messageId });
   } catch (err: any) {
@@ -337,7 +337,7 @@ router.patch("/:guildId/applications/forms/:formId", async (req, res) => {
     let syncedLive = false;
     if (form.messageId && form.channelId) {
       try {
-        await deployApplicationFormEmbed(discordClient, form.id);
+        await deployApplicationForm(discordClient, form.id);
         syncedLive = true;
       } catch (syncErr) {
         console.warn(`[Application System] Live sync error for form ${form.id}:`, syncErr);
@@ -360,7 +360,7 @@ router.delete("/:guildId/applications/forms/:formId", async (req, res) => {
 
 router.post("/:guildId/applications/forms/:formId/deploy", async (req, res) => {
   try {
-    const messageId = await deployApplicationFormEmbed(discordClient, req.params.formId);
+    const messageId = await deployApplicationForm(discordClient, req.params.formId);
     await updateAppForm(req.params.formId, { messageId });
     res.json({ success: true, messageId });
   } catch (err: any) {

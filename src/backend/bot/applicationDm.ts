@@ -1,10 +1,11 @@
 import { AppDmDraft, AppQuestion } from "@prisma/client";
 import {
   ButtonInteraction, ButtonStyle, ChannelType, Client, ContainerBuilder, DiscordAPIError, GuildMember, Interaction,
-  Message, MessageCreateOptions, MessageFlags, StringSelectMenuInteraction, TextDisplayBuilder, User,
+  Message, MessageFlags, StringSelectMenuInteraction, TextDisplayBuilder, User,
 } from "discord.js";
 import { discordClient } from "./client";
-import { applicationDb as db, applicationMember, noMentions, readStrings, reviewerRoles, serializeApplication } from "../services/applicationAccess";
+import { applicationMessage, applicationMessageEdit } from "./applicationComponents";
+import { applicationDb as db, applicationMember, readStrings, reviewerRoles, serializeApplication } from "../services/applicationAccess";
 import { removeApplicationFiles, storeApplicationFiles } from "../services/applicationFiles";
 import {
   ApplicationError, appButton, appRow, applicationReplyReceived, deliverApplicationSubmission, privateReviewChannel,
@@ -40,8 +41,8 @@ function activeDraftActions(draft: AppDmDraft) {
   return appRow(draftAction(draft, "resume", "Continue draft", ButtonStyle.Primary), draftAction(draft, "pause", "Pause draft"));
 }
 
-async function send(user: User, payload: MessageCreateOptions) {
-  return user.send({ ...payload, allowedMentions: noMentions });
+function send(user: User, content: string, rows?: Parameters<typeof applicationMessage>[1]) {
+  return user.send(applicationMessage(content, rows));
 }
 
 export async function deployApplicationDmPanel(formId: string) {
@@ -63,7 +64,7 @@ export async function deployApplicationDmPanel(formId: string) {
         `## ${(form.dmPanelTitle || form.name).trim()}\n${form.dmPanelDescription || form.description || "Apply by direct message."}`.slice(0, 3800),
       ))
       .addActionRowComponents(appRow(appButton(`app_dm:apply:${form.id}`, "Apply", ButtonStyle.Primary).setDisabled(!form.isOpen)));
-    const payload = { components: [container], allowedMentions: noMentions };
+    const payload = applicationMessage(container);
     if (form.dmPanelMessageId && form.dmPanelPostedChannelId === channel.id) {
       try {
         return (await channel.messages.edit(form.dmPanelMessageId, payload)).id;
@@ -71,7 +72,7 @@ export async function deployApplicationDmPanel(formId: string) {
         if (!unknownDiscordMessage(error)) throw error;
       }
     }
-    const message = await channel.send({ ...payload, flags: MessageFlags.IsComponentsV2 });
+    const message = await channel.send(payload);
     await db.appForm.update({ where: { id: form.id }, data: {
       dmPanelMessageId: message.id, dmPanelPostedChannelId: channel.id,
     } });
@@ -97,22 +98,21 @@ export async function offerApplication(interaction: PanelClick, formId: string, 
   if (!check.canApply) throw new ApplicationError(check.reason!);
   if (!form.questions.length) throw new ApplicationError("This form has no questions yet.");
   try {
-    await send(interaction.user, {
-      content: `**${member.guild.name} · ${form.name.slice(0, 180)}**\n${(form.dmDescription || "Choose Start application when you are ready.").slice(0, 1200)}`,
-      components: [appRow(appButton(`app_dm:start:${form.id}`, "Start application", ButtonStyle.Primary),
+    await send(interaction.user,
+      `## ${member.guild.name} · ${form.name.slice(0, 180)}\n${(form.dmDescription || "Choose Start application when you are ready.").slice(0, 1200)}`,
+      [appRow(appButton(`app_dm:start:${form.id}`, "Start application", ButtonStyle.Primary),
         appButton(`app_dm:cancel:${form.id}`, "Cancel"))],
-    });
+    );
   } catch (error) {
     const blocked = error instanceof DiscordAPIError && error.code === 50007;
-    await interaction.editReply({
-      content: blocked
+    await interaction.editReply(applicationMessageEdit(interaction.webhook, blocked
         ? "Discord blocked the DM. Enable direct messages from server members in this server’s privacy settings, then try again."
         : "Discord could not deliver the DM. Try again in a moment.",
-      components: [appRow(appButton(`app_dm:retry:${form.id}`, "Try again", ButtonStyle.Primary))],
-    });
+      [appRow(appButton(`app_dm:retry:${form.id}`, "Try again", ButtonStyle.Primary))],
+    ));
     return;
   }
-  await interaction.editReply({ content: "Check your direct messages to start or continue your application." });
+  await interaction.editReply(applicationMessageEdit(interaction.webhook, "Check your direct messages to start or continue your application."));
 }
 
 async function takeCursor(userId: string, sinceId: string, target: { draftId?: string; followupId?: string }) {
@@ -126,10 +126,10 @@ async function takeCursor(userId: string, sinceId: string, target: { draftId?: s
 async function otherDraft(user: User, draftId: string) {
   const draft = await db.appDmDraft.findUniqueOrThrow({ where: { id: draftId } });
   const form = await getAppFormById(draft.formId);
-  await send(user, {
-    content: `You have an active draft for ${form?.name.slice(0, 180) || "another application"}. Continue it or pause it before starting another conversation.`,
-    components: [activeDraftActions(draft)],
-  });
+  await send(user,
+    `You have an active draft for ${form?.name.slice(0, 180) || "another application"}. Continue it or pause it before starting another conversation.`,
+    [activeDraftActions(draft)],
+  );
 }
 
 async function activateDraft(interaction: ButtonInteraction, formId: string) {
@@ -181,8 +181,8 @@ async function showDraft(user: User, draft: AppDmDraft, page = 0) {
     if (!q.required) buttons.push(draftAction(draft, "skip", "Skip question"));
     buttons.push(draftAction(draft, "clear", "Clear answer"), draftAction(draft, "pause", "Pause draft"));
     const parts = splitApplicationText(prompt);
-    for (const part of parts.slice(0, -1)) await send(user, { content: part });
-    return send(user, { content: parts.at(-1), components: [appRow(...buttons)] });
+    for (const part of parts.slice(0, -1)) await send(user, part);
+    return send(user, parts.at(-1)!, [appRow(...buttons)]);
   }
   const question = questions[page];
   if (!question) throw new ApplicationError("This question is unavailable.");
@@ -191,13 +191,13 @@ async function showDraft(user: User, draft: AppDmDraft, page = 0) {
   const content = [`**Review · Question ${page + 1} of ${questions.length}**`, question.label,
     text || (files.length ? "" : "Skipped"), ...files.map(file => `Attachment: ${file.name}`)].filter(Boolean).join("\n");
   const parts = splitApplicationText(content);
-  for (const part of parts.slice(0, -1)) await send(user, { content: part });
-  return send(user, { content: parts.at(-1), components: [
+  for (const part of parts.slice(0, -1)) await send(user, part);
+  return send(user, parts.at(-1)!, [
     appRow(draftAction(draft, "page", "Previous answer", ButtonStyle.Secondary, page - 1).setDisabled(page === 0),
       draftAction(draft, "page", "Next answer", ButtonStyle.Secondary, page + 1).setDisabled(page + 1 === questions.length),
       draftAction(draft, "edit", "Edit this answer", ButtonStyle.Secondary, page)),
     appRow(draftAction(draft, "submit", "Submit application", ButtonStyle.Success), draftAction(draft, "pause", "Pause draft")),
-  ] });
+  ]);
 }
 
 function checkAnswer(question: AppQuestion, value: string, attachments: number) {
@@ -322,10 +322,10 @@ async function activateReply(interaction: ButtonInteraction, id: string) {
   const cursor = await db.appDmCursor.findUnique({ where: { userId: user.id } });
   if (cursor?.draftId) return otherDraft(user, cursor.draftId);
   if (cursor?.followupId && cursor.followupId !== id) throw new ApplicationError("Finish or cancel your current reply first.");
-  const prompt = await send(user, {
-    content: `**${member.guild.name} · Application #${followup.application.appNumber}**\nSend your reply in a single message. You can include attachments.`,
-    components: [appRow(appButton(`app_dm:cancelreply:${id}`, "Cancel reply"))],
-  });
+  const prompt = await send(user,
+    `## ${member.guild.name} · Application #${followup.application.appNumber}\nSend your reply in a single message. You can include attachments.`,
+    [appRow(appButton(`app_dm:cancelreply:${id}`, "Cancel reply"))],
+  );
   await takeCursor(user.id, prompt.id, { followupId: id });
 }
 
@@ -370,7 +370,7 @@ async function processDmMessage(message: Message) {
   }
   if (followup) {
     void applicationReplyReceived(followup.applicationId, member.guild).catch(console.error);
-    await send(user, { content: `Reply saved to application #${followup.application.appNumber}.` });
+    await send(user, `Reply saved to application #${followup.application.appNumber}.`);
   }
 }
 
@@ -384,17 +384,17 @@ export async function handleApplicationDmInteraction(interaction: Interaction) {
   await serializeApplication(`dm:${interaction.user.id}`, async () => {
     if (kind === "app_draft") {
       const result = await changeDraft(interaction, action, id, Number(revision), Number(page));
-      if (result) await interaction.followUp({ content: result, allowedMentions: noMentions });
+      if (result) await interaction.followUp(applicationMessage(result));
     } else if (action === "start") {
       await activateDraft(interaction, id);
-      await interaction.editReply({ components: [] });
+      await interaction.editReply(applicationMessageEdit(interaction.webhook, "Application invitation used. Continue with the latest message from the bot."));
     } else if (action === "cancel") {
-      await interaction.editReply({ content: "Application invitation cancelled.", components: [] });
+      await interaction.editReply(applicationMessageEdit(interaction.webhook, "Application invitation cancelled."));
     } else if (action === "reply") {
       await activateReply(interaction, id);
     } else if (action === "cancelreply") {
       await db.appDmCursor.deleteMany({ where: { userId: interaction.user.id, followupId: id } });
-      await interaction.editReply({ content: "Reply cancelled. You can use Reply again on the team’s message.", components: [] });
+      await interaction.editReply(applicationMessageEdit(interaction.webhook, "Reply cancelled. You can use Reply again on the team’s message."));
     }
   });
 }
@@ -406,8 +406,8 @@ export function setupApplicationDmMessages(client: Client) {
       await serializeApplication(`dm:${message.author.id}`, () => processDmMessage(message));
     } catch (error) {
       console.warn("[Applications] DM intake error:", (error as Error).message);
-      await send(message.author, { content: error instanceof ApplicationError
-        ? error.message : "Your answer could not be saved. Please resend it." }).catch(() => undefined);
+      await send(message.author, error instanceof ApplicationError
+        ? error.message : "Your answer could not be saved. Please resend it.").catch(() => undefined);
     }
   });
 }

@@ -3,7 +3,7 @@ import { mkdtempSync, openSync, closeSync, readFileSync, rmSync } from "node:fs"
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
-import { ChannelType, Collection, PermissionsBitField } from "discord.js";
+import { ChannelType, Collection, ComponentType, MessageFlags, PermissionsBitField } from "discord.js";
 
 const directory = process.env.APPLICATION_TEST_DIR;
 const guildId = "200000000000000001";
@@ -28,9 +28,9 @@ function apply(id: string, action = "apply", guild = true, messageId = "") {
   const replies: any[] = [];
   return {
     customId: `app_dm:${action}:${id}`, id: nextId(), user: applicant, message: { id: messageId },
-    guildId: guild ? guildId : null, inGuild: () => guild, isButton: () => true,
+    guildId: guild ? guildId : null, inGuild: () => guild, isButton: () => true, webhook: {},
     channel: { type: ChannelType.DM }, deferReply: async () => {}, deferUpdate: async () => {},
-    editReply: async (value: any) => { replies.push(value); }, followUp: async (value: any) => { replies.push(value); },
+    editReply: async (value: any) => { replies.push(serializeEdit(value)); }, followUp: async (value: any) => { replies.push(value); },
     replies,
   };
 }
@@ -50,7 +50,7 @@ const applicant: any = {
         const { DiscordAPIError } = await import("discord.js");
         throw new DiscordAPIError({ message: "Unknown Message", code: 10008 }, 10008, 404, "PATCH", "", {});
       }
-      Object.assign(applicantDms.find(message => message.id === id), payload);
+      Object.assign(applicantDms.find(message => message.id === id), serializeEdit(payload));
     } },
   }),
 };
@@ -77,7 +77,12 @@ const guild: any = {
         messages: { fetch: async () => entries }, send: async (message: any) => {
           ticketMentions++;
           assert.deepEqual(message.allowedMentions, { parse: [], users: [userId] });
-          entries.set(nextId(), { author: bot, components: message.components.map((row: any) => ({ components: row.components.map((item: any) => ({ customId: item.data.custom_id })) })) });
+          assertV2(message);
+          assert.match(messageText(message), new RegExp(`<@${userId}>`));
+          const deserialize = (entry: any): any => ({
+            ...entry, customId: entry.custom_id, components: entry.components?.map(deserialize),
+          });
+          entries.set(nextId(), { author: bot, components: message.components.map((row: any) => deserialize(row.toJSON())) });
         } };
       tickets.set(id, channel);
       return channel;
@@ -85,9 +90,34 @@ const guild: any = {
   },
 };
 
+function serializeEdit(payload: any) {
+  payload.target.client ??= { options: {} };
+  const { body } = payload.resolveBody();
+  assert.equal(body.content, null);
+  assert.deepEqual(body.embeds, []);
+  return { ...body, allowedMentions: payload.options.allowedMentions, components: payload.options.components };
+}
+
+function assertV2(message: any) {
+  assert.ok(message.flags & MessageFlags.IsComponentsV2);
+  assert.ok(message.content == null);
+  assert.ok(!message.embeds?.length);
+  assert.equal(message.components[0].toJSON().type, ComponentType.Container);
+}
+
+function componentList(message: any): any[] {
+  const flatten = (entry: any): any[] => [entry, ...(entry.components || []).flatMap(flatten)];
+  return message.components.flatMap((component: any) => flatten(component.toJSON()));
+}
+
+function messageText(message: any) {
+  assertV2(message);
+  return componentList(message).filter((entry: any) => entry.type === ComponentType.TextDisplay)
+    .map((entry: any) => entry.content).join("\n");
+}
+
 function button(message: any, label: string) {
-  const components = message?.components?.flatMap((row: any) => row.toJSON().components) ?? [];
-  const item = components.find((component: any) => component.label === label);
+  const item = componentList(message).find((component: any) => component.label === label);
   assert.ok(item, `missing ${label}`);
   return item.custom_id;
 }
@@ -96,6 +126,7 @@ async function exercise(phase: string) {
   const { discordClient } = await import("../src/backend/bot/client");
   const { applicationDb: db } = await import("../src/backend/services/applicationAccess");
   const { handleApplicationDmInteraction: click, setupApplicationDmMessages, deployApplicationDmPanel } = await import("../src/backend/bot/applicationDm");
+  const { deployApplicationPanel, setupApplicationInteractions } = await import("../src/backend/bot/applicationHandler");
   const { runApplicationReview } = await import("../src/backend/services/applicationReview");
   const { applicationFilePath } = await import("../src/backend/services/applicationFiles");
   const { getApplicationById } = await import("../src/backend/services/applicationService");
@@ -120,7 +151,7 @@ async function exercise(phase: string) {
       const message = { ...payload, id: nextId() };
       reviewMessages.set(message.id, message);
       return message;
-    }, messages: { edit: async (id: string, payload: any) => Object.assign(reviewMessages.get(id)!, payload) },
+    }, messages: { edit: async (id: string, payload: any) => Object.assign(reviewMessages.get(id)!, serializeEdit(payload)) },
   });
   channels.set(startChannelId, { id: startChannelId, type: ChannelType.GuildText, send: async (payload: any) => {
     assert.equal(payload.flags, 32768);
@@ -154,16 +185,31 @@ async function exercise(phase: string) {
       questions: { create: [{ id: "original-question", label: "First question", order: 0 }, { label: "Optional question", order: 1, required: false }] },
     } });
     const panelId = await deployApplicationDmPanel(form.id);
+    const legacyPanel = await db.appPanel.create({ data: {
+      guildId, channelId: startChannelId, messageId: "legacy-message", name: "Legacy start panel",
+      embedTitle: "Application choices", embedDescription: "Pick a form", thumbnail: "https://cdn.discordapp.com/example.png",
+    } });
+    await db.appForm.update({ where: { id: form.id }, data: { panelId: legacyPanel.id } });
+    const existingMessage = { id: legacyPanel.messageId, edit: async (payload: any) => {
+      const message = serializeEdit(payload);
+      assert.match(messageText(message), /Application choices/);
+      assert.ok(componentList(message).some(item => item.type === ComponentType.StringSelect));
+      return existingMessage;
+    } };
+    const channel = channels.get(startChannelId);
+    Object.assign(channel, { guildId, isDMBased: () => false, isSendable: () => true, messages: { fetch: async () => existingMessage } });
+    discordClient.channels.fetch = (async () => channel) as typeof discordClient.channels.fetch;
+    assert.equal(await deployApplicationPanel(discordClient, legacyPanel.id), existingMessage.id);
     dmsClosed = true;
     const blocked = apply(form.id, "apply", true, panelId);
     await click(blocked as any);
-    assert.match(blocked.replies[0].content, /could not deliver/);
+    assert.match(messageText(blocked.replies[0]), /could not deliver/);
     assert.equal(button(blocked.replies[0], "Try again"), "app_dm:retry:original");
     assert.equal(await db.appDmDraft.count(), 0);
     dmsClosed = false;
     await click(apply(form.id, "retry") as any);
     await press("Start application");
-    assert.match(applicantDms.at(-1).content, /Question 1 of 2/);
+    assert.match(messageText(applicantDms.at(-1)), /Question 1 of 2/);
     await sendMessage("A".repeat(2000), [nextId(), nextId()]);
     await sendMessage("B".repeat(2000), [nextId()]);
     assert.equal(await db.appFile.count(), 3);
@@ -192,7 +238,7 @@ async function exercise(phase: string) {
   await sendMessage("After restart");
   await press("Next question");
   await press("Skip question");
-  assert.match(applicantDms.at(-1).content, /Review · Question 2 of 2/);
+  assert.match(messageText(applicantDms.at(-1)), /Review · Question 2 of 2/);
   await press("Edit this answer");
   await sendMessage("An optional answer");
   await press("Next question");
@@ -217,10 +263,26 @@ async function exercise(phase: string) {
   assert.equal(initial.answers[1].value, "An optional answer");
   assert.equal(initial.files.length, 3);
   assert.ok(reviewMessages.size >= 8);
-  assert.ok([...reviewMessages.values()].every(message => message.content.length <= 2000 && !message.allowedMentions.parse.length));
+  assert.ok([...reviewMessages.values()].every(message => messageText(message).length <= 2000 && !message.allowedMentions.parse.length));
+  const downloads = [...reviewMessages.values()].flatMap(componentList).filter(entry => entry.label === "Download attachment");
+  assert.equal(downloads.length, 3);
+  assert.ok(downloads.every(entry => initial.files.some(file => entry.url.endsWith(`/files/${file.id}`))));
   const fs = await import("node:fs/promises");
   assert.equal(await fs.readFile(applicationFilePath(initial.files[0].id), "utf8"), "file");
   const controlId = initial.reviewMessageId;
+  const interactions = new (await import("discord.js")).Client({ intents: [] });
+  setupApplicationInteractions(interactions);
+  const onInteraction = interactions.listeners("interactionCreate")[0];
+  for (const [action, expected] of [["dm", ComponentType.Checkbox], ["accept", ComponentType.TextInput], ["progress", ComponentType.StringSelect]]) {
+    let modal: any;
+    await onInteraction({
+      customId: `app_review:${action}:${app.id}`, guildId, channelId: reviewChannelId,
+      user: reviewerUser, inGuild: () => true, isButton: () => true, isStringSelectMenu: () => false,
+      showModal: async (builder: any) => { modal = builder.toJSON(); },
+    });
+    assert.ok(modal.components.every((entry: any) => entry.type === ComponentType.Label));
+    assert.ok(modal.components.some((entry: any) => entry.component.type === expected));
+  }
   const decisions = await Promise.allSettled([review("accept", { reason: "Welcome" }), review("deny")]);
   assert.equal(decisions.filter(result => result.status === "fulfilled").length, 1);
   assert.equal(assigned, 1);
@@ -262,9 +324,12 @@ async function exercise(phase: string) {
     await Promise.race([updated, new Promise((_, reject) => setTimeout(() => reject(new Error("No socket update")), 2000))]);
     const first = await db.application.findUniqueOrThrow({ where: { id: app.id } });
     assert.equal(first.progressPercent, 60);
-    assert.match(reviewMessages.get(controlId!).content, /Interview scheduled · 60%/);
+    assert.match(messageText(reviewMessages.get(controlId!)), /Interview scheduled · 60%/);
+    const existingDm = applicantDms.find(message => message.id === first.statusDmId);
+    Object.assign(existingDm, { flags: 0, content: "Old progress message", embeds: [{}], components: [] });
     await progress(70);
     assert.equal((await db.application.findUniqueOrThrow({ where: { id: app.id } })).statusDmId, first.statusDmId);
+    assert.match(messageText(existingDm), /70%/);
     editFails = true;
     await progress(80);
     assert.notEqual((await db.application.findUniqueOrThrow({ where: { id: app.id } })).statusDmId, first.statusDmId);
@@ -283,7 +348,7 @@ async function exercise(phase: string) {
     await sendMessage("Still part of the other draft");
     assert.equal(await db.appFollowup.count({ where: { answeredAt: { not: null } } }), 0);
     await press("Reply", teamDm);
-    assert.match(applicantDms.at(-1).content, /active draft/);
+    assert.match(messageText(applicantDms.at(-1)), /active draft/);
     await press("Pause draft");
     await press("Reply", teamDm);
     await sendMessage("This belongs to the submitted application");

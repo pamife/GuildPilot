@@ -1174,7 +1174,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 {panelModalTab === "embed" && (
                   <div className="space-y-4">
                     <h4 className="font-bold text-white text-sm border-b border-[#35373c] pb-2 flex items-center gap-2">
-                      <Palette className="w-4 h-4 text-discord-brand" /> Panel Channel Embed Settings
+                      <Palette className="w-4 h-4 text-discord-brand" /> Discord Panel Layout
                     </h4>
 
                     <div>
@@ -1384,7 +1384,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 <div>
                   <div className="flex items-center justify-between mb-4">
                     <span className="text-xs font-bold text-zinc-400 uppercase tracking-wider flex items-center gap-1.5">
-                      <Eye className="w-4 h-4 text-discord-brand" /> Live Discord Embed Preview
+                      <Eye className="w-4 h-4 text-discord-brand" /> Discord Message Preview
                     </span>
 
                     <div className="flex items-center gap-1 bg-[#1e1f22] p-1 rounded-xl border border-[#35373c]">
@@ -1481,7 +1481,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 onClick={handleSavePanel}
                 className="px-6 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl text-xs shadow-lg"
               >
-                Save All Embed & Decision Settings
+                Save Panel & Decision Settings
               </button>
             </div>
           </div>

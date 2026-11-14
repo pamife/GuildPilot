@@ -252,6 +252,8 @@ Beim Start legt das Backend vor jeder Schema-Synchronisierung ein Backup einer v
 
 Reviewer melden sich über Discord am Webpanel an. Der Zugriff richtet sich nach Servermitgliedschaft und den für das Formular hinterlegten Rollen. Discord-Links zu gespeicherten Anhängen führen zum authentifizierten Download über die konfigurierte `NEXT_PUBLIC_API_URL`. Sichere für DM-Bewerbungen das SQLite-Volume und `transcripts/application-files`, damit gespeicherte Anhänge bei einer Wiederherstellung verfügbar sind.
 
+Discord-Panels, Bewerbungs-DMs, Review-Nachrichten und die Begrüßung im Bewerbungsticket verwenden Components V2. Veröffentliche ältere Startpanels erneut über das Application Center, um die vorhandene Nachricht zu aktualisieren. Die nächste Statusänderung aktualisiert auch eine ältere Status-DM im selben Format.
+
 ### Leveling aktivieren
 
 1. Baue und starte die Docker-Container nach dem Update neu. Der Backend-Start sichert die vorhandene SQLite-Datenbank und ergänzt die Leveling-Tabellen. Bei einer lokal bereits per `db push` verwalteten Datenbank sichere `prisma/dev.db` und führe mit der lokalen `DATABASE_URL` `npx prisma db push` aus. Bei einer per Prisma-Migrationen verwalteten Datenbank nutze nach dem Backup `npx prisma migrate deploy`.
