@@ -402,6 +402,7 @@ model Application {
   reviewChannelId String?
   reviewMessageId String?
   reviewParts     Int                @default(0)
+  reviewExtraMessageIds String?       // JSON array; null identifies the old one-message-per-answer layout
   delivery        String             @default("{}")
   submittedAt     DateTime           @default(now())
   reviewedAt      DateTime?

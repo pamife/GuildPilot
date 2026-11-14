@@ -254,6 +254,8 @@ Reviewer melden sich über Discord am Webpanel an. Der Zugriff richtet sich nach
 
 Discord-Panels, Bewerbungs-DMs, Review-Nachrichten und die Begrüßung im Bewerbungsticket verwenden Components V2. Veröffentliche ältere Startpanels erneut über das Application Center, um die vorhandene Nachricht zu aktualisieren. Die nächste Statusänderung aktualisiert auch eine ältere Status-DM im selben Format.
 
+Im Review-Kanal stehen Kopf, Fragen, Antworten, geschützte Dateilinks und Aktionsbuttons gemeinsam in einer kompakten Nachricht. Nur lange Bewerbungen werden auf weitere Nachrichten verteilt. Updates verwenden die vorhandenen Nachrichten erneut. Öffne eine bereits einzeln gepostete Bewerbung in der Review-Queue und wähle **Retry review delivery**, um sie zusammenzufassen. Die Hauptnachricht behält ihre ID; überzählige alte Antwortnachrichten des Bots werden nach erfolgreicher Zustellung entfernt.
+
 ### Leveling aktivieren
 
 1. Baue und starte die Docker-Container nach dem Update neu. Der Backend-Start sichert die vorhandene SQLite-Datenbank und ergänzt die Leveling-Tabellen. Bei einer lokal bereits per `db push` verwalteten Datenbank sichere `prisma/dev.db` und führe mit der lokalen `DATABASE_URL` `npx prisma db push` aus. Bei einer per Prisma-Migrationen verwalteten Datenbank nutze nach dem Backup `npx prisma migrate deploy`.

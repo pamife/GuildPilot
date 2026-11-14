@@ -1,5 +1,5 @@
 import {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, DiscordAPIError,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ComponentType, DiscordAPIError, escapeMarkdown,
   Guild, GuildMember, OverwriteType, PermissionFlagsBits, RESTJSONErrorCodes, TextChannel,
 } from "discord.js";
 import { createHash } from "node:crypto";
@@ -130,27 +130,74 @@ function reviewHeader(app: ReviewedApplication, showDelivery = true) {
   return fields.filter(Boolean).join("\n");
 }
 
-function reviewParts(app: ReviewedApplication) {
-  const textParts = (text: string) => splitApplicationText(text).map(body => ({ body, rows: [] }));
-  const fileLinks = (files: ReviewedApplication["files"]) => files.map(file => {
-    const url = applicationFileUrl(app, file.id);
-    return url.length <= 512 ? {
-      body: file.name,
-      rows: [appRow(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Download attachment").setURL(url))],
-    } : { body: `${file.name} · <${url}>`, rows: [] };
-  });
+export function applicationReviewPages(app: ReviewedApplication) {
+  // Components V2 permits 4,000 text characters across the entire message.
+  const limit = 4000;
+  const continuation = `**Application #${app.appNumber} · Continued**`;
+  const fileLinks = (files: ReviewedApplication["files"]) => files.map(file =>
+    `Attachment: [${escapeMarkdown(file.name)}](<${applicationFileUrl(app, file.id)}>)`);
   const answers = app.answers.flatMap((answer, index) => {
     const files = app.files.filter(file => !file.followupId && file.position === (answer.position ?? index));
     const text = `**Question ${index + 1} — ${answer.questionLabel}**\n${answer.value || (files.length ? "" : "Skipped")}`;
-    return [...textParts(text), ...fileLinks(files)];
+    return [text, ...fileLinks(files)];
   });
   const replies = app.followups.filter(followup => followup.answeredAt)
     .sort((a, b) => a.answeredAt!.getTime() - b.answeredAt!.getTime())
     .flatMap(followup => [
-      ...textParts(`**Applicant reply**\nQuestion: ${followup.question}\n${followup.answer || ""}`),
+      `**Applicant reply**\nQuestion: ${followup.question}\n${followup.answer || ""}`,
       ...fileLinks(app.files.filter(file => file.followupId === followup.id)),
     ]);
-  return [...answers, ...replies];
+  const pages = [reviewHeader(app)];
+  for (let block of [...answers, ...replies]) {
+    while (block) {
+      const index = pages.length - 1;
+      const available = limit - pages[index].length - 2;
+      if (block.length <= available) {
+        pages[index] += `\n\n${block}`;
+        break;
+      }
+      // Keep an ordinary question or attachment link together on the next page.
+      // Only an answer longer than a page needs to be split within its text.
+      if (block.length <= limit - continuation.length - 2 || available < 200) {
+        pages.push(continuation);
+        continue;
+      }
+      const chunk = splitApplicationText(block, available)[0];
+      pages[index] += `\n\n${chunk}`;
+      block = block.slice(chunk.length);
+      pages.push(continuation);
+    }
+  }
+  return pages;
+}
+
+async function legacyReviewMessageIds(app: ReviewedApplication, channel: TextChannel) {
+  if (!app.reviewMessageId || !app.reviewParts || channel.id !== app.reviewChannelId) return [];
+  const bot = await channel.guild.members.fetchMe();
+  const prefix = `### Application #${app.appNumber} · Part `;
+  const ids: string[] = [];
+  let before: string | undefined;
+  // Old versions stored only a count. Identify only this bot's numbered review
+  // parts after the fixed review message; unrelated conversation is untouched.
+  const text = (components: readonly any[]): string => components.map(component => {
+    const data = component.toJSON?.() ?? component;
+    return data.type === ComponentType.TextDisplay ? data.content : text(data.components ?? []);
+  }).join("\n");
+  while (true) {
+    const messages = await channel.messages.fetch({ limit: 100, before });
+    if (!messages.size) break;
+    for (const message of messages.values()) {
+      if (BigInt(message.id) <= BigInt(app.reviewMessageId) || message.author.id !== bot.id) continue;
+      const body = message.content || text(message.components);
+      if (!body.startsWith(prefix)) continue;
+      const part = body.slice(prefix.length).match(/^(\d+)\n/);
+      if (part && Number(part[1]) >= 1 && Number(part[1]) <= app.reviewParts) ids.push(message.id);
+    }
+    const oldest = [...messages.keys()].reduce((a, b) => BigInt(a) < BigInt(b) ? a : b);
+    if (ids.length >= app.reviewParts || BigInt(oldest) <= BigInt(app.reviewMessageId) || messages.size < 100) break;
+    before = oldest;
+  }
+  return ids.sort((a, b) => BigInt(a) < BigInt(b) ? -1 : 1);
 }
 
 async function postReview(app: ReviewedApplication, guild: Guild, retry: boolean) {
@@ -165,13 +212,23 @@ async function postReview(app: ReviewedApplication, guild: Guild, retry: boolean
       return privateReviewChannel(guild, targetId, allowed);
     });
     let messageId = app.reviewMessageId;
-    let posted = app.reviewParts;
-    const header = reviewHeader(app);
+    let extraIds = app.reviewExtraMessageIds == null
+      ? await legacyReviewMessageIds(app, channel) : readStrings(app.reviewExtraMessageIds);
+    const pages = applicationReviewPages(app);
     const controls = reviewControls(app);
-    if (messageId && channel.id !== channelId) messageId = null;
+    if (messageId && channel.id !== channelId) {
+      messageId = null;
+      extraIds = [];
+    }
+    const saveExtraIds = () => db.application.update({ where: { id: app.id }, data: {
+      reviewExtraMessageIds: JSON.stringify(extraIds), reviewParts: extraIds.length,
+    } });
+    // Persist the recovered legacy IDs before replacing anything, so a failed
+    // edit or cleanup can resume without posting duplicate answer messages.
+    await saveExtraIds();
     if (messageId) {
       try {
-        await channel.messages.edit(messageId, applicationMessageEdit(channel.messages, header, controls));
+        await channel.messages.edit(messageId, applicationMessageEdit(channel.messages, pages[0], controls));
       } catch (error) {
         if (!unknownDiscordMessage(error)) throw error;
         messageId = null;
@@ -179,21 +236,40 @@ async function postReview(app: ReviewedApplication, guild: Guild, retry: boolean
     }
     if (!messageId) {
       if (app.reviewMessageId && !retry) throw new ApplicationError("Review message was deleted. Retry delivery from the web panel.");
-      if (channelId !== targetId) channel = await privateReviewChannel(guild, targetId, allowed);
-      const message = await channel.send({ ...applicationMessage(header, controls), ...messageNonce(`${app.id}:review:${app.reviewMessageId ?? "new"}:${channel.id}`) });
+      if (channel.id !== targetId) {
+        channel = await privateReviewChannel(guild, targetId, allowed);
+        extraIds = [];
+      }
+      const message = await channel.send({ ...applicationMessage(pages[0], controls), ...messageNonce(`${app.id}:review:${app.reviewMessageId ?? "new"}:${channel.id}`) });
       messageId = message.id;
-      posted = 0;
       await db.application.update({ where: { id: app.id }, data: {
-        reviewChannelId: channel.id, reviewMessageId: messageId, reviewParts: 0,
+        reviewChannelId: channel.id, reviewMessageId: messageId,
+        reviewExtraMessageIds: JSON.stringify(extraIds), reviewParts: extraIds.length,
       } });
     }
-    const parts = reviewParts(app);
-    for (let index = posted; index < parts.length; index++) {
-      await channel.send({
-        ...applicationMessage(`### Application #${app.appNumber} · Part ${index + 1}\n${parts[index].body}`, parts[index].rows),
-        ...messageNonce(`${messageId}:part:${index}`),
+    for (let index = 0; index < pages.length - 1; index++) {
+      const existing = extraIds[index];
+      if (existing) {
+        try {
+          await channel.messages.edit(existing, applicationMessageEdit(channel.messages, pages[index + 1]));
+          continue;
+        } catch (error) { if (!unknownDiscordMessage(error)) throw error; }
+      }
+      const message = await channel.send({
+        ...applicationMessage(pages[index + 1]),
+        ...messageNonce(`${messageId}:page:${index}:${existing ?? "new"}`),
       });
-      await db.application.update({ where: { id: app.id }, data: { reviewParts: index + 1 } });
+      extraIds[index] = message.id;
+      await saveExtraIds();
+    }
+    // Remove surplus bot messages only after all answers have been delivered.
+    // Delete individually: Discord's bulk-delete age limit must not prevent
+    // an older application from being compacted.
+    while (extraIds.length > pages.length - 1) {
+      try { await channel.messages.delete(extraIds[extraIds.length - 1]); }
+      catch (error) { if (!unknownDiscordMessage(error)) throw error; }
+      extraIds.pop();
+      await saveExtraIds();
     }
   }, "Could not post or update the review messages. Check the review channel and retry delivery.");
 }

@@ -21,6 +21,8 @@ const nextId = () => String(++sequence);
 let dmsClosed = false;
 let editFails = false;
 let reviewFails = false;
+let reviewDeleteFails = false;
+let reviewSendsUntilFailure = Infinity;
 let assigned = 0;
 let ticketMentions = 0;
 
@@ -135,7 +137,8 @@ async function exercise(phase: string) {
   const { applicationDb: db } = await import("../src/backend/services/applicationAccess");
   const { handleApplicationDmInteraction: click, setupApplicationDmMessages, deployApplicationDmPanel } = await import("../src/backend/bot/applicationDm");
   const { deployApplicationPanel, setupApplicationInteractions } = await import("../src/backend/bot/applicationHandler");
-  const { runApplicationReview } = await import("../src/backend/services/applicationReview");
+  const { runApplicationReview, applicationReviewPages } = await import("../src/backend/services/applicationReview");
+  const { applicationMessage } = await import("../src/backend/bot/applicationComponents");
   const { applicationFilePath } = await import("../src/backend/services/applicationFiles");
   const { getApplicationById } = await import("../src/backend/services/applicationService");
   const { default: router } = await import("../src/backend/routes/applications");
@@ -149,17 +152,33 @@ async function exercise(phase: string) {
   const reviewerUser = { id: reviewerId, tag: "reviewer", displayAvatarURL: () => "" };
   members.set(reviewerId, { id: reviewerId, guild, user: reviewerUser, permissions: new PermissionsBitField(), roles: { cache: roles } });
   channels.set(ticketCategoryId, { id: ticketCategoryId, type: ChannelType.GuildCategory });
-  channels.set(reviewChannelId, { id: reviewChannelId, type: ChannelType.GuildText,
+  const unknownMessage = async () => {
+    const { DiscordAPIError } = await import("discord.js");
+    throw new DiscordAPIError({ message: "Unknown Message", code: 10008 }, 10008, 404, "PATCH", "", {});
+  };
+  channels.set(reviewChannelId, { id: reviewChannelId, guild, type: ChannelType.GuildText,
     permissionOverwrites: { cache: new Collection([[guildId, {
       id: guildId, allow: new PermissionsBitField(), deny: new PermissionsBitField(PermissionsBitField.Flags.ViewChannel),
     }]]) },
     permissionsFor: (subject: any) => new PermissionsBitField(subject.id === guildId ? 0n : PermissionsBitField.Flags.Administrator),
     send: async (payload: any) => {
-      if (reviewFails) throw new Error("Channel unavailable");
-      const message = { ...payload, id: nextId() };
+      if (reviewFails || reviewSendsUntilFailure-- <= 0) throw new Error("Channel unavailable");
+      const message = { ...payload, id: nextId(), author: bot };
       reviewMessages.set(message.id, message);
       return message;
-    }, messages: { edit: async (id: string, payload: any) => Object.assign(reviewMessages.get(id)!, serializeEdit(payload)) },
+    }, messages: {
+      edit: async (id: string, payload: any) => {
+        if (!reviewMessages.has(id)) return unknownMessage();
+        return Object.assign(reviewMessages.get(id)!, serializeEdit(payload));
+      },
+      delete: async (id: string) => {
+        if (reviewDeleteFails) throw new Error("Temporary Discord failure");
+        if (!reviewMessages.delete(id)) return unknownMessage();
+      },
+      fetch: async ({ before, limit }: any) => new Collection([...reviewMessages.entries()]
+        .filter(([id]) => !before || BigInt(id) < BigInt(before))
+        .sort(([a], [b]) => BigInt(a) > BigInt(b) ? -1 : 1).slice(0, limit)),
+    },
   });
   channels.set(startChannelId, { id: startChannelId, type: ChannelType.GuildText, send: async (payload: any) => {
     assert.equal(payload.flags, 32768);
@@ -282,17 +301,76 @@ async function exercise(phase: string) {
   assert.equal(JSON.parse((await getApplicationById(app.id))!.delivery)["Review channel"].ok, false);
   assert.equal(applicantDms.filter(message => messageText(message).includes("I’ll message you here")).length, 1);
   reviewFails = false;
+  // A failure after the fixed message was sent must resume without duplicating it.
+  reviewSendsUntilFailure = 1;
+  await review("retry_review");
+  assert.equal(reviewMessages.size, 1);
+  const firstReviewId = (await getApplicationById(app.id))!.reviewMessageId;
+  reviewSendsUntilFailure = Infinity;
   await review("retry_review");
   const initial = (await getApplicationById(app.id))!;
   assert.equal(initial.answers[0].questionLabel, "First question");
   assert.match(initial.answers[0].value, /After restart/);
   assert.equal(initial.answers[1].value, "An optional answer");
   assert.equal(initial.files.length, 3);
-  assert.ok(reviewMessages.size >= 8);
-  assert.ok([...reviewMessages.values()].every(message => messageText(message).length <= 2000 && !message.allowedMentions.parse.length));
-  const downloads = [...reviewMessages.values()].flatMap(componentList).filter(entry => entry.label === "Download attachment");
-  assert.equal(downloads.length, 3);
-  assert.ok(downloads.every(entry => initial.files.some(file => entry.url.endsWith(`/files/${file.id}`))));
+  assert.equal(reviewMessages.size, 2, "Long answers and three attachments are packed into two messages");
+  assert.equal(initial.reviewMessageId, firstReviewId);
+  assert.ok([...reviewMessages.values()].every(message => messageText(message).length <= 4000 &&
+    componentList(message).length <= 40 && !message.allowedMentions.parse.length));
+  const allReviewText = [...reviewMessages.values()].map(messageText).join("\n");
+  for (const file of initial.files) assert.ok(allReviewText.includes(`[${file.name}](<`) && allReviewText.includes(`/files/${file.id}>)`));
+  assert.equal((allReviewText.match(/A{10,}/g) || []).join("").length, 2000);
+  assert.equal((allReviewText.match(/B{10,}/g) || []).join("").length, 2000);
+  const reviewIds = [...reviewMessages.keys()];
+  await review("retry_review");
+  assert.deepEqual([...reviewMessages.keys()], reviewIds, "Retries reuse every review message");
+  assert.equal([...reviewMessages.values()].flatMap(componentList).filter(entry => entry.custom_id?.startsWith("app_review:")).length, 5);
+  reviewMessages.delete(reviewIds[1]);
+  await review("retry_review");
+  assert.equal(reviewMessages.size, 2, "A deleted overflow message is replaced once");
+  const repairedIds = [...reviewMessages.keys()];
+  await review("retry_review");
+  assert.deepEqual([...reviewMessages.keys()], repairedIds);
+
+  const short = { ...initial, files: [], answers: Array.from({ length: 8 }, (_, index) => ({ ...initial.answers[0],
+    position: index, questionLabel: `Short question ${index + 1}`, value: `Short answer ${index + 1}` })) };
+  const compact = applicationReviewPages(short);
+  assert.equal(compact.length, 1, "Eight ordinary questions fit alongside the header and controls");
+  for (let i = 1; i <= 8; i++) assert.ok(compact[0].includes(`Short answer ${i}`));
+  const unicode = applicationReviewPages({ ...short, answers: [{ ...short.answers[0], value: "😀".repeat(6000) }] });
+  assert.ok(unicode.every(page => page.length <= 4000 && !/[\uD800-\uDBFF](?![\uDC00-\uDFFF])|(?<![\uD800-\uDBFF])[\uDC00-\uDFFF]/u.test(page)));
+  assert.equal(unicode.join("").split("😀").length - 1, 6000);
+
+  // Compact existing per-question posts in place, including across history pages.
+  // Keep other messages and recover a failed cleanup without creating duplicates.
+  const legacyMain = nextId();
+  reviewMessages.set(legacyMain, { id: legacyMain, author: bot, ...applicationMessage("Legacy review header") });
+  const legacyParts = Array.from({ length: 8 }, (_, index) => {
+    const id = nextId();
+    reviewMessages.set(id, { id, author: bot, ...applicationMessage(`### Application #4 · Part ${index + 1}\nOld answer`) });
+    return id;
+  });
+  const otherIds = Array.from({ length: 101 }, (_, index) => {
+    const id = nextId();
+    reviewMessages.set(id, { id, author: index === 0 ? applicant : bot,
+      ...applicationMessage(index === 0 ? "### Application #4 · Part 1\nUser message" : "Unrelated review") });
+    return id;
+  });
+  await db.appForm.update({ where: { id: "legacy-form" }, data: { reviewChannelId, reviewerRoles: JSON.stringify([reviewerRole]) } });
+  await db.application.update({ where: { id: "legacy-app" }, data: { reviewChannelId, reviewMessageId: legacyMain, reviewParts: 8 } });
+  reviewDeleteFails = true;
+  const retryLegacy = () => runApplicationReview(guildId, "legacy-app", reviewerId, { action: "retry_review" });
+  assert.ok((await retryLegacy()).warnings.length);
+  assert.match(messageText(reviewMessages.get(legacyMain)), /Existing response/);
+  assert.deepEqual(JSON.parse((await getApplicationById("legacy-app"))!.reviewExtraMessageIds!), legacyParts);
+  reviewDeleteFails = false;
+  await retryLegacy();
+  await retryLegacy();
+  assert.ok(legacyParts.every(id => !reviewMessages.has(id)));
+  assert.ok(otherIds.every(id => reviewMessages.has(id)));
+  assert.equal((await getApplicationById("legacy-app"))!.reviewMessageId, legacyMain);
+  assert.equal(reviewMessages.size, reviewIds.length + otherIds.length + 1);
+  await db.appForm.update({ where: { id: "legacy-form" }, data: { reviewerRoles: "[]" } });
   const fs = await import("node:fs/promises");
   assert.equal(await fs.readFile(applicationFilePath(initial.files[0].id), "utf8"), "file");
   const controlId = initial.reviewMessageId;
