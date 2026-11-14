@@ -88,7 +88,7 @@ export function TicketTypesManager({
       label: `Frage ${currentQuestions.length + 1}`,
       placeholder: "Antwort hier eingeben...",
       style: "short",
-      required: true,
+      required: false,
     };
 
     updateTicketType(typeIdx, { questions: [...currentQuestions, newQ] });
@@ -300,6 +300,15 @@ export function TicketTypesManager({
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
                             </div>
+                            <label className="col-span-12 flex w-fit cursor-pointer items-center gap-2 text-xs text-zinc-400">
+                              <input
+                                type="checkbox"
+                                checked={q.required ?? true}
+                                onChange={(e) => updateIntakeQuestion(tIdx, qIdx, { required: e.target.checked })}
+                                className="cursor-pointer accent-indigo-500"
+                              />
+                              Pflichtfrage
+                            </label>
                           </div>
                         ))
                       )}
