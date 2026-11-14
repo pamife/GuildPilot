@@ -23,6 +23,7 @@ import selfRoleRoutes from "./routes/selfRoles";
 import customMessageRoutes from "./routes/customMessages";
 import welcomeRoutes from "./routes/welcome";
 import autoReactRoutes from "./routes/autoReact";
+import countingRoutes from "./routes/counting";
 import serverCloneRoutes from "./routes/serverClone";
 import memberRoutes from "./routes/members";
 import backupRoutes from "./routes/backups";
@@ -52,6 +53,7 @@ app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
 // Mount API Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/guilds", countingRoutes);
 app.use("/api/guilds", guildRoutes);
 app.use("/api/guilds", channelRoutes);
 app.use("/api/guilds", roleRoutes);

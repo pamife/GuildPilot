@@ -7,6 +7,20 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model CountingGame {
+  guildId       String @id
+  channelId     String
+  nextNumber    String @default("1")
+  record        String @default("0")
+  lastPlayerId  String?
+  recentPlayers String @default("[]")
+  saveStatus    String @default("available")
+}
+
+model CountingMessage {
+  messageId String @id
+}
+
 model Template {
   id          String   @id @default(uuid())
   name        String

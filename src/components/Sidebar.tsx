@@ -42,6 +42,7 @@ export type ViewType =
   | "server-clone"
   | "welcome"
   | "auto-react"
+  | "counting"
   | "custom-messages"
   | "applications"
   | "tickets"
@@ -148,6 +149,12 @@ export function Sidebar({
           label: "Automatische Reaktionen",
           description: "Emoji-Reaktionsregeln auf Keywords",
           icon: SmilePlus,
+        },
+        {
+          id: "counting",
+          label: "Relay Count",
+          description: "Zählkanal, Rekord und Relay Save",
+          icon: Hash,
         },
         {
           id: "custom-messages",

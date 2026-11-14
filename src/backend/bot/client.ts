@@ -1,6 +1,7 @@
-import { Client, GatewayIntentBits, Partials } from "discord.js";
+import { Client, Events, GatewayIntentBits, Partials } from "discord.js";
 import { broadcastEvent } from "../socket/socketManager";
-import { setupTicketInteractions } from "./ticketHandler";
+import { registerSlashCommands, setupTicketInteractions } from "./ticketHandler";
+import { setupCountingInteractions } from "./countingHandler";
 import { setupApplicationInteractions } from "./applicationHandler";
 import { setupSelfRoleInteractions } from "./selfRoleHandler";
 import { setupCustomMessageInteractions } from "./customMessageHandler";
@@ -34,8 +35,10 @@ function registerClientEvents(client: Client) {
   setupCustomMessageInteractions(client);
   setupWelcomeInteractions(client);
   setupAutoReactInteractions(client);
+  setupCountingInteractions(client);
 
-  client.once("ready", (c) => {
+  client.once(Events.ClientReady, (c) => {
+    void registerSlashCommands(c);
     console.log(`[TheGodGen Bot] Logged in as ${c.user.tag}`);
     broadcastEvent("botStatusChange", {
       ready: true,

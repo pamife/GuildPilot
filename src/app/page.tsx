@@ -21,6 +21,7 @@ import { SelfRolesView } from "@/components/views/SelfRolesView";
 import { CustomMessagesView } from "@/components/views/CustomMessagesView";
 import { WelcomeView } from "@/components/views/WelcomeView";
 import { AutoReactView } from "@/components/views/AutoReactView";
+import { CountingView } from "@/components/views/CountingView";
 import { ServerCloneView } from "@/components/views/ServerCloneView";
 import { MemberManagerView } from "@/components/views/MemberManagerView";
 import { BackupsView } from "@/components/views/BackupsView";
@@ -178,10 +179,13 @@ function DashboardContent() {
   useEffect(() => {
     if (!selectedGuildId || screenMode !== "guild") return;
     const socket = getSocket();
-    socket.emit("joinGuild", { guildId: selectedGuildId });
+    const join = () => socket.emit("joinGuild", { guildId: selectedGuildId });
+    if (socket.connected) join();
+    socket.on("connect", join);
 
     return () => {
-      socket.emit("leaveGuild", { guildId: selectedGuildId });
+      socket.off("connect", join);
+      if (socket.connected) socket.emit("leaveGuild", { guildId: selectedGuildId });
     };
   }, [selectedGuildId, screenMode]);
 
@@ -585,6 +589,9 @@ function DashboardContent() {
             botStatus={botStatus}
             guilds={guilds}
           />
+        )}
+        {currentView === "counting" && selectedGuildId && (
+          <CountingView key={selectedGuildId} guildId={selectedGuildId} channels={channels} />
         )}
         {currentView === "custom-messages" && (
           <CustomMessagesView

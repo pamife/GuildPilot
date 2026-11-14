@@ -24,8 +24,6 @@ import {
   Role,
   AttachmentBuilder,
   SlashCommandBuilder,
-  REST,
-  Routes,
 } from "discord.js";
 import {
   getTicketPanelById,
@@ -42,10 +40,11 @@ import { generateHtmlTranscript } from "../services/transcriptService";
 import { parseAndValidateEmoji } from "../utils/emojiValidator";
 import { buildTicketPanelPayload } from "./ticketComponentBuilder";
 import { TicketTypeConfig, TicketPanelComponentItem } from "../types/ticketComponentTypes";
+import { countingCommand } from "./countingHandler";
 
 // Register Slash Commands globally for bot
 export async function registerSlashCommands(client: Client) {
-  if (!client.user) return;
+  if (!client.isReady()) return;
 
   const ticketCommand = new SlashCommandBuilder()
     .setName("ticket")
@@ -73,13 +72,15 @@ export async function registerSlashCommands(client: Client) {
     .addSubcommand((sub) => sub.setName("transcript").setDescription("Generate an HTML transcript for the ticket"));
 
   try {
-    const token = process.env.DISCORD_TOKEN;
-    if (token) {
-      const rest = new REST({ version: "10" }).setToken(token);
-      await rest.put(Routes.applicationCommands(client.user.id), {
-        body: [ticketCommand.toJSON()],
-      });
-      console.log("[TheGodGen Bot] Successfully registered Slash Commands (/ticket)");
+    const results = await Promise.allSettled([ticketCommand, countingCommand].map((command) =>
+      client.application.commands.create(command.toJSON())
+    ));
+    for (const result of results) {
+      if (result.status === "rejected") {
+        console.error("[TheGodGen Bot] Failed to register slash command:", result.reason);
+      } else {
+        console.log(`[TheGodGen Bot] Registered /${result.value.name}`);
+      }
     }
   } catch (err: any) {
     console.error("[TheGodGen Bot] Failed to register Slash Commands:", err.message || err);
@@ -96,8 +97,6 @@ function isValidUrl(str: string): boolean {
 }
 
 export function setupTicketInteractions(client: Client) {
-  registerSlashCommands(client);
-
   // Track staff message count in open ticket channels
   client.on("messageCreate", async (message: Message) => {
     try {

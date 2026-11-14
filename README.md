@@ -242,6 +242,13 @@ docker compose ps
 
 Beim Start legt das Backend vor jeder Schema-Synchronisierung ein Backup einer vorhandenen Datenbank unter `data/backups/` an und führt anschließend `prisma db push --skip-generate` ohne destructive Flags aus.
 
+### Relay Count aktivieren
+
+1. Aktiviere im Discord Developer Portal unter **Bot → Privileged Gateway Intents** den **Message Content Intent**. GuildPilot fordert beim Start `Guilds`, `GuildMessages` und `MessageContent` an. Starte den Bot nach der Änderung neu.
+2. Gib dem Bot im gewünschten Server-Textkanal **View Channel**, **Send Messages**, **Read Message History** und **Add Reactions**.
+3. Wähle den Kanal mit `/counting setup channel:#counting` oder im Webpanel unter **Community & Interaktion → Relay Count**. Setup und Reset erfordern **Manage Server**. Ein Kanalwechsel übernimmt den bisherigen Spielstand.
+4. Beginnt bei `1` und wechselt euch beim Zählen ab. `/counting stats` und das Webpanel zeigen die nächste Zahl, den Rekord und den Relay Save. Mit `/counting reset` oder der Reset-Schaltfläche im Webpanel könnt ihr nach Bestätigung bei `1` neu starten.
+
 ### Aufrufen und überwachen
 
 - Dashboard: `http://100.97.89.86:3100`
