@@ -9,6 +9,7 @@ import {
   getJwtSecret,
 } from "../middleware/authMiddleware";
 import { getAllowedOrigins, isAllowedOrigin } from "../config/runtime";
+import { applicationGuildsFor } from "../services/applicationAccess";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -104,7 +105,7 @@ router.get("/callback", async (req, res) => {
 
     const discordUser = userResponse.data;
     const isUserOwner = isOwner(discordUser.id);
-    if (!isUserOwner) {
+    if (!isUserOwner && !(await applicationGuildsFor(discordUser.id)).length) {
       console.warn(`[Auth] Login rejected for Discord user ${discordUser.id}.`);
       return res.redirect(`${frontendUrl}?error=access_denied`);
     }
@@ -153,6 +154,7 @@ router.get("/callback", async (req, res) => {
       username: formattedUsername,
       avatar: avatarUrl,
       role,
+      scope: isUserOwner ? undefined : "applications",
     };
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: "7d" });

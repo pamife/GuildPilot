@@ -97,7 +97,7 @@ function DashboardContent() {
   const fetchGuilds = useCallback(async () => {
     if (!currentUser) return;
     try {
-      const res = await api.get("/guilds");
+      const res = await api.get(currentUser.scope === "applications" ? "/guilds/application-access" : "/guilds");
       setGuilds(res.data || []);
     } catch (err: any) {
       console.error("Failed to fetch guilds:", err);
@@ -171,14 +171,14 @@ function DashboardContent() {
   }, [currentUser, fetchGuilds, fetchUpdateNotification]);
 
   useEffect(() => {
-    if (selectedGuildId && screenMode === "guild") {
+    if (selectedGuildId && screenMode === "guild" && currentUser?.scope !== "applications") {
       fetchGuildData();
     }
-  }, [selectedGuildId, screenMode, fetchGuildData]);
+  }, [selectedGuildId, screenMode, fetchGuildData, currentUser?.scope]);
 
   // Socket.IO Room Management for Selected Guild
   useEffect(() => {
-    if (!selectedGuildId || screenMode !== "guild") return;
+    if (!selectedGuildId || screenMode !== "guild" || currentUser?.scope === "applications") return;
     const socket = getSocket();
     const join = () => socket.emit("joinGuild", { guildId: selectedGuildId });
     if (socket.connected) join();
@@ -188,7 +188,7 @@ function DashboardContent() {
       socket.off("connect", join);
       if (socket.connected) socket.emit("leaveGuild", { guildId: selectedGuildId });
     };
-  }, [selectedGuildId, screenMode]);
+  }, [selectedGuildId, screenMode, currentUser?.scope]);
 
   // Real-time Socket.IO Listeners
   useEffect(() => {
@@ -505,6 +505,20 @@ function DashboardContent() {
     );
   }
 
+  if (currentUser.scope === "applications") {
+    return (
+      <div className="flex h-screen flex-col overflow-hidden bg-[#07090e]">
+        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-3 text-sm text-white">
+          <button onClick={() => setScreenMode("servers")} className="flex items-center gap-2">
+            <ArrowLeft className="h-4 w-4" /> Server-Übersicht
+          </button>
+          <button onClick={handleLogout}>Abmelden</button>
+        </div>
+        <ApplicationsView key={selectedGuildId} selectedGuildId={selectedGuildId} channels={[]} roles={[]} guilds={guilds} />
+      </div>
+    );
+  }
+
   // 5. Guild Management Dashboard Screen
   return (
     <div className="flex h-screen overflow-hidden bg-[#07090e]">
@@ -609,6 +623,7 @@ function DashboardContent() {
         )}
         {currentView === "applications" && (
           <ApplicationsView
+            key={selectedGuildId}
             selectedGuildId={selectedGuildId}
             channels={channels}
             roles={roles}

@@ -11,6 +11,7 @@ import {
   checkUserGuildPermission,
 } from "../middleware/authMiddleware";
 import { getAllowedOrigins } from "../config/runtime";
+import { applicationGuildAccess, applicationMember } from "../services/applicationAccess";
 
 let io: SocketIOServer | null = null;
 let telemetryTimer: NodeJS.Timeout | null = null;
@@ -49,6 +50,7 @@ function extractSocketUser(socket: Socket): AuthUser | null {
       id: string;
       username: string;
       avatar: string | null;
+      scope?: "applications";
     };
 
     const role: "OWNER" | "USER" = isOwner(decoded.id) ? "OWNER" : "USER";
@@ -58,6 +60,7 @@ function extractSocketUser(socket: Socket): AuthUser | null {
       username: decoded.username,
       avatar: decoded.avatar,
       role,
+      scope: decoded.scope,
     };
   } catch (e) {
     return null;
@@ -126,6 +129,7 @@ export function initSocketIO(server: HTTPServer) {
         return;
       }
 
+      if (currentUser.scope === "applications") return;
       const perm = await checkUserGuildPermission(currentUser.id, guildId);
       if (perm.allowed) {
         socket.join(`guild:${guildId}`);
@@ -136,6 +140,20 @@ export function initSocketIO(server: HTTPServer) {
           error: perm.reason || "Forbidden. Kein Zugriff auf diesen Server.",
         });
       }
+    });
+
+    socket.on("joinApplicationGuild", async (payload: { guildId: string }) => {
+      const guildId = payload?.guildId;
+      if (!user || typeof guildId !== "string" || !/^\d{16,22}$/.test(guildId)) return;
+      try {
+        const member = await applicationMember(guildId, user.id);
+        if (member && await applicationGuildAccess(member)) await socket.join(`applications:${guildId}`);
+      } catch (error) {
+        console.warn("[Applications] Could not join application updates:", error);
+      }
+    });
+    socket.on("leaveApplicationGuild", (payload: { guildId: string }) => {
+      if (typeof payload?.guildId === "string") void socket.leave(`applications:${payload.guildId}`);
     });
 
     // 4. Client verlässt Server-Kanal
@@ -173,6 +191,11 @@ export function broadcastGuildEvent(guildId: string, eventName: string, payload:
   if (io) {
     io.to(`guild:${guildId}`).to("owner-room").emit(eventName, payload);
   }
+}
+
+export function broadcastApplicationEvent(guildId: string, event: "applicationSubmitted" | "applicationUpdated") {
+  // Payload-free invalidation. HTTP rechecks membership and per-form roles on every read.
+  io?.to(`applications:${guildId}`).emit(event, { guildId });
 }
 
 /**

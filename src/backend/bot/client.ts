@@ -20,6 +20,7 @@ export let discordClient = new Client({
     GatewayIntentBits.GuildInvites,
     GatewayIntentBits.GuildVoiceStates,
     GatewayIntentBits.GuildMessages,
+    GatewayIntentBits.DirectMessages,
     GatewayIntentBits.MessageContent,
   ],
   partials: [Partials.Channel, Partials.User, Partials.Message, Partials.GuildMember],
@@ -208,6 +209,7 @@ export async function initDiscordBot() {
             GatewayIntentBits.GuildInvites,
             GatewayIntentBits.GuildVoiceStates,
             GatewayIntentBits.GuildMessages,
+            GatewayIntentBits.DirectMessages,
           ],
           partials: [Partials.Channel, Partials.User, Partials.Message, Partials.GuildMember],
         });

@@ -1,8 +1,7 @@
-import { PrismaClient } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { discordClient } from "../bot/client";
-import { GuildMember, Role } from "discord.js";
+import { applicationDb as prisma, readStrings, reviewerRoles } from "./applicationAccess";
 
-const prisma = new PrismaClient();
 
 // ==========================================
 // PANELS, FORMS & QUESTIONS
@@ -129,12 +128,19 @@ export async function createAppForm(guildId: string, data: any) {
       buttonEmoji: data.buttonEmoji || "📝",
       buttonColor: data.buttonColor || "Primary",
       targetChannelId: data.targetChannelId || null,
+      dmPanelTitle: data.dmPanelTitle || null,
+      dmPanelDescription: data.dmPanelDescription || null,
+      dmPanelChannelId: data.dmPanelChannelId || null,
+      reviewChannelId: data.reviewChannelId || null,
+      ticketCategoryId: data.ticketCategoryId || null,
+      statusSteps: JSON.stringify(data.statusSteps || []),
+      channelId: data.channelId || null,
       categoryId: data.categoryId || null,
       reviewerRoles: JSON.stringify(data.reviewerRoles || []),
       applicantRoles: JSON.stringify(data.applicantRoles || []),
       acceptedRoles: JSON.stringify(data.acceptedRoles || []),
       deniedRoles: JSON.stringify(data.deniedRoles || []),
-      cooldownHours: Number(data.cooldownHours) || 24,
+      cooldownHours: Number(data.cooldownHours ?? 24),
       maxActiveApps: Number(data.maxActiveApps) || 1,
       isOpen: data.isOpen !== undefined ? Boolean(data.isOpen) : true,
     },
@@ -146,6 +152,7 @@ export async function createAppForm(guildId: string, data: any) {
 
 export async function updateAppForm(formId: string, data: any) {
   const payload: any = { ...data };
+  if (Array.isArray(data.statusSteps)) payload.statusSteps = JSON.stringify(data.statusSteps);
   if (Array.isArray(data.reviewerRoles)) payload.reviewerRoles = JSON.stringify(data.reviewerRoles);
   if (Array.isArray(data.applicantRoles)) payload.applicantRoles = JSON.stringify(data.applicantRoles);
   if (Array.isArray(data.acceptedRoles)) payload.acceptedRoles = JSON.stringify(data.acceptedRoles);
@@ -171,8 +178,12 @@ export async function updateAppForm(formId: string, data: any) {
 }
 
 export async function deleteAppForm(formId: string) {
-  return await prisma.appForm.delete({
-    where: { id: formId },
+  const form = await prisma.appForm.findUniqueOrThrow({ where: { id: formId } });
+  const roles = await reviewerRoles(form.guildId, form.reviewerRoles);
+  return prisma.$transaction(async db => {
+    await db.application.updateMany({ where: { formId, formName: null }, data: { formName: form.name } });
+    await db.application.updateMany({ where: { formId }, data: { reviewerRoles: JSON.stringify(roles) } });
+    return db.appForm.delete({ where: { id: formId } });
   });
 }
 
@@ -196,6 +207,7 @@ export async function createAppQuestion(formId: string, data: any) {
       minLength: data.minLength ? Number(data.minLength) : null,
       maxLength: data.maxLength ? Number(data.maxLength) : null,
       validationRegex: data.validationRegex || null,
+      validationError: data.validationError || null,
       helpText: data.helpText || null,
       order: data.order !== undefined ? Number(data.order) : existingCount,
     },
@@ -228,7 +240,7 @@ export async function deleteAppQuestion(questionId: string) {
 export async function reorderAppQuestions(formId: string, questionIds: string[]) {
   const updates = questionIds.map((id, index) =>
     prisma.appQuestion.update({
-      where: { id },
+      where: { id, formId },
       data: { order: index },
     })
   );
@@ -253,6 +265,7 @@ export async function duplicateAppQuestion(questionId: string) {
       minLength: original.minLength,
       maxLength: original.maxLength,
       validationRegex: original.validationRegex,
+      validationError: original.validationError,
       helpText: original.helpText,
       order: existingCount,
     },
@@ -260,55 +273,23 @@ export async function duplicateAppQuestion(questionId: string) {
 }
 
 // ==========================================
-// INTAKE SESSIONS (STEP-BY-STEP DM FLOW)
-// ==========================================
-
-export async function getAppIntakeSession(userId: string) {
-  return await prisma.appIntakeSession.findUnique({
-    where: { userId },
-  });
-}
-
-export async function createOrUpdateAppIntakeSession(
-  userId: string,
-  guildId: string,
-  formId: string,
-  currentStep: number,
-  answers: any[]
-) {
-  return await prisma.appIntakeSession.upsert({
-    where: { userId },
-    create: {
-      userId,
-      guildId,
-      formId,
-      currentStep,
-      answers: JSON.stringify(answers),
-    },
-    update: {
-      guildId,
-      formId,
-      currentStep,
-      answers: JSON.stringify(answers),
-    },
-  });
-}
-
-export async function deleteAppIntakeSession(userId: string) {
-  return await prisma.appIntakeSession.deleteMany({
-    where: { userId },
-  });
-}
-
-// ==========================================
 // APPLICATIONS WORKFLOW
 // ==========================================
 
+const applicationDetails = {
+  form: { include: { panel: true } },
+  answers: { orderBy: { position: "asc" } },
+  notes: { orderBy: { createdAt: "desc" } },
+  history: { orderBy: { timestamp: "desc" } },
+  files: { select: { id: true, name: true, size: true, position: true, followupId: true } },
+  followups: { orderBy: { requestedAt: "asc" } },
+} satisfies Prisma.ApplicationInclude;
+
 export async function getApplications(
   guildId: string,
-  filters?: { status?: string; search?: string; formId?: string; reviewerId?: string }
+  filters?: { status?: string; search?: string; formId?: string; reviewerId?: string; access?: Prisma.ApplicationWhereInput }
 ) {
-  const where: any = { guildId };
+  const where: Prisma.ApplicationWhereInput = { guildId, AND: filters?.access };
 
   if (filters?.status && filters.status !== "ALL") {
     where.status = filters.status;
@@ -334,251 +315,102 @@ export async function getApplications(
 
   return await prisma.application.findMany({
     where,
-    include: {
-      form: { select: { id: true, name: true, category: true } },
-      answers: true,
-      notes: { orderBy: { createdAt: "desc" } },
-      history: { orderBy: { timestamp: "desc" } },
-    },
+    include: applicationDetails,
     orderBy: { createdAt: "desc" },
   });
 }
 
 export async function getApplicationById(appId: string) {
-  return await prisma.application.findUnique({
-    where: { id: appId },
-    include: {
-      form: { include: { panel: true } },
-      answers: true,
-      notes: { orderBy: { createdAt: "desc" } },
-      history: { orderBy: { timestamp: "desc" } },
-    },
-  });
+  return prisma.application.findUnique({ where: { id: appId }, include: applicationDetails });
 }
 
-export async function checkUserCanApply(guildId: string, formId: string, userId: string) {
-  const form = await getAppFormById(formId);
-  if (!form) return { canApply: false, reason: "Application form not found." };
-  if (!form.isOpen) return { canApply: false, reason: "This application form is currently closed." };
+export async function checkUserCanApply(guildId: string, formId: string, userId: string, db: Prisma.TransactionClient = prisma) {
+  const form = await db.appForm.findUnique({ where: { id: formId, guildId } });
+  if (!form?.isOpen) return { canApply: false, reason: "This application form is currently closed." };
 
-  // Check active applications count
-  const activeAppsCount = await prisma.application.count({
-    where: {
-      guildId,
-      formId,
-      userId,
-      status: { in: ["PENDING", "UNDER_REVIEW", "CLAIMED", "WAITLISTED"] },
-    },
+  const where = { guildId, formId, userId };
+  const active = await db.application.count({
+    where: { ...where, status: { in: ["PENDING", "UNDER_REVIEW", "CLAIMED", "WAITLISTED"] } },
   });
-
-  if (activeAppsCount >= form.maxActiveApps) {
-    return {
-      canApply: false,
-      reason: `You already have ${activeAppsCount} active application(s) for this form (Maximum allowed: ${form.maxActiveApps}).`,
-    };
+  if (active >= form.maxActiveApps) {
+    return { canApply: false, reason: "You have reached the limit for active applications on this form." };
   }
 
-  // Check cooldown
-  if (form.cooldownHours > 0) {
-    const lastApp = await prisma.application.findFirst({
-      where: { guildId, formId, userId },
-      orderBy: { createdAt: "desc" },
-    });
-
-    if (lastApp) {
-      const hoursPassed = (Date.now() - new Date(lastApp.createdAt).getTime()) / (1000 * 60 * 60);
-      if (hoursPassed < form.cooldownHours) {
-        const remainingHours = Math.ceil(form.cooldownHours - hoursPassed);
-        return {
-          canApply: false,
-          reason: `You are on cooldown for this form. Please wait ${remainingHours} hour(s) before applying again.`,
-        };
-      }
-    }
-  }
-
+  const last = await db.application.findFirst({ where, orderBy: { createdAt: "desc" } });
+  const remaining = last ? form.cooldownHours - (Date.now() - last.createdAt.getTime()) / 3_600_000 : 0;
+  if (remaining > 0) return { canApply: false, reason: `Please wait ${Math.ceil(remaining)} hour(s) before applying again.` };
   return { canApply: true };
 }
 
-export async function createApplicationSubmission(data: {
-  guildId: string;
-  formId: string;
-  userId: string;
-  userTag: string;
-  userAvatar?: string;
-  accountAge?: string;
-  joinDate?: string;
-  currentRoles?: string[];
-  attachments?: string[];
-  answers: { questionId?: string; questionLabel: string; questionType: string; value: string }[];
-}) {
-  const count = await prisma.application.count({ where: { guildId: data.guildId } });
-  const appNumber = count + 1;
-
-  const app = await prisma.application.create({
-    data: {
-      appNumber,
-      guildId: data.guildId,
-      formId: data.formId,
-      userId: data.userId,
-      userTag: data.userTag,
-      userAvatar: data.userAvatar || null,
-      accountAge: data.accountAge || "Unknown",
-      joinDate: data.joinDate || "Unknown",
-      currentRoles: JSON.stringify(data.currentRoles || []),
-      attachments: JSON.stringify(data.attachments || []),
-      status: "PENDING",
-      submittedAt: new Date(),
-      answers: {
-        create: data.answers.map((ans) => ({
-          questionId: ans.questionId || null,
-          questionLabel: ans.questionLabel,
-          questionType: ans.questionType,
-          value: ans.value,
-        })),
-      },
-      history: {
-        create: {
-          status: "PENDING",
-          actorId: data.userId,
-          actorTag: data.userTag,
-          details: "Application submitted",
-        },
-      },
-    },
-    include: {
-      form: true,
-      answers: true,
-      notes: true,
-      history: true,
-    },
+export async function createApplicationSubmission(
+  db: Prisma.TransactionClient,
+  data: Omit<Prisma.ApplicationUncheckedCreateInput, "appNumber">,
+) {
+  const last = await db.application.findFirst({
+    where: { guildId: data.guildId }, orderBy: { appNumber: "desc" }, select: { appNumber: true },
   });
-
-  await createAppLog({
-    guildId: data.guildId,
-    applicationId: app.id,
-    action: "SUBMITTED",
-    executorId: data.userId,
-    executorTag: data.userTag,
-    details: `Submitted application #${appNumber}`,
-  });
-
-  return app;
+  const appNumber = (last?.appNumber ?? 0) + 1;
+  return db.application.create({ data: { ...data, appNumber }, include: applicationDetails });
 }
+
+export type ApplicationExecutor = { id: string; tag: string; avatar?: string };
+
+export const decisionStatuses = ["ACCEPTED", "DENIED"];
 
 export async function updateApplicationStatus(
   appId: string,
   newStatus: string,
-  executor: { id: string; tag: string; avatar?: string },
-  details?: { reason?: string; channelId?: string; transcriptUrl?: string }
+  executor: ApplicationExecutor,
+  reason?: string,
 ) {
-  const app = await prisma.application.findUnique({
-    where: { id: appId },
-    include: { form: true },
-  });
-
-  if (!app) throw new Error("Application not found");
-
-  const updateData: any = {
-    status: newStatus,
-    updatedAt: new Date(),
-  };
-
-  if (details?.reason !== undefined) {
-    updateData.decisionReason = details.reason;
-  }
-  if (details?.channelId !== undefined) {
-    updateData.channelId = details.channelId;
-  }
-  if (details?.transcriptUrl !== undefined) {
-    updateData.transcriptUrl = details.transcriptUrl;
-  }
-
-  if (newStatus === "CLAIMED") {
-    updateData.claimedByUserId = executor.id;
-    updateData.claimedByTag = executor.tag;
-    updateData.claimedByAvatar = executor.avatar || null;
-    updateData.reviewedAt = new Date();
-  } else if (newStatus === "UNCLAIMED") {
-    updateData.claimedByUserId = null;
-    updateData.claimedByTag = null;
-    updateData.claimedByAvatar = null;
-    updateData.status = "PENDING";
-  } else if (["ACCEPTED", "DENIED", "WAITLISTED", "CLOSED"].includes(newStatus)) {
-    if (!app.reviewedAt) {
-      updateData.reviewedAt = new Date();
+  return prisma.$transaction(async db => {
+    const app = await db.application.findUniqueOrThrow({ where: { id: appId } });
+    const decision = decisionStatuses.includes(newStatus);
+    if (app.status === "CLOSED" && newStatus !== "PENDING" ||
+        (app.decidedAt || decisionStatuses.includes(app.status)) && newStatus !== "CLOSED") {
+      throw new Error("This application already has a final decision or is closed.");
     }
-    if (newStatus === "CLOSED") {
-      updateData.closedAt = new Date();
-    }
-  }
-
-  const updatedApp = await prisma.application.update({
-    where: { id: appId },
-    data: updateData,
-    include: {
-      form: true,
-      answers: true,
-      notes: true,
-      history: true,
-    },
+    const status = newStatus === "UNCLAIMED" ? "PENDING" : newStatus;
+    const claim = newStatus === "CLAIMED";
+    const unclaim = newStatus === "UNCLAIMED";
+    const now = new Date();
+    const updated = await db.application.update({
+      where: { id: appId, status: app.status },
+      data: {
+        status,
+        decisionReason: decision ? reason || null : undefined,
+        decisionById: decision ? executor.id : undefined,
+        decisionByTag: decision ? executor.tag : undefined,
+        decidedAt: decision ? now : undefined,
+        reviewedAt: claim || decision || status === "WAITLISTED" ? app.reviewedAt ?? now : undefined,
+        closedAt: status === "CLOSED" ? now : status === "PENDING" ? null : undefined,
+        claimedByUserId: claim ? executor.id : unclaim ? null : undefined,
+        claimedByTag: claim ? executor.tag : unclaim ? null : undefined,
+        claimedByAvatar: claim ? executor.avatar : unclaim ? null : undefined,
+        history: { create: {
+          status: newStatus, fromStatus: app.status, toStatus: status,
+          actorId: executor.id, actorTag: executor.tag, details: reason || `Status changed to ${status}`,
+        } },
+      },
+      include: applicationDetails,
+    });
+    await db.appLog.create({ data: {
+      guildId: app.guildId, applicationId: appId, action: newStatus,
+      executorId: executor.id, executorTag: executor.tag, details: reason || `Status changed to ${status}`,
+    } });
+    return updated;
   });
-
-  // Track status history
-  await prisma.appStatusHistory.create({
-    data: {
-      applicationId: appId,
-      status: newStatus,
-      actorId: executor.id,
-      actorTag: executor.tag,
-      details: details?.reason || `Status updated to ${newStatus}`,
-    },
-  });
-
-  await createAppLog({
-    guildId: app.guildId,
-    applicationId: appId,
-    action: newStatus,
-    executorId: executor.id,
-    executorTag: executor.tag,
-    details: details?.reason || `Status changed to ${newStatus}`,
-  });
-
-  // Handle Automatic Role Assignments if ACCEPTED, DENIED, or WAITLISTED
-  if (app.form) {
-    try {
-      await handleRoleAssignments(app.guildId, app.userId, newStatus, app.form);
-    } catch (err) {
-      console.warn(`[App System] Failed role automation for app ${appId}:`, err);
-    }
-  }
-
-  return updatedApp;
 }
 
-async function handleRoleAssignments(guildId: string, userId: string, status: string, form: any) {
-  if (!discordClient || !discordClient.isReady()) return;
-
-  const guild = await discordClient.guilds.fetch(guildId).catch(() => null);
-  if (!guild) return;
-
-  const member = await guild.members.fetch(userId).catch(() => null);
-  if (!member) return;
-
-  if (status === "ACCEPTED") {
-    const acceptedRoleIds: string[] = JSON.parse(form.acceptedRoles || "[]");
-    for (const rId of acceptedRoleIds) {
-      if (rId && !member.roles.cache.has(rId)) {
-        await member.roles.add(rId).catch(() => null);
-      }
-    }
-  } else if (status === "DENIED") {
-    const deniedRoleIds: string[] = JSON.parse(form.deniedRoles || "[]");
-    for (const rId of deniedRoleIds) {
-      if (rId && !member.roles.cache.has(rId)) {
-        await member.roles.add(rId).catch(() => null);
-      }
-    }
+export async function handleRoleAssignments(app: NonNullable<Awaited<ReturnType<typeof getApplicationById>>>) {
+  const byStatus = app.status === "ACCEPTED" ? app.form?.acceptedRoles : app.form?.deniedRoles;
+  const roles = readStrings(byStatus).filter(id => id !== app.guildId);
+  if (!roles.length) return;
+  const guild = discordClient.guilds.cache.get(app.guildId);
+  if (!guild) throw new Error("Server unavailable");
+  const member = await guild.members.fetch({ user: app.userId, force: true });
+  for (const id of roles) {
+    if (!member.roles.cache.has(id)) await member.roles.add(id, "Application decision");
   }
 }
 

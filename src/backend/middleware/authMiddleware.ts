@@ -8,6 +8,7 @@ export interface AuthUser {
   username: string;
   avatar: string | null;
   role: "OWNER" | "USER";
+  scope?: "applications";
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -61,6 +62,7 @@ export function extractAuthUser(req: Request): AuthUser | null {
       username: string;
       avatar: string | null;
       role?: string;
+      scope?: "applications";
     };
 
     const role: "OWNER" | "USER" = isOwner(decoded.id) ? "OWNER" : "USER";
@@ -70,6 +72,7 @@ export function extractAuthUser(req: Request): AuthUser | null {
       username: decoded.username,
       avatar: decoded.avatar,
       role,
+      scope: decoded.scope,
     };
   } catch (error) {
     return null;
@@ -86,6 +89,14 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
   }
   req.user = user;
   next();
+}
+
+export function restrictApplicationSession(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const user = extractAuthUser(req);
+  if (user?.scope !== "applications") return next();
+  if (/^\/api\/auth\/(me|logout)\/?$/.test(req.path) ||
+      /^\/api\/guilds\/(application-access\/?$|\d{16,22}\/applications(?:\/|$))/.test(req.path)) return next();
+  return res.status(403).json({ error: "This session is limited to the Application Center." });
 }
 
 /**

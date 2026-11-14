@@ -1,5 +1,7 @@
 import {
   Client,
+  Guild,
+  User,
   Interaction,
   ButtonInteraction,
   StringSelectMenuInteraction,
@@ -230,6 +232,7 @@ async function requireTicketSupport(
     const supportRoles = new Set([
       ...readTicketConfig(settings.defaultSupportRoles),
       ...readTicketConfig(panel?.supportRoles),
+      ...readTicketConfig(ticket.applicationRoles ?? undefined),
     ]);
     for (const config of [...readTicketConfig(panel?.ticketTypesConfig), ...readTicketConfig(panel?.reasons)]) {
       const roles = (config as { supportRoles?: string[] } | null)?.supportRoles;
@@ -607,66 +610,9 @@ async function handleTicketOpen(
   // Category Target
   const categoryId = selectedReason?.categoryId || panel.categoryId || settings.defaultCategoryId || undefined;
 
-  // Grant the bot access to post and manage messages in the private channel.
-  const permissionOverwrites: any[] = [
-    {
-      id: interaction.guild.id,
-      deny: [PermissionFlagsBits.ViewChannel],
-    },
-    {
-      id: interaction.client.user.id,
-      allow: [
-        PermissionFlagsBits.ViewChannel,
-        PermissionFlagsBits.SendMessages,
-        PermissionFlagsBits.ReadMessageHistory,
-        PermissionFlagsBits.EmbedLinks,
-        PermissionFlagsBits.AttachFiles,
-      ],
-    },
-    {
-      id: interaction.user.id,
-      allow: [
-        PermissionFlagsBits.ViewChannel,
-        PermissionFlagsBits.SendMessages,
-        PermissionFlagsBits.ReadMessageHistory,
-        PermissionFlagsBits.AttachFiles,
-        PermissionFlagsBits.EmbedLinks,
-      ],
-    },
-  ];
-
-  allAllowedRoles.forEach((roleId) => {
-    if (roleId) {
-      permissionOverwrites.push({
-        id: roleId,
-        allow: [
-          PermissionFlagsBits.ViewChannel,
-          PermissionFlagsBits.SendMessages,
-          PermissionFlagsBits.ReadMessageHistory,
-          PermissionFlagsBits.AttachFiles,
-          PermissionFlagsBits.EmbedLinks,
-          ...(allSupportRoles.includes(roleId) ? [PermissionFlagsBits.ManageChannels] : []),
-        ],
-      });
-    }
-  });
-
-  const ticketChannel = await interaction.guild.channels.create({
-    name: channelName,
-    type: ChannelType.GuildText,
-    parent: categoryId,
-    permissionOverwrites,
-  });
-
-  const ticketRecord = await createTicketRecord({
-    guildId: interaction.guild.id,
-    panelId: panel.id,
-    channelId: ticketChannel.id,
-    userId: interaction.user.id,
-    userTag: interaction.user.tag,
-    userAvatar: interaction.user.displayAvatarURL({ extension: "png" }),
-    categoryId: categoryId,
-  });
+  const { ticketChannel, ticket: ticketRecord } = await createPrivateTicket(
+    interaction.guild, interaction.user, channelName, categoryId, allSupportRoles, allAllowedRoles, panel.id,
+  );
 
   // Welcome Message Styling & Dynamic Placeholders
   const welcomeTitle = (
@@ -727,13 +673,7 @@ async function handleTicketOpen(
   if (welcomeImage && isValidUrl(welcomeImage)) welcomeEmbed.setImage(welcomeImage.trim());
   if (welcomeFooter) welcomeEmbed.setFooter({ text: welcomeFooter });
 
-  const row1 = new ActionRowBuilder<ButtonBuilder>().addComponents(
-    new ButtonBuilder().setCustomId(`ticket_close:${ticketRecord.id}`).setLabel("Close").setEmoji("🔒").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`ticket_claim:${ticketRecord.id}`).setLabel("Claim").setEmoji("👤").setStyle(ButtonStyle.Primary),
-    new ButtonBuilder().setCustomId(`ticket_adduser:${ticketRecord.id}`).setLabel("Add User").setEmoji("➕").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`ticket_remuser:${ticketRecord.id}`).setLabel("Remove User").setEmoji("➖").setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder().setCustomId(`ticket_transcript:${ticketRecord.id}`).setLabel("Transcript").setEmoji("📄").setStyle(ButtonStyle.Secondary)
-  );
+
 
   // Supporter role mentions
   const supportPings = allSupportRoles.map((r) => `<@&${r}>`).join(" ");
@@ -741,7 +681,7 @@ async function handleTicketOpen(
   await ticketChannel.send({
     content: `${interaction.user} ${supportPings}`.trim(),
     embeds: [welcomeEmbed],
-    components: [row1],
+    components: [ticketControlRow(ticketRecord.id)],
   });
 
   const successContent = `✅ Ticket created successfully! Head over to ${ticketChannel}.`;
@@ -750,6 +690,105 @@ async function handleTicketOpen(
   } else {
     await interaction.reply({ content: successContent, ephemeral: true });
   }
+}
+
+async function createPrivateTicket(
+  guild: Guild, user: User, channelName: string, categoryId: string | undefined,
+  allSupportRoles: string[], allAllowedRoles: string[], panelId?: string, applicationId?: string,
+) {
+  const permissionOverwrites: import("discord.js").OverwriteResolvable[] = [
+    {
+      id: guild.id,
+      deny: [PermissionFlagsBits.ViewChannel],
+    },
+    {
+      id: guild.client.user.id,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.EmbedLinks,
+        PermissionFlagsBits.AttachFiles,
+      ],
+    },
+    {
+      id: user.id,
+      allow: [
+        PermissionFlagsBits.ViewChannel,
+        PermissionFlagsBits.SendMessages,
+        PermissionFlagsBits.ReadMessageHistory,
+        PermissionFlagsBits.AttachFiles,
+        PermissionFlagsBits.EmbedLinks,
+      ],
+    },
+  ];
+
+  allAllowedRoles.forEach((roleId) => {
+    if (roleId) {
+      permissionOverwrites.push({
+        id: roleId,
+        allow: [
+          PermissionFlagsBits.ViewChannel,
+          PermissionFlagsBits.SendMessages,
+          PermissionFlagsBits.ReadMessageHistory,
+          PermissionFlagsBits.AttachFiles,
+          PermissionFlagsBits.EmbedLinks,
+          ...(allSupportRoles.includes(roleId) ? [PermissionFlagsBits.ManageChannels] : []),
+        ],
+      });
+    }
+  });
+
+  const ticketChannel = await guild.channels.create({
+    name: channelName,
+    type: ChannelType.GuildText,
+    parent: categoryId,
+    permissionOverwrites,
+  });
+
+  const ticket = await createTicketRecord({
+    guildId: guild.id, panelId, channelId: ticketChannel.id,
+    userId: user.id, userTag: user.tag, userAvatar: user.displayAvatarURL({ extension: "png" }),
+    categoryId, applicationId, applicationRoles: applicationId ? allSupportRoles : undefined,
+  }).catch(async error => {
+    await ticketChannel.delete("Ticket record could not be saved").catch(console.error);
+    throw error;
+  });
+  return { ticketChannel, ticket };
+}
+
+function ticketControlRow(ticketId: string) {
+  return new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder().setCustomId(`ticket_close:${ticketId}`).setLabel("Close").setEmoji("🔒").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`ticket_claim:${ticketId}`).setLabel("Claim").setEmoji("👤").setStyle(ButtonStyle.Primary),
+    new ButtonBuilder().setCustomId(`ticket_adduser:${ticketId}`).setLabel("Add User").setEmoji("➕").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`ticket_remuser:${ticketId}`).setLabel("Remove User").setEmoji("➖").setStyle(ButtonStyle.Secondary),
+    new ButtonBuilder().setCustomId(`ticket_transcript:${ticketId}`).setLabel("Transcript").setEmoji("📄").setStyle(ButtonStyle.Secondary)
+  );
+}
+
+export async function createApplicationTicket(guild: Guild, user: User, application: {
+  id: string; appNumber: number;
+}, categoryId: string, reviewerIds: string[]) {
+  const category = await guild.channels.fetch(categoryId, { force: true });
+  if (category?.type !== ChannelType.GuildCategory) throw new Error("The configured ticket category is unavailable.");
+  const roles = (await guild.roles.fetch());
+  const supportRoles = reviewerIds.filter(id => id !== guild.id && roles.has(id));
+  return createPrivateTicket(guild, user, `application-${application.appNumber}`, category.id,
+    supportRoles, supportRoles, undefined, application.id);
+}
+
+export async function postApplicationTicketWelcome(channel: TextChannel, ticketId: string, userId: string, appNumber: number) {
+  const existing = await channel.messages.fetch({ limit: 20 });
+  if (existing.some(msg => msg.author.id === channel.client.user.id && msg.components.some(row =>
+    "components" in row && row.components.some(component => "customId" in component && component.customId === `ticket_close:${ticketId}`)
+  ))) return;
+  await channel.send({
+    content: `<@${userId}> This ticket is linked to application #${appNumber}.`,
+    allowedMentions: { parse: [], users: [userId] },
+    components: [ticketControlRow(ticketId)],
+    nonce: ticketId.replace(/-/g, "").slice(0, 24), enforceNonce: true,
+  });
 }
 
 async function handleCloseRequest(

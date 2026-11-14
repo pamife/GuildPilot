@@ -161,6 +161,8 @@ model Ticket {
   closedByTag        String?
   closeReason        String?
   staffMessageCounts String?      @default("{}") // JSON object of staffUserId -> message count
+  applicationId      String?
+  applicationRoles   String?
   openTimestamp      DateTime     @default(now())
   closedTimestamp    DateTime?
   closedAt           DateTime?
@@ -169,6 +171,8 @@ model Ticket {
   updatedAt          DateTime     @updatedAt
 
   logs               TicketLog[]
+
+  @@index([applicationId])
 }
 
 model TicketLog {
@@ -324,6 +328,14 @@ model AppForm {
   buttonEmoji        String?       @default("📝")
   buttonColor        String        @default("Primary") // Primary, Secondary, Success, Danger
   targetChannelId    String?
+  dmPanelTitle       String?
+  dmPanelDescription String?
+  dmPanelChannelId   String?
+  dmPanelMessageId   String?
+  dmPanelPostedChannelId String?
+  reviewChannelId    String?
+  statusSteps        String        @default("[]")
+  ticketCategoryId   String?
   categoryId         String?
   reviewerRoles      String        @default("[]") // JSON array of role IDs
   applicantRoles     String        @default("[]") // JSON array of allowed role IDs
@@ -379,6 +391,18 @@ model Application {
   claimedByTag    String?
   claimedByAvatar String?
   decisionReason  String?
+  decisionById    String?
+  decisionByTag   String?
+  decidedAt       DateTime?
+  formName        String?
+  reviewerRoles   String?
+  progressStep    String?
+  progressPercent Int?
+  statusDmId      String?
+  reviewChannelId String?
+  reviewMessageId String?
+  reviewParts     Int                @default(0)
+  delivery        String             @default("{}")
   submittedAt     DateTime           @default(now())
   reviewedAt      DateTime?
   closedAt        DateTime?
@@ -389,6 +413,8 @@ model Application {
   answers         AppAnswer[]
   notes           AppNote[]
   history         AppStatusHistory[]
+  files           AppFile[]
+  followups       AppFollowup[]
 }
 
 model AppAnswer {
@@ -399,6 +425,59 @@ model AppAnswer {
   questionLabel String
   questionType  String
   value         String
+  position      Int?
+}
+
+model AppDmDraft {
+  id          String    @id @default(uuid())
+  userId      String
+  guildId     String
+  formId      String
+  questions   String
+  answers     String    @default("{}")
+  step        Int       @default(0)
+  editing     Boolean   @default(false)
+  revision    Int       @default(0)
+  files       AppFile[]
+
+  @@unique([userId, formId])
+}
+
+model AppDmCursor {
+  userId      String  @id
+  draftId     String?
+  followupId  String?
+  sinceId     String
+}
+
+model AppFile {
+  id            String      @id
+  draftId       String?
+  draft         AppDmDraft? @relation(fields: [draftId], references: [id], onDelete: Cascade)
+  applicationId String?
+  application   Application? @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  followupId    String?
+  followup      AppFollowup? @relation(fields: [followupId], references: [id], onDelete: SetNull)
+  position      Int
+  name          String
+  size          Int
+
+  @@index([draftId])
+  @@index([applicationId])
+}
+
+model AppFollowup {
+  id            String      @id @default(uuid())
+  applicationId String
+  application   Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  question      String
+  requestedBy   String
+  requestedAt   DateTime    @default(now())
+  answer        String?
+  files         AppFile[]
+  answeredAt    DateTime?
+
+  @@index([applicationId])
 }
 
 model AppNote {

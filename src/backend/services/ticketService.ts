@@ -273,6 +273,8 @@ export async function createTicketRecord(data: {
   userTag: string;
   userAvatar?: string;
   categoryId?: string;
+  applicationId?: string;
+  applicationRoles?: string[];
 }) {
   const number = await getNextTicketNumber(data.guildId);
 
@@ -287,6 +289,8 @@ export async function createTicketRecord(data: {
       userAvatar: data.userAvatar || null,
       categoryId: data.categoryId || null,
       status: "OPEN",
+      applicationId: data.applicationId,
+      applicationRoles: data.applicationRoles ? JSON.stringify(data.applicationRoles) : undefined,
     },
   });
 
@@ -298,10 +302,17 @@ export async function createTicketRecord(data: {
     executorId: data.userId,
     executorTag: data.userTag,
     details: `Ticket #${number} opened by ${data.userTag}`,
-  });
+  }).catch(error => console.warn("[Tickets] Could not log ticket creation", error));
 
   broadcastEvent("ticketCreate", { guildId: data.guildId, ticketId: ticket.id, ticketNumber: number });
   return ticket;
+}
+
+export async function getOpenApplicationTickets(guildId: string, applicationId: string) {
+  return prisma.ticket.findMany({
+    where: { guildId, applicationId, status: { not: "CLOSED" } },
+    orderBy: { createdAt: "desc" },
+  });
 }
 
 export async function getTickets(guildId: string, filters?: { status?: string; search?: string }) {

@@ -50,6 +50,7 @@ import {
 } from "lucide-react";
 
 import { QuickImportModal } from "../QuickImportModal";
+import { ApplicationAttachment, ApplicationDmSettings, ApplicationReviewControls } from "./ApplicationDmControls";
 
 type SubPage = "dashboard" | "panels" | "forms" | "applications" | "questions" | "roles" | "review-queue" | "statistics" | "settings";
 type PanelTab = "embed" | "dm_embed" | "welcome" | "decisions" | "forms" | "channels";
@@ -64,6 +65,10 @@ interface ApplicationsViewProps {
 export function ApplicationsView({ selectedGuildId, channels, roles, guilds = [] }: ApplicationsViewProps) {
   const { showToast } = useToast();
   const [activeSubPage, setActiveSubPage] = useState<SubPage>("dashboard");
+  const [canManage, setCanManage] = useState<boolean | null>(null);
+  const [formBusy, setFormBusy] = useState(false);
+  const [configuration, setConfiguration] = useState<{ channels: any[]; roles: any[] }>();
+  const [loadError, setLoadError] = useState("");
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   // Data states
@@ -96,7 +101,6 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
   const [appSearchQuery, setAppSearchQuery] = useState("");
   const [appStatusFilter, setAppStatusFilter] = useState("ALL");
   const [newNoteContent, setNewNoteContent] = useState("");
-  const [decisionReason, setDecisionReason] = useState("");
 
   // Filter & Search states
   const [loading, setLoading] = useState(false);
@@ -199,35 +203,47 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
     helpText: "",
   });
 
-  // Fetch Core Data
   const fetchData = useCallback(async () => {
     if (!selectedGuildId) return;
+    const base = `/guilds/${selectedGuildId}/applications`;
     setLoading(true);
+    setLoadError("");
     try {
-      const [statsRes, panelsRes, formsRes, appsRes] = await Promise.all([
-        api.get(`/guilds/${selectedGuildId}/applications/stats`).catch(() => ({ data: {} })),
-        api.get(`/guilds/${selectedGuildId}/applications/panels`).catch(() => ({ data: [] })),
-        api.get(`/guilds/${selectedGuildId}/applications/forms`).catch(() => ({ data: [] })),
-        api.get(`/guilds/${selectedGuildId}/applications/apps`).catch(() => ({ data: [] })),
-      ]);
-
-      setStats(statsRes.data || {});
-      setPanels(panelsRes.data || []);
-      setForms(formsRes.data || []);
-      setApplications(appsRes.data || []);
-
-      if (panelsRes.data && panelsRes.data.length > 0 && !selectedPanelId) {
-        setSelectedPanelId(panelsRes.data[0].id);
+      const { data: access } = await api.get(`${base}/access`);
+      setCanManage(access.manage);
+      if (!access.manage) setActiveSubPage(page => page === "applications" ? page : "review-queue");
+      const apps = await api.get(`${base}/apps`);
+      setApplications(apps.data);
+      setSelectedApp((current: any) => current ? apps.data.find((app: any) => app.id === current.id) ?? null : null);
+      if (access.manage) {
+        const [statsRes, panelsRes, formsRes] = await Promise.all([
+          api.get(`${base}/stats`), api.get(`${base}/panels`), api.get(`${base}/forms`),
+        ]);
+        setStats(statsRes.data);
+        setPanels(panelsRes.data);
+        setForms(formsRes.data);
+        setSelectedPanelId(id => panelsRes.data.some((panel: any) => panel.id === id) ? id : panelsRes.data[0]?.id ?? null);
+        setSelectedFormId(id => formsRes.data.some((form: any) => form.id === id) ? id : formsRes.data[0]?.id ?? null);
       }
-      if (formsRes.data && formsRes.data.length > 0 && !selectedFormId) {
-        setSelectedFormId(formsRes.data[0].id);
-      }
-    } catch (err) {
-      console.error("Failed to load applications data:", err);
+    } catch (error: any) {
+      setApplications([]);
+      setSelectedApp(null);
+      setLoadError(error.response?.data?.error || "Could not load the Application Center.");
     } finally {
       setLoading(false);
     }
-  }, [selectedGuildId, selectedPanelId, selectedFormId]);
+  }, [selectedGuildId]);
+
+  useEffect(() => {
+    if (!canManage || !selectedGuildId) return;
+    let current = true;
+    api.get(`/guilds/${selectedGuildId}/applications/configuration-options`).then(({ data }) => {
+      if (current) setConfiguration(data);
+    }).catch(() => {
+      if (current) showToast("Could not load application channels and roles.", "error");
+    });
+    return () => { current = false; };
+  }, [canManage, selectedGuildId, showToast]);
 
   // Fetch Questions for Selected Form
   const fetchQuestions = useCallback(async () => {
@@ -248,23 +264,24 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
     if (selectedFormId) fetchQuestions();
   }, [selectedFormId, fetchQuestions]);
 
-  // Socket.IO Listeners
   useEffect(() => {
+    if (!selectedGuildId) return;
     const socket = getSocket();
-
-    const handleUpdate = () => {
-      fetchData();
-      if (selectedFormId) fetchQuestions();
+    const join = () => socket.emit("joinApplicationGuild", { guildId: selectedGuildId });
+    const handleUpdate = (event: { guildId: string }) => {
+      if (event.guildId === selectedGuildId) void fetchData();
     };
-
+    join();
+    socket.on("connect", join);
     socket.on("applicationSubmitted", handleUpdate);
     socket.on("applicationUpdated", handleUpdate);
-
     return () => {
+      socket.off("connect", join);
       socket.off("applicationSubmitted", handleUpdate);
       socket.off("applicationUpdated", handleUpdate);
+      if (socket.connected) socket.emit("leaveApplicationGuild", { guildId: selectedGuildId });
     };
-  }, [fetchData, fetchQuestions, selectedFormId]);
+  }, [fetchData, selectedGuildId]);
 
   // Panel Handlers
   const handleOpenPanelModal = (panel?: any) => {
@@ -441,12 +458,18 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
         buttonEmoji: form.buttonEmoji || "📝",
         buttonColor: form.buttonColor || "Primary",
         targetChannelId: form.targetChannelId || "",
+        dmPanelTitle: form.dmPanelTitle || "",
+        dmPanelDescription: form.dmPanelDescription || "",
+        dmPanelChannelId: form.dmPanelChannelId || "",
+        reviewChannelId: form.reviewChannelId || "",
+        ticketCategoryId: form.ticketCategoryId || "",
+        statusSteps: JSON.parse(form.statusSteps || "[]").join("\n"),
         categoryId: form.categoryId || "",
         reviewerRoles: JSON.parse(form.reviewerRoles || "[]"),
         applicantRoles: JSON.parse(form.applicantRoles || "[]"),
         acceptedRoles: JSON.parse(form.acceptedRoles || "[]"),
         deniedRoles: JSON.parse(form.deniedRoles || "[]"),
-        cooldownHours: form.cooldownHours || 24,
+        cooldownHours: form.cooldownHours ?? 24,
         maxActiveApps: form.maxActiveApps || 1,
         isOpen: form.isOpen !== undefined ? form.isOpen : true,
       });
@@ -475,21 +498,41 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
     setIsFormModalOpen(true);
   };
 
-  const handleSaveForm = async () => {
-    if (!selectedGuildId) return;
+  const handleSaveForm = async (publish = false) => {
+    if (!selectedGuildId || formBusy) return;
+    setFormBusy(true);
+    const base = `/guilds/${selectedGuildId}/applications/forms`;
     try {
-      if (editingForm) {
-        await api.patch(`/guilds/${selectedGuildId}/applications/forms/${editingForm.id}`, formPayload);
-        showToast("Application Form updated!", "success");
-      } else {
-        const res = await api.post(`/guilds/${selectedGuildId}/applications/forms`, formPayload);
-        setSelectedFormId(res.data.id);
-        showToast("Application Form created!", "success");
-      }
+      const payload = {
+        ...formPayload,
+        statusSteps: (formPayload.statusSteps || "").split("\n").map((step: string) => step.trim()).filter(Boolean),
+      };
+      const { data } = editingForm
+        ? await api.patch(`${base}/${editingForm.id}`, payload) : await api.post(base, payload);
+      setEditingForm(data);
+      setSelectedFormId(data.id);
+      if (publish) await api.post(`${base}/${data.id}/dm-panel`);
+      showToast(publish ? "Discord start panel published." : "Application form saved.", "success");
       setIsFormModalOpen(false);
-      fetchData();
     } catch (err: any) {
-      showToast(err.response?.data?.error || "Failed to save form", "error");
+      showToast(err.response?.data?.error || "Could not save or publish the form.", "error");
+    } finally {
+      setFormBusy(false);
+      void fetchData();
+    }
+  };
+
+  const publishExistingPanel = async (formId: string) => {
+    if (!selectedGuildId || formBusy) return;
+    setFormBusy(true);
+    try {
+      await api.post(`/guilds/${selectedGuildId}/applications/forms/${formId}/dm-panel`);
+      showToast("Discord start panel published.", "success");
+      await fetchData();
+    } catch (error: any) {
+      showToast(error.response?.data?.error || "Could not publish the panel.", "error");
+    } finally {
+      setFormBusy(false);
     }
   };
 
@@ -620,25 +663,6 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
   };
 
   // Application Action & Review Handlers
-  const handleExecuteAppAction = async (appId: string, action: string) => {
-    if (!selectedGuildId) return;
-    try {
-      await api.post(`/guilds/${selectedGuildId}/applications/apps/${appId}/action`, {
-        action,
-        reason: decisionReason,
-      });
-      showToast(`Action "${action.toUpperCase()}" executed successfully!`, "success");
-      setDecisionReason("");
-      fetchData();
-      if (selectedApp?.id === appId) {
-        const updated = await api.get(`/guilds/${selectedGuildId}/applications/apps/${appId}`);
-        setSelectedApp(updated.data);
-      }
-    } catch (err: any) {
-      showToast(err.response?.data?.error || "Failed to execute action", "error");
-    }
-  };
-
   const handleAddNote = async (appId: string) => {
     if (!selectedGuildId || !newNoteContent.trim()) return;
     try {
@@ -648,7 +672,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
       showToast("Staff note added!", "success");
       setNewNoteContent("");
       const updated = await api.get(`/guilds/${selectedGuildId}/applications/apps/${appId}`);
-      setSelectedApp(updated.data);
+      setSelectedApp((current: any) => current?.id === appId ? updated.data : current);
     } catch (err: any) {
       showToast(err.response?.data?.error || "Failed to add note", "error");
     }
@@ -657,9 +681,9 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
   const selectedForm = forms.find((f) => f.id === selectedFormId) || forms[0];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#0b0f17] text-slate-200 overflow-hidden select-none">
+    <div className="flex-1 flex flex-col h-full bg-[#0b0f17] text-slate-200 overflow-hidden">
       {/* Top Navbar Header */}
-      <header className="h-16 bg-[#0d121c] border-b border-[#1e293b] px-6 flex items-center justify-between shrink-0 shadow-sm">
+      <header className="min-h-16 py-2 flex-wrap gap-2 bg-[#0d121c] border-b border-[#1e293b] px-6 flex items-center justify-between shrink-0 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
             <ClipboardList className="w-5 h-5" />
@@ -678,7 +702,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
         </div>
 
         {/* Sub-Pages Navigation Bar */}
-        <div className="flex items-center gap-1 bg-[#111724] p-1 rounded-xl border border-[#1e293b]">
+        <div className="flex flex-wrap items-center gap-1 bg-[#111724] p-1 rounded-xl border border-[#1e293b]">
           {[
             { id: "dashboard", label: "Übersicht", icon: LayoutDashboard },
             { id: "panels", label: "Panels", icon: Layers },
@@ -689,7 +713,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
             { id: "review-queue", label: "Review-Queue", icon: UserCheck },
             { id: "statistics", label: "Statistiken", icon: BarChart3 },
             { id: "settings", label: "Einstellungen", icon: Settings },
-          ].map((tab) => {
+          ].filter(tab => canManage || ["applications", "review-queue"].includes(tab.id)).map((tab) => {
             const Icon = tab.icon;
             const isActive = activeSubPage === tab.id;
             return (
@@ -712,8 +736,9 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
 
       {/* Main View Area */}
       <main className="flex-1 overflow-y-auto p-6 space-y-6">
+        {loadError && <p role="alert" className="text-red-300">{loadError}</p>}
         {/* DASHBOARD */}
-        {activeSubPage === "dashboard" && (
+        {canManage && activeSubPage === "dashboard" && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <div className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
@@ -902,6 +927,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                   </div>
                   <div className="flex items-center justify-between pt-3 border-t border-[#1f1f23] text-xs">
                     <button onClick={() => handleOpenFormModal(f)} className="px-3 py-1.5 bg-[#0d0d11] border border-[#27272a] text-white rounded-xl font-semibold hover:bg-[#18181b] cursor-pointer">Edit</button>
+                    {f.dmPanelChannelId && <button disabled={formBusy} onClick={() => publishExistingPanel(f.id)} className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white disabled:opacity-50">{f.dmPanelMessageId ? "Update Discord panel" : "Publish Discord panel"}</button>}
                     <button onClick={() => handleDeleteForm(f.id)} className="px-3 py-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl font-semibold hover:bg-rose-600 hover:text-white cursor-pointer">Delete</button>
                   </div>
                 </div>
@@ -957,7 +983,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
             {/* Applications Grid / Table */}
             {applications.filter((app) => {
               const matchesStatus = activeSubPage === "review-queue"
-                ? (app.status === "PENDING" || app.status === "CLAIMED")
+                ? (["PENDING", "CLAIMED", "UNDER_REVIEW", "WAITLISTED"].includes(app.status) || Object.values(JSON.parse(app.delivery || "{}")).some((state: any) => !state.ok))
                 : (appStatusFilter === "ALL" || app.status === appStatusFilter);
 
               const q = appSearchQuery.toLowerCase().trim();
@@ -973,7 +999,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 {applications
                   .filter((app) => {
                     const matchesStatus = activeSubPage === "review-queue"
-                      ? (app.status === "PENDING" || app.status === "CLAIMED")
+                      ? (["PENDING", "CLAIMED", "UNDER_REVIEW", "WAITLISTED"].includes(app.status) || Object.values(JSON.parse(app.delivery || "{}")).some((state: any) => !state.ok))
                       : (appStatusFilter === "ALL" || app.status === appStatusFilter);
 
                     const q = appSearchQuery.toLowerCase().trim();
@@ -1016,14 +1042,16 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                           )}
                           <div className="overflow-hidden">
                             <h4 className="font-bold text-white text-sm truncate">{app.userTag}</h4>
-                            <p className="text-[11px] text-zinc-400 truncate">{app.form?.name || "Application Position"}</p>
+                            <p className="text-[11px] text-zinc-400 truncate">{app.formName || app.form?.name || "Application Position"}</p>
                           </div>
                         </div>
 
                         <div className="text-[11px] text-zinc-400 space-y-1 bg-[#0d0d11] p-3 rounded-xl border border-[#1f1f23]">
                           <p><span className="font-semibold text-zinc-300">User ID:</span> {app.userId}</p>
                           <p><span className="font-semibold text-zinc-300">Submitted:</span> {new Date(app.submittedAt).toLocaleDateString()}</p>
-                          <p><span className="font-semibold text-zinc-300">Answers:</span> {app.answers?.length || 0} questions answered</p>
+                          <p>{app.answers?.length || 0} questions · {app.files?.length || 0} attachments</p>
+                          {app.progressStep && <p>{app.progressStep} · {app.progressPercent}%</p>}
+                          {Object.values(JSON.parse(app.delivery || "{}")).some((state: any) => !state.ok) && <p className="text-amber-300">Delivery failed</p>}
                         </div>
                       </div>
 
@@ -1463,7 +1491,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
       {/* Form Editor Modal */}
       {isFormModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+          <div className="bg-[#2b2d31] border border-[#35373c] rounded-2xl max-w-xl w-full max-h-[90vh] overflow-auto p-6 space-y-4 shadow-2xl">
             <div className="flex items-center justify-between border-b border-[#35373c] pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <FileText className="w-5 h-5 text-discord-brand" />
@@ -1521,11 +1549,13 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                   className="w-full bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white"
                 />
               </div>
+              <ApplicationDmSettings value={formPayload} onChange={setFormPayload} channels={configuration?.channels ?? channels} roles={configuration?.roles ?? roles} />
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#35373c]">
+            <div className="flex flex-wrap items-center justify-end gap-3 pt-4 border-t border-[#35373c]">
               <button onClick={() => setIsFormModalOpen(false)} className="px-4 py-2 bg-[#1e1f22] text-zinc-300 rounded-xl font-bold text-xs">Cancel</button>
-              <button onClick={handleSaveForm} className="px-5 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl text-xs">Save Form</button>
+              <button disabled={formBusy} onClick={() => handleSaveForm()} className="px-5 py-2 bg-discord-brand hover:bg-discord-brandHover text-white font-bold rounded-xl text-xs">Save Form</button>
+              <button disabled={formBusy || !editingForm || !formPayload.dmPanelChannelId} onClick={() => handleSaveForm(true)} className="px-5 py-2 bg-indigo-600 text-white font-bold rounded-xl text-xs disabled:opacity-40">Save & publish Discord panel</button>
             </div>
           </div>
         </div>
@@ -1711,7 +1741,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                       {selectedApp.status}
                     </span>
                   </h3>
-                  <p className="text-xs text-zinc-400">{selectedApp.form?.name || "Application Position"}</p>
+                  <p className="text-xs text-zinc-400">{selectedApp.formName || selectedApp.form?.name || "Application Position"}</p>
                 </div>
               </div>
 
@@ -1758,9 +1788,11 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                         <p className="font-bold text-indigo-400 text-xs">
                           ❓ Question {idx + 1}: {a.questionLabel}
                         </p>
-                        <p className="text-zinc-200 bg-[#18181b] p-3 rounded-lg border border-[#27272a] whitespace-pre-wrap leading-relaxed font-sans text-xs">
-                          {a.value || "No answer provided."}
+                        <p className="break-words text-zinc-200 bg-[#18181b] p-3 rounded-lg border border-[#27272a] whitespace-pre-wrap leading-relaxed font-sans text-xs">
+                          {a.value || (selectedApp.files?.some((file: any) => !file.followupId && file.position === (a.position ?? idx)) ? "Attachment answer" : "No answer provided.")}
                         </p>
+                        {selectedApp.files?.filter((file: any) => !file.followupId && file.position === (a.position ?? idx))
+                          .map((file: any) => <div key={file.id}><ApplicationAttachment app={selectedApp} file={file} /></div>)}
                       </div>
                     ))
                   ) : (
@@ -1769,56 +1801,40 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 </div>
               </div>
 
-              {/* Action Controls & Reason Input */}
-              <div className="p-4 bg-[#0d0d11] rounded-xl border border-[#1f1f23] space-y-3">
-                <h4 className="font-bold text-white text-xs flex items-center gap-2">
-                  <Shield className="w-4 h-4 text-indigo-400" /> Moderator Review Actions
-                </h4>
-
-                <div>
-                  <label className="font-bold text-zinc-300 block mb-1">Decision Reason / Staff Comment (Sent to user):</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. Excellent experience! Accepted for trial position."
-                    value={decisionReason}
-                    onChange={(e) => setDecisionReason(e.target.value)}
-                    className="w-full bg-[#18181b] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
-                  />
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2 pt-1">
-                  <button
-                    onClick={() => handleExecuteAppAction(selectedApp.id, "accept")}
-                    className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-lg shadow-emerald-600/20"
-                  >
-                    <CheckCircle2 className="w-4 h-4" /> Accept Application
-                  </button>
-                  <button
-                    onClick={() => handleExecuteAppAction(selectedApp.id, "deny")}
-                    className="px-4 py-2 bg-rose-600 hover:bg-rose-500 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-lg shadow-rose-600/20"
-                  >
-                    <XCircle className="w-4 h-4" /> Deny Application
-                  </button>
-                  <button
-                    onClick={() => handleExecuteAppAction(selectedApp.id, "waitlist")}
-                    className="px-4 py-2 bg-amber-600 hover:bg-amber-500 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer shadow-lg shadow-amber-600/20"
-                  >
-                    <Clock className="w-4 h-4" /> Place on Waitlist
-                  </button>
-                  <button
-                    onClick={() => handleExecuteAppAction(selectedApp.id, "claim")}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
-                  >
-                    📌 Claim Review
-                  </button>
-                  <button
-                    onClick={() => handleExecuteAppAction(selectedApp.id, "close")}
-                    className="px-4 py-2 bg-[#18181b] border border-[#27272a] text-zinc-300 hover:text-white font-bold rounded-xl flex items-center gap-1.5 cursor-pointer"
-                  >
-                    🔒 Close & Generate Transcript
-                  </button>
-                </div>
-              </div>
+              <section className="space-y-2">
+                <h4 className="font-bold text-sm text-white">Status and delivery</h4>
+                <p className="font-mono text-zinc-400">{selectedApp.id}</p>
+                {selectedApp.progressStep && <p>{selectedApp.progressStep} · {selectedApp.progressPercent}%</p>}
+                {selectedApp.decidedAt && <p>
+                  {selectedApp.decisionByTag} · {new Date(selectedApp.decidedAt).toLocaleString()}
+                  {selectedApp.decisionReason && ` · ${selectedApp.decisionReason}`}
+                </p>}
+                {selectedApp.channelId && <a className="block text-indigo-300 underline"
+                  href={`https://discord.com/channels/${selectedApp.guildId}/${selectedApp.channelId}`} target="_blank" rel="noreferrer">Linked Discord channel</a>}
+                {Object.entries(JSON.parse(selectedApp.delivery || "{}")).map(([label, state]: [string, any]) => (
+                  <p key={label} className={state.ok ? "text-emerald-300" : "text-amber-300"}>
+                    {label} · {state.ok ? "Delivered" : state.error || "Failed"} · {new Date(state.at).toLocaleString()}
+                  </p>
+                ))}
+              </section>
+              <ApplicationReviewControls key={selectedApp.id} app={selectedApp}
+                onUpdate={app => setSelectedApp((current: any) => current?.id === app.id ? app : current)} />
+              {selectedApp.followups?.length > 0 && <section className="space-y-2">
+                <h4 className="font-bold text-sm text-white">Requested replies</h4>
+                {selectedApp.followups.map((reply: any) => <div key={reply.id} className="space-y-1 rounded-lg border border-[#27272a] p-3">
+                  <p className="whitespace-pre-wrap break-words">{reply.question}</p>
+                  <p className="whitespace-pre-wrap break-words text-zinc-400">{reply.answeredAt ? reply.answer || "Attachment reply" : "Awaiting reply"}</p>
+                  {selectedApp.files?.filter((file: any) => file.followupId === reply.id)
+                    .map((file: any) => <div key={file.id}><ApplicationAttachment app={selectedApp} file={file} /></div>)}
+                </div>)}
+              </section>}
+              <section className="space-y-2">
+                <h4 className="font-bold text-sm text-white">Review history</h4>
+                {selectedApp.history?.map((entry: any) => <div key={entry.id} className="space-y-1 rounded-lg border border-[#27272a] p-3">
+                  <p>{entry.status} · {entry.actorTag} · {new Date(entry.timestamp).toLocaleString()}</p>
+                  {entry.details && <p className="whitespace-pre-wrap break-words text-zinc-400">{entry.details}</p>}
+                </div>)}
+              </section>
 
               {/* Staff Notes Section */}
               <div className="space-y-3">

@@ -5,6 +5,7 @@ import express from "express";
 import http from "http";
 import cors from "cors";
 import cookieParser from "cookie-parser";
+import { restrictApplicationSession } from "./middleware/authMiddleware";
 import { initSocketIO } from "./socket/socketManager";
 import { initDiscordBot, isBotReady } from "./bot/client";
 
@@ -49,11 +50,13 @@ app.use(
 );
 
 app.use(cookieParser());
+app.use(restrictApplicationSession);
 app.use(express.json({ limit: "25mb" }));
 app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
 // Mount API Routes
 app.use("/api/auth", authRoutes);
+app.use("/api/guilds", applicationRoutes);
 app.use("/api/guilds", countingRoutes);
 app.use("/api/guilds", levelingRoutes);
 app.use("/api/guilds", guildRoutes);
@@ -62,7 +65,6 @@ app.use("/api/guilds", roleRoutes);
 app.use("/api/guilds", emojiStickerRoutes);
 app.use("/api/guilds", inviteRoutes);
 app.use("/api/guilds", ticketRoutes);
-app.use("/api/guilds", applicationRoutes);
 app.use("/api/guilds", selfRoleRoutes);
 app.use("/api/guilds", customMessageRoutes);
 app.use("/api/guilds", welcomeRoutes);

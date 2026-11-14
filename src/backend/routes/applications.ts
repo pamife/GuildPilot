@@ -22,7 +22,6 @@ import {
   duplicateAppQuestion,
   getApplications,
   getApplicationById,
-  updateApplicationStatus,
   addApplicationNote,
   getApplicationSettings,
   updateApplicationSettings,
@@ -30,14 +29,202 @@ import {
 } from "../services/applicationService";
 import { deployApplicationPanelEmbed, deployApplicationFormEmbed } from "../bot/applicationHandler";
 import { generateApplicationHtmlTranscript } from "../services/transcriptService";
-import { TextChannel } from "discord.js";
-import { requireGuildAccess } from "../middleware/authMiddleware";
+import { AuthenticatedRequest, requireAuth } from "../middleware/authMiddleware";
+import { GuildMember, ChannelType } from "discord.js";
+import { applicationDb as db, applicationGuildAccess, applicationGuildsFor, applicationMember, managesApplications, reviewerRoles, reviewAccessFilter } from "../services/applicationAccess";
+import { ApplicationError, privateReviewChannel, requireApplicationReviewer, runApplicationReview } from "../services/applicationReview";
+import { deployApplicationDmPanel } from "../bot/applicationDm";
+import { applicationFilePath } from "../services/applicationFiles";
+import { broadcastApplicationEvent } from "../socket/socketManager";
 
 const router = Router();
 
-// Absicherung gegen IDOR: Zugriff nur für berechtigte Nutzer dieses Servers
-router.use(requireGuildAccess("guildId"));
+const base = "/:guildId/applications";
+const reviewPath = `${base}/apps/:appId`;
 
+function failure(res: import("express").Response, error: unknown) {
+  if (error instanceof ApplicationError) return res.status(error.statusCode).json({ error: error.message });
+  console.error("[Applications] Dashboard request failed:", error);
+  return res.status(500).json({ error: "The application request failed." });
+}
+
+router.get("/application-access", requireAuth, async (req: AuthenticatedRequest, res) => {
+  try { res.json(await applicationGuildsFor(req.user!.id)); }
+  catch (error) { failure(res, error); }
+});
+
+router.use(base, requireAuth, async (req: AuthenticatedRequest, res, next) => {
+  try {
+    const member = await applicationMember(req.params.guildId, req.user!.id);
+    if (!member || !await applicationGuildAccess(member)) throw new ApplicationError("You do not have access to this server’s Application Center.", 403);
+    res.locals.member = member;
+    next();
+  } catch (error) { failure(res, error); }
+});
+
+router.get(`${base}/access`, (_req, res) => {
+  res.json({ manage: managesApplications(res.locals.member) });
+});
+
+router.get(`${base}/apps`, async (req, res) => {
+  try {
+    const filters = Object.fromEntries(["status", "search", "formId", "reviewerId"]
+      .flatMap(key => typeof req.query[key] === "string" ? [[key, req.query[key]]] : []));
+    res.json(await getApplications(req.params.guildId, { ...filters, access: await reviewAccessFilter(res.locals.member) }));
+  } catch (error) { failure(res, error); }
+});
+
+router.param("appId", async (req: AuthenticatedRequest, res, next, id) => {
+  try {
+    res.locals.application = (await requireApplicationReviewer(req.params.guildId, id, req.user!.id)).app;
+    next();
+  } catch (error) { failure(res, error); }
+});
+
+router.get(reviewPath, (_req, res) => res.json(res.locals.application));
+
+router.get(`${reviewPath}/files/:fileId`, (req, res) => {
+  const app: NonNullable<Awaited<ReturnType<typeof getApplicationById>>> = res.locals.application;
+  const file = app.files.find(item => item.id === req.params.fileId);
+  if (!file) return res.status(404).json({ error: "Attachment not found." });
+  res.set({ "Cache-Control": "private, no-store", "X-Content-Type-Options": "nosniff", "Content-Type": "application/octet-stream" });
+  res.download(applicationFilePath(file.id), file.name, error => {
+    if (error && !res.headersSent) res.status(404).json({ error: "Attachment unavailable." });
+  });
+});
+
+router.post(`${reviewPath}/action`, async (req: AuthenticatedRequest, res) => {
+  try {
+    if (typeof req.body?.action !== "string") throw new ApplicationError("Choose a review action.");
+    res.json(await runApplicationReview(req.params.guildId, req.params.appId, req.user!.id, req.body));
+  } catch (error) { failure(res, error); }
+});
+
+router.post(`${reviewPath}/notes`, async (req: AuthenticatedRequest, res) => {
+  try {
+    const member: GuildMember = res.locals.member;
+    const content = req.body?.content;
+    if (typeof content !== "string" || !content.trim() || content.length > 2000) {
+      throw new ApplicationError("Enter an internal note of 1–2000 characters.");
+    }
+    const note = await addApplicationNote(req.params.appId, { id: member.id, tag: member.user.tag, avatar: member.user.displayAvatarURL() }, content.trim());
+    broadcastApplicationEvent(req.params.guildId, "applicationUpdated");
+    res.json(note);
+  } catch (error) { failure(res, error); }
+});
+
+router.get(`${base}/transcripts/:appId/download`, async (req, res) => {
+  try {
+    const app: NonNullable<Awaited<ReturnType<typeof getApplicationById>>> = res.locals.application;
+    let filePath = path.resolve("transcripts", `application-${app.id}.html`);
+    if (!fs.existsSync(filePath)) {
+      const channel = app.channelId ? await res.locals.member.guild.channels.fetch(app.channelId).catch(() => null) : null;
+      filePath = await generateApplicationHtmlTranscript(app, channel?.type === ChannelType.GuildText ? channel : null);
+    }
+    res.set({ "Cache-Control": "private, no-store", "Content-Security-Policy": "sandbox; default-src 'none'; style-src 'unsafe-inline'; img-src https:" });
+    if (req.query.download === "true") return res.download(filePath, `application-${app.appNumber}.html`);
+    res.type("html").sendFile(path.resolve(filePath));
+  } catch (error) { failure(res, error); }
+});
+
+router.use(base, (req, res, next) => {
+  if (managesApplications(res.locals.member)) return next();
+  return res.status(403).json({ error: "You need Manage Server to configure the Application Center." });
+});
+
+router.get(`${base}/configuration-options`, async (_req, res) => {
+  try {
+    const member: GuildMember = res.locals.member;
+    const [channels, roles] = await Promise.all([member.guild.channels.fetch(), member.guild.roles.fetch()]);
+    res.json({
+      channels: channels.filter(channel => Boolean(channel)).map(channel => ({
+        id: channel!.id, name: channel!.name, type: channel!.type,
+      })),
+      roles: roles.filter(role => role.id !== member.guild.id).map(role => ({ id: role.id, name: role.name })),
+    });
+  } catch (error) { failure(res, error); }
+});
+
+router.param("panelId", async (req, res, next, id) => {
+  try {
+    if (!await db.appPanel.findUnique({ where: { id, guildId: req.params.guildId } })) throw new ApplicationError("Panel not found.", 404);
+    next();
+  } catch (error) { failure(res, error); }
+});
+
+router.param("formId", async (req, res, next, id) => {
+  try {
+    if (!await db.appForm.findUnique({ where: { id, guildId: req.params.guildId } })) throw new ApplicationError("Form not found.", 404);
+    next();
+  } catch (error) { failure(res, error); }
+});
+
+router.param("questionId", async (req, res, next, id) => {
+  try {
+    if (!await db.appQuestion.findFirst({ where: { id, form: { guildId: req.params.guildId } } })) throw new ApplicationError("Question not found.", 404);
+    next();
+  } catch (error) { failure(res, error); }
+});
+
+function fields(body: Record<string, unknown>, allowed: string[]) {
+  return Object.fromEntries(allowed.filter(key => Object.hasOwn(body, key)).map(key => [key, body[key]]));
+}
+
+const formFields = `name description emoji category panelId buttonText buttonEmoji buttonColor displayType
+  targetChannelId categoryId reviewerRoles applicantRoles acceptedRoles deniedRoles cooldownHours maxActiveApps isOpen
+  dmPanelTitle dmPanelDescription dmPanelChannelId reviewChannelId ticketCategoryId statusSteps channelId
+  dmTitle dmDescription dmColor dmAuthorName dmAuthorIcon dmThumbnail dmImage dmFooter dmFooterIcon
+  embedTitle embedDescription embedColor embedAuthorName embedAuthorIcon embedAuthorUrl thumbnail image footer footerIcon showTimestamp embedFields
+  welcomeTitle welcomeDescription welcomeColor welcomeAuthorName welcomeAuthorIcon welcomeThumbnail welcomeImage welcomeFooter welcomeFooterIcon
+  acceptMessage acceptEmbedTitle acceptEmbedDescription acceptEmbedColor denyMessage denyEmbedTitle denyEmbedDescription denyEmbedColor
+  waitlistMessage waitlistEmbedTitle waitlistEmbedDescription waitlistEmbedColor`.split(/\s+/);
+
+const panelFields = [...formFields.filter(key => !["panelId","reviewerRoles","applicantRoles","acceptedRoles","deniedRoles","statusSteps",
+  "dmPanelTitle","dmPanelDescription","dmPanelChannelId","reviewChannelId","ticketCategoryId","isOpen","cooldownHours","maxActiveApps",
+  "targetChannelId","categoryId","emoji","category","buttonText","buttonEmoji","buttonColor"].includes(key)),
+  "acceptEmbedColor", "denyEmbedColor"].filter(key => !["acceptMessage","acceptEmbedTitle","acceptEmbedDescription",
+  "denyMessage","denyEmbedTitle","denyEmbedDescription","waitlistMessage","waitlistEmbedTitle","waitlistEmbedDescription","waitlistEmbedColor"].includes(key));
+
+async function formConfig(member: GuildMember, body: Record<string, unknown>, current?: Awaited<ReturnType<typeof getAppFormById>>) {
+  const data = fields(body, formFields);
+  const guild = member.guild;
+  if (data.panelId && !await db.appPanel.findFirst({ where: { id: String(data.panelId), guildId: guild.id } })) {
+    throw new ApplicationError("Select an application panel from this server.");
+  }
+  for (const key of ["dmPanelChannelId", "reviewChannelId", "ticketCategoryId", "targetChannelId", "categoryId", "channelId", "panelId"]) {
+    if (data[key] === "") data[key] = null;
+    if (data[key] != null && typeof data[key] !== "string") throw new ApplicationError("Invalid channel or panel selection.");
+    if (!data[key] || key === "panelId") continue;
+    const channel = await guild.channels.fetch(String(data[key]), { force: true }).catch(() => null);
+    const valid = key === "ticketCategoryId" || key === "categoryId" ? channel?.type === ChannelType.GuildCategory
+      : channel?.type === ChannelType.GuildText || (["dmPanelChannelId", "channelId"].includes(key) && channel?.type === ChannelType.GuildAnnouncement);
+    if (!valid) throw new ApplicationError("Select a matching channel or category from this server.");
+  }
+  for (const key of ["reviewerRoles", "applicantRoles", "acceptedRoles", "deniedRoles"]) {
+    if (!(key in data)) continue;
+    const ids = data[key];
+    const roles = await guild.roles.fetch();
+    if (!Array.isArray(ids) || !ids.every(id => typeof id === "string" && id !== guild.id && roles.has(id))) {
+      throw new ApplicationError("Select roles from this server.");
+    }
+  }
+  if ("statusSteps" in data) {
+    const steps = data.statusSteps;
+    if (!Array.isArray(steps) || steps.length > 25 || !steps.every(step => typeof step === "string" && step.trim() && step.trim().length <= 100)) {
+      throw new ApplicationError("Enter up to 25 status steps of at most 100 characters each.");
+    }
+    data.statusSteps = [...new Set(steps.map(step => step.trim()))];
+  }
+  const reviewChannelId = "reviewChannelId" in data ? data.reviewChannelId : current?.reviewChannelId;
+  if (typeof reviewChannelId === "string") {
+    const roles = Array.isArray(data.reviewerRoles) ? JSON.stringify(data.reviewerRoles) : current?.reviewerRoles;
+    await privateReviewChannel(guild, reviewChannelId, await reviewerRoles(guild.id, roles));
+    if (reviewChannelId === ("dmPanelChannelId" in data ? data.dmPanelChannelId : current?.dmPanelChannelId)) {
+      throw new ApplicationError("Use separate channels for the start panel and reviews.");
+    }
+  }
+  return data;
+}
 
 // Stats & Overview
 router.get("/:guildId/applications/stats", async (req, res) => {
@@ -71,7 +258,7 @@ router.get("/:guildId/applications/panels/:panelId", async (req, res) => {
 
 router.post("/:guildId/applications/panels", async (req, res) => {
   try {
-    const panel = await createAppPanel(req.params.guildId, req.body);
+    const panel = await createAppPanel(req.params.guildId, fields(req.body, panelFields));
     res.json(panel);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to create panel" });
@@ -80,7 +267,7 @@ router.post("/:guildId/applications/panels", async (req, res) => {
 
 router.patch("/:guildId/applications/panels/:panelId", async (req, res) => {
   try {
-    const panel = await updateAppPanel(req.params.panelId, req.body);
+    const panel = await updateAppPanel(req.params.panelId, fields(req.body, panelFields));
     let syncedLive = false;
     if (panel.messageId && panel.channelId) {
       try {
@@ -137,16 +324,16 @@ router.get("/:guildId/applications/forms/:formId", async (req, res) => {
 
 router.post("/:guildId/applications/forms", async (req, res) => {
   try {
-    const form = await createAppForm(req.params.guildId, req.body);
+    const form = await createAppForm(req.params.guildId, await formConfig(res.locals.member, req.body));
     res.json(form);
   } catch (err: any) {
-    res.status(500).json({ error: err.message || "Failed to create form" });
+    failure(res, err);
   }
 });
 
 router.patch("/:guildId/applications/forms/:formId", async (req, res) => {
   try {
-    const form = await updateAppForm(req.params.formId, req.body);
+    const form = await updateAppForm(req.params.formId, await formConfig(res.locals.member, req.body, await getAppFormById(req.params.formId)));
     let syncedLive = false;
     if (form.messageId && form.channelId) {
       try {
@@ -158,7 +345,7 @@ router.patch("/:guildId/applications/forms/:formId", async (req, res) => {
     }
     res.json({ ...form, syncedLive });
   } catch (err: any) {
-    res.status(500).json({ error: err.message || "Failed to update form" });
+    failure(res, err);
   }
 });
 
@@ -181,6 +368,16 @@ router.post("/:guildId/applications/forms/:formId/deploy", async (req, res) => {
   }
 });
 
+router.post(`${base}/forms/:formId/dm-panel`, async (req, res) => {
+  try {
+    const messageId = await deployApplicationDmPanel(req.params.formId);
+    res.json({ messageId });
+  } catch (error) { failure(res, error); }
+});
+
+const questionFields = ["label", "type", "placeholder", "required", "options", "minLength", "maxLength",
+  "validationRegex", "validationError", "helpText", "order"];
+
 // Questions CRUD & Reordering
 router.get("/:guildId/applications/forms/:formId/questions", async (req, res) => {
   try {
@@ -193,7 +390,7 @@ router.get("/:guildId/applications/forms/:formId/questions", async (req, res) =>
 
 router.post("/:guildId/applications/forms/:formId/questions", async (req, res) => {
   try {
-    const question = await createAppQuestion(req.params.formId, req.body);
+    const question = await createAppQuestion(req.params.formId, fields(req.body, questionFields));
     res.json(question);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to create question" });
@@ -202,7 +399,7 @@ router.post("/:guildId/applications/forms/:formId/questions", async (req, res) =
 
 router.patch("/:guildId/applications/questions/:questionId", async (req, res) => {
   try {
-    const question = await updateAppQuestion(req.params.questionId, req.body);
+    const question = await updateAppQuestion(req.params.questionId, fields(req.body, questionFields));
     res.json(question);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to update question" });
@@ -238,114 +435,6 @@ router.post("/:guildId/applications/questions/:questionId/duplicate", async (req
   }
 });
 
-// Applications List & Actions
-router.get("/:guildId/applications/apps", async (req, res) => {
-  try {
-    const { status, search, formId, reviewerId } = req.query as any;
-    const apps = await getApplications(req.params.guildId, { status, search, formId, reviewerId });
-    res.json(apps);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || "Failed to fetch applications" });
-  }
-});
-
-router.get("/:guildId/applications/apps/:appId", async (req, res) => {
-  try {
-    const app = await getApplicationById(req.params.appId);
-    if (!app) return res.status(404).json({ error: "Application not found" });
-    res.json(app);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || "Failed to fetch application" });
-  }
-});
-
-router.post("/:guildId/applications/apps/:appId/action", async (req, res) => {
-  try {
-    const { action, reason } = req.body;
-    const app = await getApplicationById(req.params.appId);
-    if (!app) return res.status(404).json({ error: "Application not found" });
-
-    const executor = {
-      id: "dashboard_user",
-      tag: "Dashboard Administrator",
-    };
-
-    let updatedStatus = app.status;
-
-    if (action === "claim") updatedStatus = "CLAIMED";
-    else if (action === "unclaim") updatedStatus = "UNCLAIMED";
-    else if (action === "accept") updatedStatus = "ACCEPTED";
-    else if (action === "deny") updatedStatus = "DENIED";
-    else if (action === "waitlist") updatedStatus = "WAITLISTED";
-    else if (action === "reopen") updatedStatus = "PENDING";
-    else if (action === "close") updatedStatus = "CLOSED";
-    else if (action === "request_info") updatedStatus = "UNDER_REVIEW";
-
-    const updatedApp = await updateApplicationStatus(app.id, updatedStatus, executor, { reason });
-
-    // If action is transcript, generate HTML transcript file
-    if (action === "transcript" || action === "close") {
-      let channel: TextChannel | null = null;
-      if (app.channelId) {
-        channel = (await discordClient.channels.fetch(app.channelId).catch(() => null)) as TextChannel;
-      }
-      const filePath = await generateApplicationHtmlTranscript(updatedApp, channel);
-      const transcriptUrl = `/api/guilds/${app.guildId}/applications/transcripts/${app.id}/download`;
-      await updateApplicationStatus(app.id, updatedStatus, executor, { transcriptUrl });
-    }
-
-    res.json({ success: true, application: updatedApp });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || "Failed to execute action" });
-  }
-});
-
-router.post("/:guildId/applications/apps/:appId/notes", async (req, res) => {
-  try {
-    const { content } = req.body;
-    if (!content || !content.trim()) return res.status(400).json({ error: "Note content required" });
-
-    const author = {
-      id: "dashboard_user",
-      tag: "Dashboard Administrator",
-    };
-
-    const note = await addApplicationNote(req.params.appId, author, content.trim());
-    res.json(note);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message || "Failed to add note" });
-  }
-});
-
-// Transcript Download / Display
-router.get("/:guildId/applications/transcripts/:appId/download", async (req, res) => {
-  try {
-    const { guildId, appId } = req.params;
-    const app = await getApplicationById(appId);
-    if (!app) return res.status(404).send("Application not found.");
-
-    const TRANSCRIPTS_DIR = path.join(process.cwd(), "transcripts");
-    let filePath = path.join(TRANSCRIPTS_DIR, `application-${appId}.html`);
-
-    if (!fs.existsSync(filePath)) {
-      let channel: TextChannel | null = null;
-      if (app.channelId) {
-        channel = (await discordClient.channels.fetch(app.channelId).catch(() => null)) as TextChannel;
-      }
-      filePath = await generateApplicationHtmlTranscript(app, channel);
-    }
-
-    if (req.query.download === "true") {
-      return res.download(filePath, `application-${app.appNumber}-${app.userTag}.html`);
-    }
-
-    res.setHeader("Content-Type", "text/html; charset=utf-8");
-    res.sendFile(filePath);
-  } catch (err: any) {
-    res.status(500).send("Error generating/serving transcript.");
-  }
-});
-
 // Settings & Logs
 router.get("/:guildId/applications/settings", async (req, res) => {
   try {
@@ -358,7 +447,7 @@ router.get("/:guildId/applications/settings", async (req, res) => {
 
 router.patch("/:guildId/applications/settings", async (req, res) => {
   try {
-    const settings = await updateApplicationSettings(req.params.guildId, req.body);
+    const settings = await updateApplicationSettings(req.params.guildId, fields(req.body, ["defaultReviewerRoles", "defaultCategoryId", "archiveCategoryId", "logChannelId", "transcriptStorage", "defaultCooldownHours", "maxAppsPerUser", "autoCloseHours", "autoArchive", "timezone"]));
     res.json(settings);
   } catch (err: any) {
     res.status(500).json({ error: err.message || "Failed to update settings" });

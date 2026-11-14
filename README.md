@@ -62,6 +62,7 @@ Gebaut mit **Next.js 14, React 18, Tailwind CSS, TypeScript, Discord.js v14, Exp
 - **Review-Queue:** Übersichtliche Prüfungsliste für Moderatoren mit Notizfunktion.
 - **Entscheidungsworkflow:** Bewerbungen annehmen, ablehnen oder auf die Warteliste setzen.
 - **Automatische Aktionen:** Automatische Vergabe von Teamrollen und DM-Benachrichtigung des Bewerbers bei Annahme/Ablehnung.
+- **Discord-DM-Bewerbungen:** Components-V2-Startpanel, fortsetzbare Entwürfe mit Anhängen und ein privater Review-Kanal pro Formular.
 
 ### 🏷️ 7. Self-Roles & Reaktions-Panels
 - **Button- & Dropdown-Panels:** Interaktive Rollen-Panels mit Live-Mitgliederzählern.
@@ -241,6 +242,15 @@ docker compose ps
 ```
 
 Beim Start legt das Backend vor jeder Schema-Synchronisierung ein Backup einer vorhandenen Datenbank unter `data/backups/` an und führt anschließend `prisma db push --skip-generate` ohne destructive Flags aus.
+
+### Erstes DM-Bewerbungspanel veröffentlichen
+
+1. Öffne **Application Center → Formulare**. Erstelle ein Formular oder bearbeite ein bestehendes. Lege unter **Fragen** die Fragen und Pflichtfelder an.
+2. Trage im Formular unter **Discord DM application** Titel und Beschreibung ein. Wähle einen öffentlichen Startkanal und einen privaten Review-Textkanal. Entziehe `@everyone` im Review-Kanal **View Channel** und erlaube ihn für die vorgesehenen Reviewer-Rollen und den Bot. Der Bot braucht dort auch **Send Messages** und **Read Message History**.
+3. Wähle die Reviewer-Rollen und bei Bedarf Statusschritte, eine Ticket-Kategorie und Annahmerollen. Für Tickets braucht der Bot **Manage Channels**. Für die Rollenvergabe braucht er **Manage Roles** und eine höhere Rolle als die zu vergebenden Rollen.
+4. Wähle **Save & publish Discord panel**. Über **Update Discord panel** kannst du die veröffentlichte Nachricht später bearbeiten. Teste **Apply → Start application** mit einem Servermitglied und prüfe die Einreichung in der **Review-Queue**.
+
+Reviewer melden sich über Discord am Webpanel an. Der Zugriff richtet sich nach Servermitgliedschaft und den für das Formular hinterlegten Rollen. Discord-Links zu gespeicherten Anhängen führen zum authentifizierten Download über die konfigurierte `NEXT_PUBLIC_API_URL`. Sichere für DM-Bewerbungen das SQLite-Volume und `transcripts/application-files`, damit gespeicherte Anhänge bei einer Wiederherstellung verfügbar sind.
 
 ### Leveling aktivieren
 
