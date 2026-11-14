@@ -26,12 +26,20 @@ let ticketMentions = 0;
 
 function apply(id: string, action = "apply", guild = true, messageId = "") {
   const replies: any[] = [];
+  const edits: any[] = [];
   return {
     customId: `app_dm:${action}:${id}`, id: nextId(), user: applicant, message: { id: messageId },
     guildId: guild ? guildId : null, inGuild: () => guild, isButton: () => true, webhook: {},
     channel: { type: ChannelType.DM }, deferReply: async () => {}, deferUpdate: async () => {},
-    editReply: async (value: any) => { replies.push(serializeEdit(value)); }, followUp: async (value: any) => { replies.push(value); },
-    replies,
+    editReply: async (value: any) => {
+      const edited = serializeEdit(value);
+      edits.push(edited);
+      const original = !guild && applicantDms.find(message => message.id === messageId);
+      if (original) Object.assign(original, edited);
+      replies.push(edited);
+    },
+    followUp: async (value: any) => { replies.push(value); },
+    replies, edits,
   };
 }
 
@@ -168,7 +176,7 @@ async function exercise(phase: string) {
     await onMessage({ content, id: nextId(), author: applicant, channel: { type: ChannelType.DM }, attachments });
   };
   const press = async (label: string, message = applicantDms.at(-1)) => {
-    const interaction = apply("", "start", false);
+    const interaction = apply("", "start", false, message.id);
     interaction.customId = button(message, label);
     await click(interaction as any);
     return interaction;
@@ -244,7 +252,24 @@ async function exercise(phase: string) {
   await press("Next question");
   reviewFails = true;
   const submit = applicantDms.at(-1);
-  await Promise.all([press("Submit application", submit), press("Submit application", submit)]);
+  const submitId = button(submit, "Submit application");
+  const submitClick = async () => {
+    const interaction = apply("", "start", false, submit.id);
+    interaction.customId = submitId;
+    await click(interaction as any);
+    return interaction;
+  };
+  await db.appForm.update({ where: { id: draft.formId }, data: { isOpen: false } });
+  await assert.rejects(submitClick(), /currently closed/);
+  assert.equal(button(submit, "Submit application"), submitId);
+  await db.appForm.update({ where: { id: draft.formId }, data: { isOpen: true } });
+  const clicks = await Promise.all(Array.from({ length: 10 }, submitClick));
+  assert.equal(clicks.flatMap(interaction => interaction.edits).length, 1);
+  assert.equal(clicks.flatMap(interaction => interaction.replies).length, 1);
+  assert.match(messageText(submit), /submitted/);
+  assert.ok(!componentList(submit).some(component => component.type === ComponentType.Button));
+  const lateClick = await submitClick();
+  assert.equal(lateClick.replies.length, lateClick.edits.length);
   const app = await db.application.findUniqueOrThrow({ where: { id: draft.id } });
   assert.equal(await db.application.count({ where: { id: app.id } }), 1);
   assert.equal(await db.appDmDraft.count({ where: { id: draft.id } }), 0);
@@ -255,6 +280,7 @@ async function exercise(phase: string) {
     await new Promise(resolve => setTimeout(resolve, 25));
   }
   assert.equal(JSON.parse((await getApplicationById(app.id))!.delivery)["Review channel"].ok, false);
+  assert.equal(applicantDms.filter(message => messageText(message).includes("I’ll message you here")).length, 1);
   reviewFails = false;
   await review("retry_review");
   const initial = (await getApplicationById(app.id))!;

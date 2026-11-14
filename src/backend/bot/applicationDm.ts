@@ -16,6 +16,7 @@ import { checkUserCanApply, createApplicationSubmission, getAppFormById } from "
 type Answers = Record<number, { messageId: string; text: string }[]>;
 type Form = NonNullable<Awaited<ReturnType<typeof getAppFormById>>>;
 type PanelClick = ButtonInteraction | StringSelectMenuInteraction;
+const submittingPrompts = new Set<string>();
 
 async function checkApplicant(form: Form, userId: string) {
   const member = await applicationMember(form.guildId, userId);
@@ -250,7 +251,10 @@ async function changeDraft(interaction: ButtonInteraction, action: string, id: s
   const draft = await db.appDmDraft.findUnique({ where: { id, userId: user.id } });
   if (!draft) {
     const submitted = await db.application.findUnique({ where: { id, userId: user.id }, select: { appNumber: true } });
-    if (submitted) return `Application #${submitted.appNumber} is already submitted.`;
+    if (submitted) {
+      await showSubmitted(interaction, submitted.appNumber);
+      return;
+    }
     throw new ApplicationError("This draft is no longer available.");
   }
   const form = await getAppFormById(draft.formId);
@@ -282,7 +286,8 @@ async function changeDraft(interaction: ButtonInteraction, action: string, id: s
   if (action === "submit" && !q) {
     const app = await submitDraft(draft, form, member);
     void deliverApplicationSubmission(app.id, member.guild).catch(error => console.error("[Applications] Submission delivery failed", error));
-    return `Application #${app.appNumber} submitted.`;
+    await showSubmitted(interaction, app.appNumber);
+    return;
   }
   if (action === "page" && !q) { await showDraft(user, draft, page); return; }
   const answers = draftAnswers(draft);
@@ -311,6 +316,12 @@ async function changeDraft(interaction: ButtonInteraction, action: string, id: s
   await removeApplicationFiles(removed);
   const prompt = await showDraft(user, updated, updated.step >= questions.length ? Math.min(draft.step, questions.length - 1) : 0);
   await db.appDmCursor.update({ where: { userId: user.id, draftId: draft.id }, data: { sinceId: prompt.id } });
+}
+
+async function showSubmitted(interaction: ButtonInteraction, appNumber: number) {
+  await interaction.editReply(applicationMessageEdit(interaction.webhook,
+    `## Application #${appNumber} submitted\nYour application is with the server team.`,
+  )).catch(error => console.warn("[Applications] Could not clear submitted draft controls:", error));
 }
 
 async function activateReply(interaction: ButtonInteraction, id: string) {
@@ -381,6 +392,18 @@ export async function handleApplicationDmInteraction(interaction: Interaction) {
   if (action === "apply" || action === "retry") return offerApplication(interaction, id, action === "apply");
   if (interaction.inGuild() || interaction.channel?.type !== ChannelType.DM) return;
   await interaction.deferUpdate();
+  if (kind === "app_draft" && action === "submit") {
+    const key = `${interaction.user.id}:${interaction.message.id}`;
+    if (submittingPrompts.has(key)) return;
+    submittingPrompts.add(key);
+    try {
+      await serializeApplication(`dm:${interaction.user.id}`, () =>
+        changeDraft(interaction, action, id, Number(revision), Number(page)));
+    } finally {
+      submittingPrompts.delete(key);
+    }
+    return;
+  }
   await serializeApplication(`dm:${interaction.user.id}`, async () => {
     if (kind === "app_draft") {
       const result = await changeDraft(interaction, action, id, Number(revision), Number(page));
