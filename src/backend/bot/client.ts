@@ -2,6 +2,7 @@ import { Client, Events, GatewayIntentBits, Partials } from "discord.js";
 import { broadcastEvent } from "../socket/socketManager";
 import { registerSlashCommands, setupTicketInteractions } from "./ticketHandler";
 import { setupCountingInteractions } from "./countingHandler";
+import { setupLevelingInteractions } from "./levelingHandler";
 import { setupApplicationInteractions } from "./applicationHandler";
 import { setupSelfRoleInteractions } from "./selfRoleHandler";
 import { setupCustomMessageInteractions } from "./customMessageHandler";
@@ -36,6 +37,7 @@ function registerClientEvents(client: Client) {
   setupWelcomeInteractions(client);
   setupAutoReactInteractions(client);
   setupCountingInteractions(client);
+  setupLevelingInteractions(client);
 
   client.once(Events.ClientReady, (c) => {
     void registerSlashCommands(c);

@@ -43,6 +43,7 @@ export type ViewType =
   | "welcome"
   | "auto-react"
   | "counting"
+  | "leveling"
   | "custom-messages"
   | "applications"
   | "tickets"
@@ -149,6 +150,12 @@ export function Sidebar({
           label: "Automatische Reaktionen",
           description: "Emoji-Reaktionsregeln auf Keywords",
           icon: SmilePlus,
+        },
+        {
+          id: "leveling",
+          label: "Leveling",
+          description: "Chat-XP, Rollen und Prestige",
+          icon: Sparkles,
         },
         {
           id: "counting",

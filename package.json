@@ -16,7 +16,8 @@
     "prisma:generate": "prisma generate",
     "prisma:push": "prisma db push",
     "test:security": "tsx scripts/test-security.ts",
-    "test:counting": "tsx scripts/test-counting.ts"
+    "test:counting": "tsx scripts/test-counting.ts",
+    "test:leveling": "tsx scripts/test-leveling.ts"
   },
   "keywords": [
     "discord",

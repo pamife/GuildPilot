@@ -1,30 +1,13 @@
-import { PermissionFlagsBits } from "discord.js";
-import { NextFunction, Response, Router } from "express";
-import { AuthenticatedRequest, requireGuildAccess } from "../middleware/authMiddleware";
+import { Router } from "express";
+import { requireAuth, requireManageServer } from "../middleware/authMiddleware";
 import { discordClient } from "../bot/client";
 import { countingChannelError, notifyCountingChanged } from "../bot/countingHandler";
 import { getCountingStats, resetCountingRun, setCountingChannel } from "../services/countingService";
 
 const router = Router();
 const path = "/:guildId/counting";
-const guildAccess = requireGuildAccess("guildId");
 
-async function requireManageServer(req: AuthenticatedRequest, res: Response, next: NextFunction) {
-  const guild = discordClient.guilds.cache.get(req.params.guildId);
-  if (!discordClient.isReady() || !guild?.available) {
-    return res.status(503).json({ error: "The bot is not connected to this server." });
-  }
-
-  try {
-    const member = await guild.members.fetch({ user: req.user!.id, force: true });
-    if (member.permissions.has(PermissionFlagsBits.ManageGuild)) return next();
-  } catch (error) {
-    console.warn("[Relay Count] Failed to verify Manage Server permission:", error);
-  }
-  return res.status(403).json({ error: "You need Manage Server to do that." });
-}
-
-router.get(path, guildAccess, async (req, res, next) => {
+router.get(path, requireAuth, requireManageServer, async (req, res, next) => {
   try {
     res.json(await getCountingStats(req.params.guildId));
   } catch (error) {
@@ -32,7 +15,7 @@ router.get(path, guildAccess, async (req, res, next) => {
   }
 });
 
-router.put(path, guildAccess, requireManageServer, async (req, res, next) => {
+router.put(path, requireAuth, requireManageServer, async (req, res, next) => {
   const { channelId } = req.body ?? {};
   if (typeof channelId !== "string" || !/^\d{17,20}$/.test(channelId)) {
     return res.status(400).json({ error: "Choose a server text channel." });
@@ -50,7 +33,7 @@ router.put(path, guildAccess, requireManageServer, async (req, res, next) => {
   }
 });
 
-router.post(`${path}/reset`, guildAccess, requireManageServer, async (req, res, next) => {
+router.post(`${path}/reset`, requireAuth, requireManageServer, async (req, res, next) => {
   if (req.body?.confirmed !== true) {
     return res.status(400).json({ error: "Confirm the reset first." });
   }

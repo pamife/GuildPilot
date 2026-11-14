@@ -21,6 +21,40 @@ model CountingMessage {
   messageId String @id
 }
 
+model LevelingSettings {
+  guildId            String  @id
+  enabled            Boolean @default(false)
+  minXp              Int     @default(15)
+  maxXp              Int     @default(25)
+  cooldownSeconds    Int     @default(60)
+  excludedChannelIds String  @default("[]")
+  excludeRelay       Boolean @default(true)
+  announce           Boolean @default(false)
+  announcementId     String?
+  rewards            String  @default("[]")
+  highestOnly        Boolean @default(false)
+  prestigeEnabled    Boolean @default(false)
+  prestigeLevel      Int     @default(50)
+}
+
+model LevelingMember {
+  guildId      String
+  userId       String
+  xp           Int      @default(0)
+  level        Int      @default(0)
+  prestige     Int      @default(0)
+  revision     Int      @default(0)
+  lastAwardAt  DateTime?
+
+  @@id([guildId, userId])
+  @@index([guildId, xp, userId])
+  @@index([guildId, prestige, userId])
+}
+
+model LevelingMessage {
+  messageId String @id
+}
+
 model Template {
   id          String   @id @default(uuid())
   name        String

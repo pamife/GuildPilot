@@ -242,6 +242,13 @@ docker compose ps
 
 Beim Start legt das Backend vor jeder Schema-Synchronisierung ein Backup einer vorhandenen Datenbank unter `data/backups/` an und führt anschließend `prisma db push --skip-generate` ohne destructive Flags aus.
 
+### Leveling aktivieren
+
+1. Baue und starte die Docker-Container nach dem Update neu. Der Backend-Start sichert die vorhandene SQLite-Datenbank und ergänzt die Leveling-Tabellen. Bei einer lokal bereits per `db push` verwalteten Datenbank sichere `prisma/dev.db` und führe mit der lokalen `DATABASE_URL` `npx prisma db push` aus. Bei einer per Prisma-Migrationen verwalteten Datenbank nutze nach dem Backup `npx prisma migrate deploy`.
+2. Öffne **Community & Interaktion → Leveling** mit **Manage Server** oder **Administrator**. Aktiviere Chat-Leveling und speichere die Einstellungen. Die Vorgabe beträgt 15–25 XP pro Nachricht mit 60 Sekunden Cooldown. Der Relay-Count-Kanal ist standardmäßig ausgeschlossen.
+3. Für Rollenbelohnungen braucht der Bot **Manage Roles** und eine Bot-Rolle oberhalb aller Belohnungsrollen. Für Meldungen braucht er im Zielkanal **View Channel** und **Send Messages**. Vorhandene Mitgliederrollen werden bei der nächsten XP-Vergabe, manuellen XP-Änderung oder beim Prestige anhand der Einstellungen aktualisiert.
+4. Verwende `/rank`, `/leaderboard` und bei aktiviertem Prestige `/prestige`. Für die Prestige-Rangliste wähle im Discord-Befehl `ranking:Prestige` oder im Panel den Eintrag **Prestige**.
+
 ### Relay Count aktivieren
 
 1. Aktiviere im Discord Developer Portal unter **Bot → Privileged Gateway Intents** den **Message Content Intent**. GuildPilot fordert beim Start `Guilds`, `GuildMessages` und `MessageContent` an. Starte den Bot nach der Änderung neu.

@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
-import { PermissionsBitField } from "discord.js";
+import { PermissionFlagsBits, PermissionsBitField } from "discord.js";
 import { discordClient, isBotReady } from "../bot/client";
 
 export interface AuthUser {
@@ -210,4 +210,17 @@ export function requireGuildAccess(paramName?: string) {
   };
 }
 
+export async function requireManageServer(req: AuthenticatedRequest, res: Response, next: NextFunction) {
+  const guild = discordClient.guilds.cache.get(req.params.guildId);
+  if (!discordClient.isReady() || !guild?.available) {
+    return res.status(503).json({ error: "The bot is not connected to this server." });
+  }
 
+  try {
+    const member = await guild.members.fetch({ user: req.user!.id, force: true });
+    if (member.permissions.has(PermissionFlagsBits.ManageGuild)) return next();
+  } catch (error) {
+    console.warn("[Guild Access] Failed to verify Manage Server permission:", error);
+  }
+  return res.status(403).json({ error: "You need Manage Server to do that." });
+}

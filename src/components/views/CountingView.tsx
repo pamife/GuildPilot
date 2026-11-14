@@ -85,7 +85,7 @@ export function CountingView({ guildId, channels }: Props) {
     ? "Bereit"
     : stats?.saveStatus === "used"
       ? "In diesem Run verbraucht"
-      : `Relay-Fortschritt · ${stats?.relayProgress}/5`;
+      : "Noch nicht bereit";
   const button = "rounded-lg border border-white/15 px-4 py-2 text-sm font-medium disabled:opacity-50";
 
   return (
@@ -98,10 +98,12 @@ export function CountingView({ guildId, channels }: Props) {
       {!stats && !loadError && <p role="status" className="text-sm text-slate-400">Spielstand wird geladen …</p>}
       {stats && (
         <>
-          <dl className="grid gap-3 sm:grid-cols-3">
+          <dl className="grid gap-3 sm:grid-cols-3 lg:grid-cols-5">
             {[
+              ["Aktuelle Zahl", (BigInt(stats.nextNumber) - 1n).toString()],
               ["Nächste Zahl", stats.nextNumber],
               ["Serverrekord", stats.record],
+              ["Relay-Fortschritt", `${stats.relayProgress}/5`],
               ["Relay Save", saveLabel],
             ].map(([label, value]) => (
               <div className="panel-glass rounded-xl p-4" key={label}>
