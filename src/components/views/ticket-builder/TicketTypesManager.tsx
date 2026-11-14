@@ -16,12 +16,13 @@ import {
   TicketTypeConfig,
   IntakeQuestionItem,
 } from "@/types/ticketComponentTypes";
-import { Channel } from "./types";
+import { Channel, Role } from "./types";
 
 interface TicketTypesManagerProps {
   panelData: TicketPanelData;
   setPanelData: React.Dispatch<React.SetStateAction<TicketPanelData>>;
   categoryChannels: Channel[];
+  roles: Role[];
   showToast: (msg: string, type?: "success" | "error" | "info") => void;
 }
 
@@ -29,6 +30,7 @@ export function TicketTypesManager({
   panelData,
   setPanelData,
   categoryChannels,
+  roles,
   showToast,
 }: TicketTypesManagerProps) {
   const [expandedTypeIdx, setExpandedTypeIdx] = useState<number | null>(0);
@@ -42,8 +44,8 @@ export function TicketTypesManager({
       emoji: "🎫",
       description: "Beschreibung für diesen Support-Bereich",
       namingFormat: "ticket-{username}",
-      welcomeTitle: `👋 Willkommen im Support-Ticket!`,
-      welcomeDescription: `Willkommen {user}! Ein Supporter wird dir in Kürze zur Seite stehen. Nutze die Buttons unten zur Verwaltung.`,
+      welcomeTitle: `👋 Welcome to your support ticket!`,
+      welcomeDescription: `Welcome {user}! Our support team will be with you shortly.`,
       welcomeColor: "#5865F2",
       questions: [],
     };
@@ -232,6 +234,33 @@ export function TicketTypesManager({
                     </div>
                   </div>
 
+                  <fieldset className="rounded-xl border border-[#27272a] bg-[#14151b] p-4">
+                    <legend className="px-1 text-xs font-bold text-zinc-300">Operator-Rollen</legend>
+                    <p className="mb-3 text-xs text-zinc-400">
+                      Ausgewählte Rollen erhalten Zugriff und werden im Ticket erwähnt. Ohne Auswahl gelten die Rollen des Panels und die Server-Standardrollen.
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {roles.filter((role) => role.name !== "@everyone").map((role) => {
+                        const selectedRoles = t.supportRoles || [];
+                        return (
+                          <label key={role.id} className="flex cursor-pointer items-center gap-2 rounded-lg bg-[#0e0f15] px-2.5 py-1.5 text-xs text-zinc-300">
+                            <input
+                              type="checkbox"
+                              checked={selectedRoles.includes(role.id)}
+                              onChange={(event) => updateTicketType(tIdx, {
+                                supportRoles: event.target.checked
+                                  ? [...selectedRoles, role.id]
+                                  : selectedRoles.filter((id) => id !== role.id),
+                              })}
+                              className="accent-indigo-500"
+                            />
+                            {role.name}
+                          </label>
+                        );
+                      })}
+                    </div>
+                  </fieldset>
+
                   {/* Intake Modal Questions Builder */}
                   <div className="p-4 bg-[#14151b] rounded-xl border border-[#27272a] space-y-3">
                     <div className="flex items-center justify-between">
@@ -328,7 +357,7 @@ export function TicketTypesManager({
                           type="text"
                           value={t.welcomeTitle || ""}
                           onChange={(e) => updateTicketType(tIdx, { welcomeTitle: e.target.value })}
-                          placeholder="👋 Willkommen im Ticket!"
+                          placeholder="👋 Welcome to your ticket!"
                           className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
                         />
                       </div>
@@ -351,7 +380,7 @@ export function TicketTypesManager({
                         rows={2}
                         value={t.welcomeDescription || ""}
                         onChange={(e) => updateTicketType(tIdx, { welcomeDescription: e.target.value })}
-                        placeholder="Willkommen {user}! Ein Supporter hilft dir in Kürze..."
+                        placeholder="Welcome {user}! Our support team will be with you shortly."
                         className="w-full bg-[#0e0f15] border border-[#27272a] p-2.5 rounded-lg text-xs text-white outline-none"
                       />
                     </div>

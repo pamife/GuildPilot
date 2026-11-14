@@ -374,6 +374,7 @@ export async function updateTicketStatus(
     closeReason?: string;
     staffMessageCounts?: string;
     closedTimestamp?: Date;
+    categoryId?: string | null;
   }
 ) {
   const data: any = { status };
@@ -388,6 +389,7 @@ export async function updateTicketStatus(
     if (meta.closeReason !== undefined) data.closeReason = meta.closeReason;
     if (meta.staffMessageCounts !== undefined) data.staffMessageCounts = meta.staffMessageCounts;
     if (meta.closedTimestamp !== undefined) data.closedTimestamp = meta.closedTimestamp;
+    if (meta.categoryId !== undefined) data.categoryId = meta.categoryId;
     if (status === "CLOSED" && !data.closedAt) data.closedAt = new Date();
   }
 

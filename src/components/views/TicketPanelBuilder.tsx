@@ -116,8 +116,8 @@ export function TicketPanelBuilder({
           emoji: "📩",
           description: "Allgemeine Server- und Community-Hilfe",
           namingFormat: "ticket-{username}",
-          welcomeTitle: "👋 Willkommen in deinem Support-Ticket!",
-          welcomeDescription: "Willkommen {user}! Unser Team steht dir in Kürze zur Seite. Nutze die Buttons unten zur Ticket-Steuerung.",
+          welcomeTitle: "👋 Welcome to your support ticket!",
+          welcomeDescription: "Welcome {user}! Our support team will be with you shortly.",
           welcomeColor: "#5865F2",
           questions: [],
         },
@@ -399,6 +399,7 @@ export function TicketPanelBuilder({
                 panelData={panelData}
                 setPanelData={setPanelData}
                 categoryChannels={categoryChannels}
+                roles={roles}
                 showToast={showToast}
               />
             )}

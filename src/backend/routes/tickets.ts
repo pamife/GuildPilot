@@ -21,7 +21,7 @@ import {
   updateTicketSettings,
   createTicketLog,
 } from "../services/ticketService";
-import { closeTicket, deployTicketPanelEmbed } from "../bot/ticketHandler";
+import { closeTicket, deployTicketPanelEmbed, reopenTicket } from "../bot/ticketHandler";
 import { validateTicketPanelComponents } from "../utils/ticketComponentValidator";
 import { convertLegacyPanelToComponentsV2 } from "../bot/ticketComponentBuilder";
 import { getTranscriptFilePath, generateHtmlTranscript } from "../services/transcriptService";
@@ -249,18 +249,8 @@ router.post("/:guildId/tickets/:ticketId/action", async (req, res) => {
       if (closing) {
         await closeTicket(ticket, channel, { id: user.id, tag: user.username }, "Closed via Webpanel");
       } else {
-        if (!channel) return res.status(409).json({ error: "Der Discord-Kanal dieses Tickets wurde gelöscht." });
-        await channel.permissionOverwrites.edit(ticket.userId, { SendMessages: true, ViewChannel: true });
-        await updateTicketStatus(ticket.id, "OPEN");
-        await createTicketLog({
-          guildId: ticket.guildId,
-          ticketId: ticket.id,
-          ticketNumber: ticket.ticketNumber,
-          action: "REOPENED",
-          executorId: user.id,
-          executorTag: user.username,
-          details: "Ticket reopened via Webpanel",
-        });
+        if (!channel) return res.status(409).json({ error: "This ticket’s Discord channel has been deleted." });
+        await reopenTicket(ticket, channel, { id: user.id, tag: user.username });
       }
     } else if (action === "delete") {
       await createTicketLog({

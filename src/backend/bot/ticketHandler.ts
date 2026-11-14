@@ -9,6 +9,8 @@ import {
   ChannelType,
   PermissionFlagsBits,
   OverwriteType,
+  DiscordAPIError,
+  RESTJSONErrorCodes,
   EmbedBuilder,
   ActionRowBuilder,
   ButtonBuilder,
@@ -203,7 +205,7 @@ async function requireTicketSupport(
   ticket: Awaited<ReturnType<typeof getTicketByChannelId>>
 ) {
   if (!ticket || ticket.guildId !== interaction.guildId || ticket.channelId !== interaction.channelId) {
-    await interaction.reply({ content: "❌ Diese Aktion ist nur im zugehörigen Ticket-Kanal verfügbar.", ephemeral: true });
+    await interaction.reply({ content: "❌ This action is only available in the associated ticket channel.", ephemeral: true });
     return false;
   }
 
@@ -218,25 +220,22 @@ async function requireTicketSupport(
       ...readTicketConfig(settings.defaultSupportRoles),
       ...readTicketConfig(panel?.supportRoles),
     ]);
+    for (const config of [...readTicketConfig(panel?.ticketTypesConfig), ...readTicketConfig(panel?.reasons)]) {
+      const roles = (config as { supportRoles?: string[] } | null)?.supportRoles;
+      if (Array.isArray(roles)) roles.forEach((roleId) => supportRoles.add(roleId));
+    }
+    const memberRoleIds = Array.isArray(member.roles) ? member.roles : member.roles.cache.keys();
     if (interaction.channel?.type === ChannelType.GuildText) {
-      for (const config of [...readTicketConfig(panel?.ticketTypesConfig), ...readTicketConfig(panel?.reasons)]) {
-        const roles = (config as { supportRoles?: string[] } | null)?.supportRoles;
-        if (!Array.isArray(roles)) continue;
-        for (const roleId of roles) {
-          const overwrite = interaction.channel.permissionOverwrites.cache.get(roleId);
-          if (overwrite?.type === OverwriteType.Role && overwrite.allow.has(PermissionFlagsBits.ManageChannels)) {
-            supportRoles.add(roleId);
-          }
+      for (const roleId of memberRoleIds) {
+        const overwrite = interaction.channel.permissionOverwrites.cache.get(roleId);
+        if (supportRoles.has(roleId) && overwrite?.type === OverwriteType.Role && overwrite.allow.has(PermissionFlagsBits.ManageChannels)) {
+          return true;
         }
       }
     }
-    const memberRoleIds = Array.isArray(member.roles) ? member.roles : member.roles.cache.keys();
-    for (const roleId of memberRoleIds) {
-      if (supportRoles.has(roleId)) return true;
-    }
   }
 
-  await interaction.reply({ content: "❌ Diese Aktion ist dem Support-Team vorbehalten und für das eigene Ticket gesperrt.", ephemeral: true });
+  await interaction.reply({ content: "❌ Only support staff can perform this action on someone else’s ticket.", ephemeral: true });
   return false;
 }
 
@@ -252,6 +251,9 @@ async function handleSlashCommandInteraction(interaction: ChatInputCommandIntera
 
   if (subcommand === "add") {
     if (!await requireTicketSupport(interaction, ticket)) return;
+    if (ticket?.status === "CLOSED") {
+      return interaction.reply({ content: "❌ Reopen this ticket before adding members.", ephemeral: true });
+    }
     const targetUser = interaction.options.getUser("user", true);
     const channel = interaction.channel as TextChannel;
     if (channel && ticket) {
@@ -273,7 +275,7 @@ async function handleSlashCommandInteraction(interaction: ChatInputCommandIntera
     const channel = interaction.channel as TextChannel;
     if (channel && ticket) {
       if (targetUser.id === ticket.userId || targetUser.id === interaction.client.user.id) {
-        return interaction.reply({ content: "❌ Ticketersteller und Bot können nicht entfernt werden.", ephemeral: true });
+        return interaction.reply({ content: "❌ The ticket creator and the bot cannot be removed.", ephemeral: true });
       }
       await channel.permissionOverwrites.delete(targetUser.id);
       await createTicketLog({
@@ -293,7 +295,7 @@ async function handleSlashCommandInteraction(interaction: ChatInputCommandIntera
   } else if (subcommand === "claim") {
     await handleTicketClaim(interaction, ticket!.id);
   } else if (subcommand === "reopen") {
-    await handleTicketReopen(interaction as any, ticket!.id);
+    await handleTicketReopen(interaction, ticket!.id);
   } else if (subcommand === "transcript") {
     await handleTicketTranscript(interaction as any, ticket!.id);
   }
@@ -562,33 +564,18 @@ async function handleTicketOpen(
 
   const settings = await getTicketSettings(interaction.guild.id);
 
-  // Supporter Roles & Additional Roles
-  let panelSupportRoles: string[] = [];
-  try {
-    if (typeof panel.supportRoles === "string") {
-      panelSupportRoles = JSON.parse(panel.supportRoles || "[]");
-    } else if (Array.isArray(panel.supportRoles)) {
-      panelSupportRoles = panel.supportRoles;
-    }
-  } catch {
-    panelSupportRoles = [];
-  }
-
-  let defaultSupportRoles: string[] = [];
-  try {
-    if (typeof settings.defaultSupportRoles === "string") {
-      defaultSupportRoles = JSON.parse(settings.defaultSupportRoles || "[]");
-    } else if (Array.isArray(settings.defaultSupportRoles)) {
-      defaultSupportRoles = settings.defaultSupportRoles;
-    }
-  } catch {
-    defaultSupportRoles = [];
-  }
-
-  const reasonSupportRoles: string[] = selectedReason?.supportRoles || [];
+  const typeSupportRoles = Array.isArray(selectedReason?.supportRoles) ? selectedReason.supportRoles : [];
+  const configuredSupportRoles = typeSupportRoles.length > 0
+    ? typeSupportRoles
+    : [
+        ...(Array.isArray(panel.supportRoles) ? panel.supportRoles : readTicketConfig(panel.supportRoles)),
+        ...readTicketConfig(settings.defaultSupportRoles),
+      ];
+  const allSupportRoles = Array.from(new Set<string>(
+    configuredSupportRoles.filter((id: unknown): id is string => typeof id === "string" && id !== interaction.guildId)
+  ));
   const additionalRoles: string[] = selectedReason?.additionalRoles || [];
-  const allSupportRoles = Array.from(new Set([...panelSupportRoles, ...defaultSupportRoles, ...reasonSupportRoles]));
-  const allAllowedRoles = Array.from(new Set([...allSupportRoles, ...additionalRoles]));
+  const allAllowedRoles = Array.from(new Set([...allSupportRoles, ...additionalRoles])).filter((id) => id !== interaction.guildId);
 
   // Channel Naming Format
   let channelName = selectedReason?.namingFormat || settings.namingFormat || "ticket-{username}";
@@ -695,21 +682,24 @@ async function handleTicketOpen(
 
   if (selectedReason?.name || selectedReason?.label) {
     welcomeEmbed.addFields({
-      name: "Ticket-Typ",
+      name: "Ticket Type",
       value: `${selectedReason.emoji || "🎫"} ${selectedReason.name || selectedReason.label}`.substring(0, 1024),
     });
   }
 
   const answeredQuestions = formAnswers?.filter(({ answer }) => answer.trim()) ?? [];
   if (answeredQuestions.length > 0) {
-    const formattedAnswers = answeredQuestions
-      .map(({ label, answer }) => `**${label}**\n${answer.trim()}`)
-      .join("\n\n");
-
-    welcomeEmbed.addFields({
-      name: "Antworten",
-      value: formattedAnswers.length > 1024 ? `${formattedAnswers.substring(0, 1023)}…` : formattedAnswers,
+    const answerLimit = Math.floor(1024 / answeredQuestions.length) - 55;
+    const formattedAnswers = answeredQuestions.map(({ label, answer }) => {
+      const trimmed = answer.trim();
+      const abbreviated = trimmed.length > answerLimit ? `${trimmed.substring(0, answerLimit - 1)}…` : trimmed;
+      // Keep backticks inside the answer from ending the inline code span.
+      const code = abbreviated.replace(/`/g, "`\u200b");
+      const formattedCode = code.length > answerLimit ? `${code.substring(0, answerLimit - 2)}\u200b…` : code;
+      return `**${label.substring(0, 45)}**\n\`\`${formattedCode}\`\``;
     });
+
+    welcomeEmbed.addFields({ name: "Answers", value: formattedAnswers.join("\n\n") });
   }
 
   const welcomeThumbnail = selectedReason?.welcomeThumbnail || panel.welcomeThumbnail;
@@ -784,6 +774,32 @@ async function handleTicketCloseExecute(
   await closeTicket(ticket, interaction.channel as TextChannel | null, interaction.user, closeReason, interaction);
 }
 
+const closedCategoryName = "Closed Tickets";
+const pendingClosedCategories = new Map<string, Promise<string>>();
+
+function getClosedCategoryId(guild: TextChannel["guild"]): Promise<string> {
+  const pending = pendingClosedCategories.get(guild.id);
+  if (pending) return pending;
+
+  const resolveCategory = (async () => {
+    const channels = await guild.channels.fetch();
+    const existing = channels.find((channel) =>
+      channel?.type === ChannelType.GuildCategory && channel.name === closedCategoryName && channel.children.cache.size < 50
+    );
+    if (existing) return existing.id;
+
+    const category = await guild.channels.create({
+      name: closedCategoryName,
+      type: ChannelType.GuildCategory,
+      permissionOverwrites: [{ id: guild.id, deny: [PermissionFlagsBits.ViewChannel] }],
+    });
+    return category.id;
+  })().finally(() => pendingClosedCategories.delete(guild.id));
+
+  pendingClosedCategories.set(guild.id, resolveCategory);
+  return resolveCategory;
+}
+
 export async function closeTicket(
   ticket: NonNullable<Awaited<ReturnType<typeof getTicketById>>>,
   channel: TextChannel | null,
@@ -796,8 +812,25 @@ export async function closeTicket(
     return;
   }
 
+  const originalCategoryId = channel ? channel.parentId : ticket.categoryId;
   if (channel) {
+    const closedCategoryId = await getClosedCategoryId(channel.guild);
+    const creatorOverwrite = channel.permissionOverwrites.cache.get(ticket.userId);
+    const previousSend = creatorOverwrite?.allow.has(PermissionFlagsBits.SendMessages)
+      ? true
+      : creatorOverwrite?.deny.has(PermissionFlagsBits.SendMessages) ? false : null;
+
     await channel.permissionOverwrites.edit(ticket.userId, { SendMessages: false });
+    if (channel.parentId !== closedCategoryId) {
+      try {
+        await channel.setParent(closedCategoryId, { lockPermissions: false });
+      } catch (error) {
+        await channel.permissionOverwrites.edit(ticket.userId, { SendMessages: previousSend }).catch((rollbackError) => {
+          console.error("[TicketHandler] Failed to restore ticket permissions:", rollbackError);
+        });
+        throw error;
+      }
+    }
   }
 
   const now = new Date();
@@ -807,6 +840,7 @@ export async function closeTicket(
     closedByTag: actor.tag,
     closeReason,
     closedTimestamp: now,
+    categoryId: originalCategoryId,
   });
 
   await createTicketLog({
@@ -933,7 +967,7 @@ async function handleTicketClaim(interaction: ButtonInteraction | ChatInputComma
   const ticket = await getTicketById(ticketId);
   if (!await requireTicketSupport(interaction, ticket) || !ticket) return;
   if (ticket.status !== "OPEN") {
-    return interaction.reply({ content: "❌ Nur offene, noch nicht übernommene Tickets können übernommen werden.", ephemeral: true });
+    return interaction.reply({ content: "❌ Only open, unclaimed tickets can be claimed.", ephemeral: true });
   }
 
   await interaction.deferReply();
@@ -969,41 +1003,65 @@ async function handleTicketClaim(interaction: ButtonInteraction | ChatInputComma
   await interaction.editReply({ embeds: [claimEmbed] });
 }
 
-async function handleTicketReopen(interaction: ButtonInteraction, ticketId: string) {
-  if (!interaction.deferred && !interaction.replied) {
-    await interaction.deferReply();
-  }
-
+async function handleTicketReopen(interaction: ButtonInteraction | ChatInputCommandInteraction, ticketId: string) {
   const ticket = await getTicketById(ticketId);
-  if (!ticket) {
-    return interaction.editReply({ content: "❌ Ticket not found." });
+  if (!await requireTicketSupport(interaction, ticket) || !ticket) return;
+  if (ticket.status !== "CLOSED") {
+    return interaction.reply({ content: "❌ Only closed tickets can be reopened.", ephemeral: true });
   }
 
-  const channel = interaction.channel as TextChannel;
-  if (channel) {
-    await channel.permissionOverwrites.edit(ticket.userId, {
-      SendMessages: true,
-      ViewChannel: true,
-    }).catch(() => {});
+  const channel = interaction.channel;
+  if (channel?.type !== ChannelType.GuildText) {
+    return interaction.reply({ content: "❌ The ticket channel is unavailable.", ephemeral: true });
   }
 
-  await updateTicketStatus(ticket.id, "OPEN");
-
-  await createTicketLog({
-    guildId: ticket.guildId,
-    ticketId: ticket.id,
-    ticketNumber: ticket.ticketNumber,
-    action: "REOPENED",
-    executorId: interaction.user.id,
-    executorTag: interaction.user.tag,
-    details: `Ticket #${ticket.ticketNumber} reopened by ${interaction.user.tag}`,
-  });
+  await interaction.deferReply();
+  await reopenTicket(ticket, channel, interaction.user);
 
   const reopenEmbed = new EmbedBuilder()
     .setDescription(`🔓 Ticket reopened by ${interaction.user}.`)
     .setColor("#57F287");
 
   await interaction.editReply({ embeds: [reopenEmbed] });
+}
+
+export async function reopenTicket(
+  ticket: NonNullable<Awaited<ReturnType<typeof getTicketById>>>,
+  channel: TextChannel,
+  actor: { id: string; tag: string }
+) {
+  const originalCategory = ticket.categoryId
+    ? await channel.guild.channels.fetch(ticket.categoryId).catch((error) => {
+        if (error instanceof DiscordAPIError && error.code === RESTJSONErrorCodes.UnknownChannel) return null;
+        throw error;
+      })
+    : null;
+  const destination = originalCategory?.type === ChannelType.GuildCategory ? originalCategory.id : null;
+  const closedCategoryId = channel.parentId;
+  if (closedCategoryId !== destination) {
+    await channel.setParent(destination, { lockPermissions: false });
+  }
+  try {
+    await channel.permissionOverwrites.edit(ticket.userId, { SendMessages: true, ViewChannel: true });
+  } catch (error) {
+    if (closedCategoryId !== destination) {
+      await channel.setParent(closedCategoryId, { lockPermissions: false }).catch((rollbackError) => {
+        console.error("[TicketHandler] Failed to restore closed ticket category:", rollbackError);
+      });
+    }
+    throw error;
+  }
+
+  await updateTicketStatus(ticket.id, "OPEN");
+  await createTicketLog({
+    guildId: ticket.guildId,
+    ticketId: ticket.id,
+    ticketNumber: ticket.ticketNumber,
+    action: "REOPENED",
+    executorId: actor.id,
+    executorTag: actor.tag,
+    details: `Ticket #${ticket.ticketNumber} reopened by ${actor.tag}`,
+  });
 }
 
 async function handleTicketDelete(interaction: ButtonInteraction, ticketId: string) {
@@ -1063,7 +1121,11 @@ async function handleTicketDelete(interaction: ButtonInteraction, ticketId: stri
 }
 
 async function handleTicketAddUserPrompt(interaction: ButtonInteraction, ticketId: string) {
-  if (!await requireTicketSupport(interaction, await getTicketById(ticketId))) return;
+  const ticket = await getTicketById(ticketId);
+  if (!await requireTicketSupport(interaction, ticket)) return;
+  if (ticket?.status === "CLOSED") {
+    return interaction.reply({ content: "❌ Reopen this ticket before adding members.", ephemeral: true });
+  }
 
   const modal = new ModalBuilder()
     .setCustomId(`ticket_adduser_modal:${ticketId}`)
@@ -1199,12 +1261,15 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
     const ticket = await getTicketById(ticketId);
 
     if (!await requireTicketSupport(interaction, ticket)) return;
+    if (ticket?.status === "CLOSED") {
+      return interaction.reply({ content: "❌ Reopen this ticket before adding members.", ephemeral: true });
+    }
 
     if (channel && ticket) {
       const member = /^\d{17,20}$/.test(userIdInput)
         ? await channel.guild.members.fetch(userIdInput).catch(() => null)
         : null;
-      if (!member) return interaction.reply({ content: "❌ Bitte gib die ID eines Servermitglieds ein.", ephemeral: true });
+      if (!member) return interaction.reply({ content: "❌ Enter the Discord ID of a server member.", ephemeral: true });
       await channel.permissionOverwrites.edit(member, {
         ViewChannel: true,
         SendMessages: true,
@@ -1233,7 +1298,7 @@ async function handleModalInteraction(interaction: ModalSubmitInteraction) {
     if (channel && ticket) {
       const overwrite = channel.permissionOverwrites.cache.get(userIdInput);
       if (overwrite?.type !== OverwriteType.Member || userIdInput === ticket.userId || userIdInput === interaction.client.user.id) {
-        return interaction.reply({ content: "❌ Dieses Mitglied kann nicht aus dem Ticket entfernt werden.", ephemeral: true });
+        return interaction.reply({ content: "❌ This member cannot be removed from the ticket.", ephemeral: true });
       }
       await channel.permissionOverwrites.delete(userIdInput);
 

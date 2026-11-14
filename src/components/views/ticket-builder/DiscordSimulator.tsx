@@ -287,7 +287,7 @@ export function DiscordSimulator({
 
                   {currentPreviewType && (
                     <div className="pt-1 text-xs text-zinc-300">
-                      <span className="block font-bold">Ticket-Typ</span>
+                      <span className="block font-bold">Ticket Type</span>
                       {currentPreviewType.emoji} {currentPreviewType.name}
                     </div>
                   )}
