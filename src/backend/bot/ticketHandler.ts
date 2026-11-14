@@ -24,6 +24,7 @@ import {
   Role,
   AttachmentBuilder,
   SlashCommandBuilder,
+  InteractionContextType,
 } from "discord.js";
 import {
   getTicketPanelById,
@@ -72,8 +73,16 @@ export async function registerSlashCommands(client: Client) {
     .addSubcommand((sub) => sub.setName("reopen").setDescription("Reopen a closed ticket channel"))
     .addSubcommand((sub) => sub.setName("transcript").setDescription("Generate an HTML transcript for the ticket"));
 
+  const closeRequestCommand = new SlashCommandBuilder()
+    .setName("closerequest")
+    .setDescription("Ask the ticket creator to confirm closing this ticket")
+    .setContexts(InteractionContextType.Guild)
+    .addStringOption((option) =>
+      option.setName("reason").setDescription("Reason for requesting closure").setMaxLength(1024)
+    );
+
   try {
-    const results = await Promise.allSettled([ticketCommand, countingCommand, ...levelingCommands].map((command) =>
+    const results = await Promise.allSettled([ticketCommand, closeRequestCommand, countingCommand, ...levelingCommands].map((command) =>
       client.application.commands.create(command.toJSON())
     ));
     for (const result of results) {
@@ -123,7 +132,7 @@ export function setupTicketInteractions(client: Client) {
         const current = counts[message.author.id] || 0;
         counts[message.author.id] = current + 1;
 
-        await updateTicketStatus(ticket.id, ticket.status as any, {
+        await updateTicketStatus(ticket.id, undefined, {
           staffMessageCounts: JSON.stringify(counts),
         });
       }
@@ -146,7 +155,9 @@ export function setupTicketInteractions(client: Client) {
     } catch (err) {
       console.error("[TicketHandler] Interaction error:", err);
       if (interaction.isRepliable() && !interaction.replied) {
-        const content = "❌ An error occurred while processing this ticket action.";
+        const content = err instanceof ClosedTicketCategoryError
+          ? err.message
+          : "❌ An error occurred while processing this ticket action.";
         if (interaction.deferred) {
           await interaction.editReply({ content }).catch(() => {});
         } else {
@@ -240,10 +251,14 @@ async function requireTicketSupport(
 }
 
 async function handleSlashCommandInteraction(interaction: ChatInputCommandInteraction) {
-  if (interaction.commandName !== "ticket") return;
+  if (interaction.commandName !== "ticket" && interaction.commandName !== "closerequest") return;
+
+  const ticket = await getTicketByChannelId(interaction.channelId);
+  if (interaction.commandName === "closerequest") {
+    return handleCloseRequest(interaction, ticket);
+  }
 
   const subcommand = interaction.options.getSubcommand();
-  const ticket = await getTicketByChannelId(interaction.channelId);
 
   if (!ticket && subcommand !== "create") {
     return interaction.reply({ content: "❌ This command can only be used inside a ticket channel.", ephemeral: true });
@@ -367,6 +382,8 @@ async function handleButtonInteraction(interaction: ButtonInteraction) {
   if (customId.startsWith("ticket_open:")) {
     const panelId = customId.split(":")[1];
     await triggerTicketProcess(interaction, panelId);
+  } else if (customId.startsWith("ticket_close_request:")) {
+    await handleCloseRequestConfirmation(interaction, customId.split(":")[1]);
   } else if (customId.startsWith("ticket_close:")) {
     const ticketId = customId.split(":")[1];
     await handleTicketClose(interaction, ticketId);
@@ -735,6 +752,65 @@ async function handleTicketOpen(
   }
 }
 
+async function handleCloseRequest(
+  interaction: ChatInputCommandInteraction,
+  ticket: Awaited<ReturnType<typeof getTicketByChannelId>>
+) {
+  if (!await requireTicketSupport(interaction, ticket) || !ticket) return;
+  if (ticket.status === "CLOSED" || interaction.channel?.type !== ChannelType.GuildText) {
+    return interaction.reply({ content: "This command requires an open ticket channel.", ephemeral: true });
+  }
+
+  const reason = interaction.options.getString("reason")?.trim() || "Resolved";
+  const embed = new EmbedBuilder()
+    .setTitle("Ticket Closure Requested")
+    .setDescription(`<@${interaction.user.id}> requested to close this ticket.`)
+    .addFields({ name: "Reason", value: reason })
+    .setColor("#FEE75C");
+  const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
+    new ButtonBuilder()
+      .setCustomId(`ticket_close_request:${ticket.id}`)
+      .setLabel("Confirm Closure")
+      .setStyle(ButtonStyle.Danger)
+  );
+
+  await interaction.reply({
+    content: `<@${ticket.userId}>, please confirm if your ticket can be closed.`,
+    allowedMentions: { users: [ticket.userId] },
+    embeds: [embed],
+    components: [row],
+  });
+}
+
+async function handleCloseRequestConfirmation(interaction: ButtonInteraction, ticketId: string) {
+  await interaction.deferReply({ ephemeral: true });
+  const channel = interaction.channel;
+  const ticket = await getTicketByChannelId(interaction.channelId);
+  if (!ticket || ticket.id !== ticketId || ticket.guildId !== interaction.guildId || channel?.type !== ChannelType.GuildText) {
+    return interaction.editReply("This request must be confirmed in its ticket channel.");
+  }
+  if (interaction.user.id !== ticket.userId) {
+    return interaction.editReply("Only the ticket creator can confirm this request.");
+  }
+  if (ticket.status === "CLOSED") {
+    return interaction.editReply("This ticket is already closed.");
+  }
+  const lastClosedAt = ticket.closedTimestamp ?? ticket.closedAt;
+  if (lastClosedAt && lastClosedAt.getTime() >= interaction.message.createdTimestamp) {
+    return interaction.editReply("This request has expired. Staff can send a new one with /closerequest.");
+  }
+
+  const reason = interaction.message.embeds[0]?.fields.find((field) => field.name === "Reason")?.value || "Resolved";
+  if (!await closeTicket(ticket, channel, interaction.user, reason)) {
+    return interaction.editReply("This ticket is already closed or is being closed.");
+  }
+
+  await interaction.message.edit({ components: [] }).catch((error) => {
+    console.error("[TicketHandler] Failed to disable the confirmed closure request:", error);
+  });
+  await interaction.editReply("Ticket closed.");
+}
+
 async function handleTicketClose(interaction: ButtonInteraction, ticketId: string) {
   const settings = await getTicketSettings(interaction.guildId || "");
 
@@ -776,8 +852,26 @@ async function handleTicketCloseExecute(
 
 const closedCategoryName = "Closed Tickets";
 const pendingClosedCategories = new Map<string, Promise<string>>();
+const closingTickets = new Set<string>();
 
-function getClosedCategoryId(guild: TextChannel["guild"]): Promise<string> {
+export class ClosedTicketCategoryError extends Error {}
+
+async function getClosedCategoryId(channel: TextChannel, configuredId: string | null): Promise<string> {
+  const { guild } = channel;
+  if (configuredId) {
+    const category = await guild.channels.fetch(configuredId, { force: true }).catch((error) => {
+      if (error instanceof DiscordAPIError && error.code === RESTJSONErrorCodes.UnknownChannel) return null;
+      throw error;
+    });
+    if (category?.type !== ChannelType.GuildCategory || category.guild.id !== guild.id) {
+      throw new ClosedTicketCategoryError("The configured closed ticket category is unavailable. Update it in the ticket settings.");
+    }
+    if (channel.parentId !== category.id && category.children.cache.size >= 50) {
+      throw new ClosedTicketCategoryError("The configured closed ticket category is full. Free up space or choose another category.");
+    }
+    return category.id;
+  }
+
   const pending = pendingClosedCategories.get(guild.id);
   if (pending) return pending;
 
@@ -801,20 +895,42 @@ function getClosedCategoryId(guild: TextChannel["guild"]): Promise<string> {
 }
 
 export async function closeTicket(
-  ticket: NonNullable<Awaited<ReturnType<typeof getTicketById>>>,
+  ticket: NonNullable<Awaited<ReturnType<typeof getTicketByChannelId>>>,
   channel: TextChannel | null,
   actor: { id: string; tag: string },
   closeReason: string,
   interaction?: ButtonInteraction | ChatInputCommandInteraction
 ) {
-  if (ticket.status === "CLOSED") {
-    await interaction?.editReply({ content: "This ticket is already closed." });
-    return;
+  if (closingTickets.has(ticket.id)) {
+    await interaction?.editReply({ content: "This ticket is already being closed." });
+    return false;
   }
 
+  closingTickets.add(ticket.id);
+  try {
+    const current = await getTicketByChannelId(ticket.channelId);
+    if (!current || current.id !== ticket.id || current.status === "CLOSED") {
+      await interaction?.editReply({ content: "This ticket is already closed or unavailable." });
+      return false;
+    }
+    await executeTicketClose(current, channel, actor, closeReason, interaction);
+    return true;
+  } finally {
+    closingTickets.delete(ticket.id);
+  }
+}
+
+async function executeTicketClose(
+  ticket: NonNullable<Awaited<ReturnType<typeof getTicketByChannelId>>>,
+  channel: TextChannel | null,
+  actor: { id: string; tag: string },
+  closeReason: string,
+  interaction?: ButtonInteraction | ChatInputCommandInteraction
+) {
+  const settings = await getTicketSettings(ticket.guildId);
   const originalCategoryId = channel ? channel.parentId : ticket.categoryId;
   if (channel) {
-    const closedCategoryId = await getClosedCategoryId(channel.guild);
+    const closedCategoryId = await getClosedCategoryId(channel, settings.closedCategoryId);
     const creatorOverwrite = channel.permissionOverwrites.cache.get(ticket.userId);
     const previousSend = creatorOverwrite?.allow.has(PermissionFlagsBits.SendMessages)
       ? true
@@ -875,7 +991,6 @@ export async function closeTicket(
   }
 
   // Post Ticket Log Embed to Log Channel matching attached screenshot!
-  const settings = await getTicketSettings(ticket.guildId);
   const guild = interaction?.guild ?? channel?.guild;
   if (settings.logChannelId && guild) {
     const logChannel = (await guild.channels.fetch(settings.logChannelId).catch(() => null)) as TextChannel;

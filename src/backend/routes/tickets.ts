@@ -190,6 +190,19 @@ router.get("/:guildId/tickets/settings", async (req, res) => {
 
 router.patch("/:guildId/tickets/settings", async (req, res) => {
   try {
+    const { closedCategoryId } = req.body;
+    if (closedCategoryId !== undefined && closedCategoryId !== null && closedCategoryId !== "") {
+      if (typeof closedCategoryId !== "string" || !/^\d{17,20}$/.test(closedCategoryId)) {
+        return res.status(400).json({ error: "Select a valid Discord category for closed tickets." });
+      }
+      const channel = await discordClient.channels.fetch(closedCategoryId).catch((error) => {
+        if (error instanceof DiscordAPIError && error.code === RESTJSONErrorCodes.UnknownChannel) return null;
+        throw error;
+      });
+      if (channel?.type !== ChannelType.GuildCategory || channel.guild.id !== req.params.guildId) {
+        return res.status(400).json({ error: "The closed ticket category must be a category on this server." });
+      }
+    }
     const settings = await updateTicketSettings(req.params.guildId, req.body);
     res.json(settings);
   } catch (err: any) {
@@ -274,7 +287,7 @@ router.post("/:guildId/tickets/:ticketId/action", async (req, res) => {
           },
           ticket.id
         );
-        await updateTicketStatus(ticket.id, ticket.status as any, {
+        await updateTicketStatus(ticket.id, undefined, {
           transcriptUrl: `/api/guilds/${ticket.guildId}/tickets/transcripts/${ticket.id}/download`,
         });
       }
@@ -306,7 +319,7 @@ router.get("/:guildId/tickets/transcripts/:ticketId/download", async (req, res) 
           },
           ticket.id
         );
-        await updateTicketStatus(ticket.id, ticket.status as any, {
+        await updateTicketStatus(ticket.id, undefined, {
           transcriptUrl: `/api/guilds/${guildId}/tickets/transcripts/${ticket.id}/download`,
         });
       }

@@ -36,6 +36,7 @@ export async function updateTicketSettings(guildId: string, data: any) {
       namingFormat: data.namingFormat,
       defaultSupportRoles: JSON.stringify(data.defaultSupportRoles || []),
       defaultCategoryId: data.defaultCategoryId || null,
+      closedCategoryId: data.closedCategoryId === undefined ? undefined : data.closedCategoryId || null,
       logChannelId: data.logChannelId || null,
       closeConfirmation: data.closeConfirmation !== undefined ? data.closeConfirmation : true,
       deleteDelaySeconds: data.deleteDelaySeconds !== undefined ? Number(data.deleteDelaySeconds) : 5,
@@ -48,6 +49,7 @@ export async function updateTicketSettings(guildId: string, data: any) {
       namingFormat: data.namingFormat || "ticket-{username}",
       defaultSupportRoles: JSON.stringify(data.defaultSupportRoles || []),
       defaultCategoryId: data.defaultCategoryId || null,
+      closedCategoryId: data.closedCategoryId || null,
       logChannelId: data.logChannelId || null,
       closeConfirmation: data.closeConfirmation !== undefined ? data.closeConfirmation : true,
       deleteDelaySeconds: data.deleteDelaySeconds !== undefined ? Number(data.deleteDelaySeconds) : 5,
@@ -363,7 +365,7 @@ export async function getTicketByChannelId(channelId: string) {
 
 export async function updateTicketStatus(
   ticketId: string,
-  status: "OPEN" | "CLOSED" | "CLAIMED",
+  status: "OPEN" | "CLOSED" | "CLAIMED" | undefined,
   meta?: {
     closedByUserId?: string;
     closedByTag?: string;
@@ -408,7 +410,7 @@ export async function updateTicketStatus(
     data,
   });
 
-  broadcastEvent("ticketUpdate", { guildId: ticket.guildId, ticketId: ticket.id, status });
+  broadcastEvent("ticketUpdate", { guildId: ticket.guildId, ticketId: ticket.id, status: ticket.status });
   return ticket;
 }
 

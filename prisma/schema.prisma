@@ -190,6 +190,7 @@ model TicketSetting {
   namingFormat        String   @default("ticket-{username}") // ticket-{username}, {username}-ticket, ticket-{number}
   defaultSupportRoles String   @default("[]") // JSON array of role IDs
   defaultCategoryId   String?
+  closedCategoryId    String?
   logChannelId        String?
   closeConfirmation   Boolean  @default(true)
   deleteDelaySeconds  Int      @default(5)

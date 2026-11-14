@@ -3,6 +3,7 @@
 import { AccentColorToggle } from "@/components/AccentColorToggle";
 
 import React, { useState, useEffect, useCallback } from "react";
+import { isAxiosError } from "axios";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/ToastContainer";
 import { getSocket } from "@/lib/socket";
@@ -97,6 +98,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
     namingFormat: "ticket-{username}",
     defaultSupportRoles: [],
     defaultCategoryId: "",
+    closedCategoryId: "",
     logChannelId: "",
     closeConfirmation: true,
     deleteDelaySeconds: 5,
@@ -468,7 +470,8 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
       showToast("Ticket settings updated!", "success");
       fetchAllData();
     } catch (err) {
-      showToast("Failed to save settings.", "error");
+      const message = isAxiosError(err) ? err.response?.data?.error : undefined;
+      showToast(typeof message === "string" ? message : "Failed to save settings.", "error");
     }
   };
 
@@ -1438,6 +1441,24 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                       <option key={c.id} value={c.id}>
                         📁 {c.name}
                       </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="closed-ticket-category" className="block text-zinc-400 mb-1.5 font-semibold">Closed Ticket Category</label>
+                  <select
+                    id="closed-ticket-category"
+                    value={settings.closedCategoryId || ""}
+                    onChange={(e) => setSettings({ ...settings, closedCategoryId: e.target.value })}
+                    className="w-full p-2.5 rounded-xl bg-[#000000] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                  >
+                    <option value="">Automatic (Closed Tickets)</option>
+                    {settings.closedCategoryId && !categoryChannels.some((c) => c.id === settings.closedCategoryId) && (
+                      <option value={settings.closedCategoryId}>Unavailable category</option>
+                    )}
+                    {categoryChannels.map((c) => (
+                      <option key={c.id} value={c.id}>📁 {c.name}</option>
                     ))}
                   </select>
                 </div>
