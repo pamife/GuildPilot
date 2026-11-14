@@ -1,5 +1,7 @@
 "use client";
 
+import { AccentColorToggle } from "@/components/AccentColorToggle";
+
 import React, { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/ToastContainer";
@@ -482,6 +484,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
 
   // Active preview reason & questions
   const activePreviewReason = panelForm.reasons && panelForm.reasons[selectedPreviewReasonIdx];
+  const welcomePreviewColor = activePreviewReason?.welcomeColor || panelForm.welcomeColor || "#5865F2";
   const activePreviewQuestions =
     activePreviewReason?.questions && activePreviewReason.questions.length > 0
       ? activePreviewReason.questions
@@ -1035,11 +1038,16 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
             {/* Panels List Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {panels.map((panel) => {
+                const accentColor = panel.layoutMode === "components_v2" && panel.accentColor !== undefined
+                  ? panel.accentColor
+                  : panel.embedColor;
                 const reasonsList: TicketReason[] = JSON.parse(panel.reasons || "[]");
                 const supportRoleIds: string[] = JSON.parse(panel.supportRoles || "[]");
                 return (
                   <div key={panel.id} className="p-5 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-4 relative overflow-hidden shadow-2xl hover:border-discord-brand/40 transition-all">
-                    <div className="w-full h-1.5 absolute top-0 left-0" style={{ backgroundColor: panel.accentColor || panel.embedColor || "#5865F2" }} />
+                    {accentColor !== null && accentColor !== "none" && (
+                      <div className="w-full h-1.5 absolute top-0 left-0" style={{ backgroundColor: accentColor || "#5865F2" }} />
+                    )}
                     <div className="flex items-start justify-between">
                       <div>
                         <div className="flex items-center gap-2">
@@ -1638,17 +1646,17 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
 
                       {/* Color Picker & Presets */}
                       <div>
-                        <label className="block text-zinc-400 mb-1 font-semibold">Embed Accent Color</label>
-                        <div className="flex items-center gap-3">
+                        <AccentColorToggle checked={panelForm.embedColor !== "none"} onChange={(checked) => setPanelForm({ ...panelForm, embedColor: checked ? "#5865F2" : "none" })} />
+                        <fieldset disabled={panelForm.embedColor === "none"} className="flex items-center gap-3 disabled:opacity-40">
                           <input
                             type="color"
-                            value={panelForm.embedColor || "#5865F2"}
+                            value={panelForm.embedColor === "none" ? "#5865F2" : (panelForm.embedColor || "#5865F2")}
                             onChange={(e) => setPanelForm({ ...panelForm, embedColor: e.target.value })}
                             className="w-10 h-10 rounded-xl border-none cursor-pointer bg-transparent"
                           />
                           <input
                             type="text"
-                            value={panelForm.embedColor || "#5865F2"}
+                            value={panelForm.embedColor === "none" ? "#5865F2" : (panelForm.embedColor || "#5865F2")}
                             onChange={(e) => setPanelForm({ ...panelForm, embedColor: e.target.value })}
                             className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white font-mono outline-none w-32"
                           />
@@ -1663,7 +1671,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                               />
                             ))}
                           </div>
-                        </div>
+                        </fieldset>
                       </div>
 
                       {/* Image & Thumbnail Asset URLs */}
@@ -2193,17 +2201,17 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
 
                       {/* Welcome Embed Accent Color */}
                       <div>
-                        <label className="block text-zinc-400 mb-1 font-semibold">Welcome Embed Accent Color</label>
-                        <div className="flex items-center gap-3">
+                        <AccentColorToggle checked={panelForm.welcomeColor !== "none"} onChange={(checked) => setPanelForm({ ...panelForm, welcomeColor: checked ? "#5865F2" : "none" })} label="Accent-Farbe für Begrüßung anzeigen" />
+                        <fieldset disabled={panelForm.welcomeColor === "none"} className="flex items-center gap-3 disabled:opacity-40">
                           <input
                             type="color"
-                            value={panelForm.welcomeColor || "#5865F2"}
+                            value={panelForm.welcomeColor === "none" ? "#5865F2" : (panelForm.welcomeColor || "#5865F2")}
                             onChange={(e) => setPanelForm({ ...panelForm, welcomeColor: e.target.value })}
                             className="w-10 h-10 rounded-xl border-none cursor-pointer bg-transparent"
                           />
                           <input
                             type="text"
-                            value={panelForm.welcomeColor || "#5865F2"}
+                            value={panelForm.welcomeColor === "none" ? "#5865F2" : (panelForm.welcomeColor || "#5865F2")}
                             onChange={(e) => setPanelForm({ ...panelForm, welcomeColor: e.target.value })}
                             className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white font-mono outline-none w-32"
                           />
@@ -2218,7 +2226,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                               />
                             ))}
                           </div>
-                        </div>
+                        </fieldset>
                       </div>
 
                       {/* Assets */}
@@ -2314,8 +2322,8 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                   {previewTab === "panel" && (
                     <div className="space-y-3">
                       <div
-                        className="p-3.5 rounded-xl bg-[#000000] space-y-2 border-l-4 relative overflow-hidden"
-                        style={{ borderColor: panelForm.embedColor || "#5865F2" }}
+                        className={`p-3.5 rounded-xl bg-[#000000] space-y-2 relative overflow-hidden ${panelForm.embedColor === "none" ? "" : "border-l-4"}`}
+                        style={{ borderColor: panelForm.embedColor === "none" ? undefined : (panelForm.embedColor || "#5865F2") }}
                       >
                         {panelForm.thumbnail && (
                           <img src={panelForm.thumbnail} alt="" className="w-14 h-14 rounded-md object-cover absolute top-3 right-3 border border-[#18181b]" />
@@ -2403,7 +2411,10 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                   )}
 
                   {previewTab === "welcome" && (
-                    <div className="p-3.5 rounded-xl bg-[#000000] space-y-2 border-l-4 border-discord-brand">
+                    <div
+                      className={`p-3.5 rounded-xl bg-[#000000] space-y-2 ${welcomePreviewColor === "none" ? "" : "border-l-4"}`}
+                      style={{ borderColor: welcomePreviewColor === "none" ? undefined : welcomePreviewColor }}
+                    >
                       <h4 className="text-sm font-bold text-white">{panelForm.welcomeTitle || "👋 Welcome to your ticket!"}</h4>
                       <p className="text-xs text-zinc-300">{panelForm.welcomeDescription}</p>
                     </div>

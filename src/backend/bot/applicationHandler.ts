@@ -59,7 +59,7 @@ function buildEmbedHelper(config: {
 
   if (config.title) embed.setTitle(config.title);
   if (config.description) embed.setDescription(config.description);
-  if (config.color) embed.setColor((config.color as any) || "#5865F2");
+  if (config.color && config.color !== "none") embed.setColor(config.color as `#${string}`);
 
   if (config.authorName) {
     embed.setAuthor({
@@ -305,7 +305,7 @@ export function setupApplicationInteractions(client: Client) {
             const acceptEmbed = buildEmbedHelper({
               title: replacePlaceholders(form.acceptEmbedTitle || "🎉 Application Accepted!", app, form),
               description: replacePlaceholders(form.acceptEmbedDescription || "Congratulations! Your application has been accepted by our staff team.", app, form),
-              color: form.acceptEmbedColor || "#23A55A",
+              color: form.panel?.acceptEmbedColor === "none" ? "none" : (form.acceptEmbedColor || "#23A55A"),
               showTimestamp: true,
             });
 
@@ -325,7 +325,7 @@ export function setupApplicationInteractions(client: Client) {
             const denyEmbed = buildEmbedHelper({
               title: replacePlaceholders(form.denyEmbedTitle || "❌ Application Decision", app, form),
               description: replacePlaceholders(form.denyEmbedDescription || "Thank you for applying. Unfortunately, your application was not accepted at this time.", app, form),
-              color: form.denyEmbedColor || "#F23F43",
+              color: form.panel?.denyEmbedColor === "none" ? "none" : (form.denyEmbedColor || "#F23F43"),
               showTimestamp: true,
             });
 

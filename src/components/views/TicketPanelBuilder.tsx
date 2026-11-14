@@ -53,7 +53,9 @@ export function TicketPanelBuilder({
       return {
         ...initialPanel,
         layoutMode: initialPanel.layoutMode || "components_v2",
-        accentColor: initialPanel.accentColor || initialPanel.embedColor || "#5865F2",
+        accentColor: initialPanel.layoutMode === "embed"
+          ? (initialPanel.embedColor === "none" ? null : (initialPanel.embedColor || "#5865F2"))
+          : (initialPanel.accentColor === undefined ? (initialPanel.embedColor || "#5865F2") : initialPanel.accentColor),
         spoiler: !!initialPanel.spoiler,
         containerConfig: typeof initialPanel.containerConfig === "string"
           ? JSON.parse(initialPanel.containerConfig || "[]")
@@ -137,6 +139,10 @@ export function TicketPanelBuilder({
   const textChannels = channels.filter((c) => c.type === 0);
   const categoryChannels = channels.filter((c) => c.type === 4);
 
+  const panelPayload = panelData.layoutMode === "embed"
+    ? { ...panelData, embedColor: panelData.accentColor ?? "none" }
+    : panelData;
+
   // Save Panel to DB
   const handleSavePanel = async () => {
     if (!selectedGuildId) return;
@@ -159,11 +165,11 @@ export function TicketPanelBuilder({
 
       let res;
       if (panelData.id) {
-        res = await api.patch(`/guilds/${selectedGuildId}/tickets/panels/${panelData.id}`, panelData);
+        res = await api.patch(`/guilds/${selectedGuildId}/tickets/panels/${panelData.id}`, panelPayload);
         showToast("Ticket-Panel erfolgreich gespeichert!", "success");
       } else {
         res = await api.post(`/guilds/${selectedGuildId}/tickets/panels`, {
-          ...panelData,
+          ...panelPayload,
           guildId: selectedGuildId,
         });
         showToast("Ticket-Panel erfolgreich erstellt!", "success");
@@ -195,13 +201,13 @@ export function TicketPanelBuilder({
 
       if (!targetId) {
         const saveRes = await api.post(`/guilds/${selectedGuildId}/tickets/panels`, {
-          ...panelData,
+          ...panelPayload,
           guildId: selectedGuildId,
         });
         targetId = saveRes.data.id;
         setPanelData((prev) => ({ ...prev, id: targetId }));
       } else {
-        await api.patch(`/guilds/${selectedGuildId}/tickets/panels/${targetId}`, panelData);
+        await api.patch(`/guilds/${selectedGuildId}/tickets/panels/${targetId}`, panelPayload);
       }
 
       const deployRes = await api.post(`/guilds/${selectedGuildId}/tickets/panels/${targetId}/deploy`);

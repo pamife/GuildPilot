@@ -84,7 +84,7 @@ export async function createTicketPanel(guildId: string, data: any) {
       name: data.name || "General Support",
       description: data.description || null,
       layoutMode: data.layoutMode || "components_v2",
-      accentColor: data.accentColor || data.embedColor || "#5865F2",
+      accentColor: data.accentColor === null ? null : (data.accentColor || data.embedColor || "#5865F2"),
       spoiler: !!data.spoiler,
       containerConfig: typeof data.containerConfig === "object" ? JSON.stringify(data.containerConfig) : (data.containerConfig || "[]"),
       ticketTypesConfig: typeof data.ticketTypesConfig === "object" ? JSON.stringify(data.ticketTypesConfig) : (data.ticketTypesConfig || "[]"),

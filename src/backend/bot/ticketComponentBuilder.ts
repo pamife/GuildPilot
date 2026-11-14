@@ -208,7 +208,7 @@ export function convertLegacyPanelToComponentsV2(panel: any) {
   return {
     ...panel,
     layoutMode: "components_v2",
-    accentColor: panel.embedColor || "#5865F2",
+    accentColor: panel.embedColor === "none" ? null : (panel.embedColor || "#5865F2"),
     spoiler: false,
     containerConfig: containerItems,
     ticketTypesConfig: ticketTypes,
@@ -506,7 +506,7 @@ export function buildTicketComponentsV2Payload(panelData: any) {
     components: containerComponents,
   };
 
-  const accentHex = panelData.accentColor || panelData.embedColor || "#5865F2";
+  const accentHex = panelData.accentColor === null ? null : (panelData.accentColor || panelData.embedColor || "#5865F2");
   const colorInt = hexToInt(accentHex);
   if (colorInt !== undefined) {
     containerPayload.accent_color = colorInt;
@@ -528,8 +528,8 @@ export function buildTicketComponentsV2Payload(panelData: any) {
 export function buildClassicTicketEmbedPayload(panel: any) {
   const embed = new EmbedBuilder()
     .setTitle(panel.embedTitle || panel.name || "Support Ticket")
-    .setDescription(panel.embedDescription || "Click the button below or choose a reason to open a ticket.")
-    .setColor((panel.embedColor as `#${string}`) || "#5865F2");
+    .setDescription(panel.embedDescription || "Click the button below or choose a reason to open a ticket.");
+  if (panel.embedColor !== "none") embed.setColor((panel.embedColor as `#${string}`) || "#5865F2");
 
   if (panel.thumbnail && isValidUrl(panel.thumbnail)) embed.setThumbnail(panel.thumbnail.trim());
   if (panel.image && isValidUrl(panel.image)) embed.setImage(panel.image.trim());

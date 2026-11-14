@@ -51,6 +51,8 @@ export async function createAppPanel(guildId: string, data: any) {
       welcomeTitle: data.welcomeTitle || "👋 Application Submitted!",
       welcomeDescription: data.welcomeDescription || "Your application has been received.",
       welcomeColor: data.welcomeColor || "#5865F2",
+      acceptEmbedColor: data.acceptEmbedColor || "#23A55A",
+      denyEmbedColor: data.denyEmbedColor || "#F23F43",
       welcomeThumbnail: data.welcomeThumbnail || null,
       welcomeImage: data.welcomeImage || null,
       welcomeFooter: data.welcomeFooter || "GuildPilot Applications System",
@@ -346,7 +348,7 @@ export async function getApplicationById(appId: string) {
   return await prisma.application.findUnique({
     where: { id: appId },
     include: {
-      form: true,
+      form: { include: { panel: true } },
       answers: true,
       notes: { orderBy: { createdAt: "desc" } },
       history: { orderBy: { timestamp: "desc" } },

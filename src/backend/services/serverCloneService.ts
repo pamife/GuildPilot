@@ -422,6 +422,8 @@ export async function cloneServerModules(
           embedTitle: panel.embedTitle,
           embedDescription: panel.embedDescription,
           embedColor: panel.embedColor,
+          layoutMode: panel.layoutMode,
+          accentColor: panel.accentColor,
           thumbnail: panel.thumbnail,
           image: panel.image,
           footer: panel.footer,

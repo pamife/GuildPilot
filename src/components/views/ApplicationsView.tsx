@@ -1,5 +1,7 @@
 "use client";
 
+import { AccentColorToggle } from "@/components/AccentColorToggle";
+
 import React, { useState, useEffect, useCallback } from "react";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/ToastContainer";
@@ -1190,21 +1192,21 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                     </div>
 
                     <div>
-                      <label className="font-bold text-zinc-300 block mb-1">Embed Color (Hex):</label>
-                      <div className="flex items-center gap-3">
+                      <AccentColorToggle checked={panelPayload.embedColor !== "none"} onChange={(checked) => setPanelPayload({ ...panelPayload, embedColor: checked ? "#5865F2" : "none" })} />
+                      <fieldset disabled={panelPayload.embedColor === "none"} className="flex items-center gap-3 disabled:opacity-40">
                         <input
                           type="color"
-                          value={panelPayload.embedColor}
+                          value={panelPayload.embedColor === "none" ? "#5865F2" : panelPayload.embedColor}
                           onChange={(e) => setPanelPayload({ ...panelPayload, embedColor: e.target.value })}
                           className="w-12 h-10 bg-[#1e1f22] border border-[#35373c] rounded-xl cursor-pointer p-1"
                         />
                         <input
                           type="text"
-                          value={panelPayload.embedColor}
+                          value={panelPayload.embedColor === "none" ? "#5865F2" : panelPayload.embedColor}
                           onChange={(e) => setPanelPayload({ ...panelPayload, embedColor: e.target.value })}
                           className="flex-1 bg-[#1e1f22] border border-[#35373c] rounded-xl p-2.5 text-white font-mono"
                         />
-                      </div>
+                      </fieldset>
                     </div>
                   </div>
                 )}
@@ -1274,10 +1276,11 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                           />
                         </div>
                         <div>
-                          <label className="font-bold text-zinc-300 block mb-1">Accept Embed Color:</label>
+                          <AccentColorToggle checked={panelPayload.acceptEmbedColor !== "none"} onChange={(checked) => setPanelPayload({ ...panelPayload, acceptEmbedColor: checked ? "#23A55A" : "none" })} label="Accent-Farbe bei Zusage anzeigen" />
                           <input
                             type="color"
-                            value={panelPayload.acceptEmbedColor}
+                            disabled={panelPayload.acceptEmbedColor === "none"}
+                            value={panelPayload.acceptEmbedColor === "none" ? "#23A55A" : panelPayload.acceptEmbedColor}
                             onChange={(e) => setPanelPayload({ ...panelPayload, acceptEmbedColor: e.target.value })}
                             className="w-full bg-[#2b2d31] border border-[#35373c] rounded-xl h-10 cursor-pointer p-1"
                           />
@@ -1311,10 +1314,11 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                           />
                         </div>
                         <div>
-                          <label className="font-bold text-zinc-300 block mb-1">Deny Embed Color:</label>
+                          <AccentColorToggle checked={panelPayload.denyEmbedColor !== "none"} onChange={(checked) => setPanelPayload({ ...panelPayload, denyEmbedColor: checked ? "#F23F43" : "none" })} label="Accent-Farbe bei Absage anzeigen" />
                           <input
                             type="color"
-                            value={panelPayload.denyEmbedColor}
+                            disabled={panelPayload.denyEmbedColor === "none"}
+                            value={panelPayload.denyEmbedColor === "none" ? "#F23F43" : panelPayload.denyEmbedColor}
                             onChange={(e) => setPanelPayload({ ...panelPayload, denyEmbedColor: e.target.value })}
                             className="w-full bg-[#2b2d31] border border-[#35373c] rounded-xl h-10 cursor-pointer p-1"
                           />
@@ -1394,8 +1398,8 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                   {/* Simulated Live Discord Embed Box */}
                   {previewTab === "panel" && (
                     <div
-                      style={{ borderLeftColor: panelPayload.embedColor || "#5865F2" }}
-                      className="bg-[#2b2d31] border-l-4 rounded-r-xl p-4 shadow-2xl space-y-3"
+                      style={{ borderLeftColor: panelPayload.embedColor === "none" ? undefined : (panelPayload.embedColor || "#5865F2") }}
+                      className={`bg-[#2b2d31] rounded-r-xl p-4 shadow-2xl space-y-3 ${panelPayload.embedColor === "none" ? "" : "border-l-4"}`}
                     >
                       <h4 className="font-bold text-white text-base">{panelPayload.embedTitle || "Panel Title"}</h4>
                       <p className="text-xs text-zinc-300 whitespace-pre-wrap">{panelPayload.embedDescription}</p>
@@ -1414,8 +1418,8 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
 
                   {previewTab === "accepted" && (
                     <div
-                      style={{ borderLeftColor: panelPayload.acceptEmbedColor || "#23A55A" }}
-                      className="bg-[#2b2d31] border-l-4 rounded-r-xl p-4 shadow-2xl space-y-3"
+                      style={{ borderLeftColor: panelPayload.acceptEmbedColor === "none" ? undefined : (panelPayload.acceptEmbedColor || "#23A55A") }}
+                      className={`bg-[#2b2d31] rounded-r-xl p-4 shadow-2xl space-y-3 ${panelPayload.acceptEmbedColor === "none" ? "" : "border-l-4"}`}
                     >
                       <p className="text-xs font-bold text-emerald-400">{panelPayload.acceptMessage}</p>
                       <h4 className="font-bold text-white text-base">{panelPayload.acceptEmbedTitle}</h4>
@@ -1425,8 +1429,8 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
 
                   {previewTab === "denied" && (
                     <div
-                      style={{ borderLeftColor: panelPayload.denyEmbedColor || "#F23F43" }}
-                      className="bg-[#2b2d31] border-l-4 rounded-r-xl p-4 shadow-2xl space-y-3"
+                      style={{ borderLeftColor: panelPayload.denyEmbedColor === "none" ? undefined : (panelPayload.denyEmbedColor || "#F23F43") }}
+                      className={`bg-[#2b2d31] rounded-r-xl p-4 shadow-2xl space-y-3 ${panelPayload.denyEmbedColor === "none" ? "" : "border-l-4"}`}
                     >
                       <p className="text-xs font-bold text-rose-400">{panelPayload.denyMessage}</p>
                       <h4 className="font-bold text-white text-base">{panelPayload.denyEmbedTitle}</h4>

@@ -620,13 +620,14 @@ async function handleTicketOpen(
   const welcomeEmbed = new EmbedBuilder()
     .setTitle(welcomeTitle)
     .setDescription(welcomeDesc)
-    .setColor((welcomeColorHex as `#${string}`) || "#5865F2")
     .addFields(
       { name: "Creator", value: `<@${interaction.user.id}> (${interaction.user.tag})`, inline: true },
       { name: "Panel", value: `${panel.name}`, inline: true },
       { name: "Status", value: "🟢 Open", inline: true }
     )
     .setTimestamp();
+
+  if (welcomeColorHex !== "none") welcomeEmbed.setColor(welcomeColorHex as `#${string}`);
 
   if (selectedReason?.name || selectedReason?.label) {
     welcomeEmbed.addFields({

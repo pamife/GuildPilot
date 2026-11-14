@@ -1,5 +1,7 @@
 "use client";
 
+import { AccentColorToggle } from "@/components/AccentColorToggle";
+
 import React from "react";
 import {
   Plus,
@@ -172,7 +174,8 @@ export function ContainerDesigner({
           </label>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap pt-1">
+        <AccentColorToggle checked={panelData.accentColor !== null} onChange={(checked) => setPanelData({ ...panelData, accentColor: checked ? "#5865F2" : null })} />
+        <fieldset disabled={panelData.accentColor === null} className="flex items-center gap-2 flex-wrap pt-1 disabled:opacity-40">
           {PRESET_COLORS.map((c) => (
             <button
               key={c.hex}
@@ -199,7 +202,7 @@ export function ContainerDesigner({
               className="w-24 bg-[#14151b] border border-[#27272a] px-2 py-1 rounded text-xs font-mono text-white outline-none"
             />
           </div>
-        </div>
+        </fieldset>
       </div>
 
       {/* Component Toolbar (+ Add Blocks) */}

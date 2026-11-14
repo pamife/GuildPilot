@@ -55,6 +55,7 @@ export function DiscordSimulator({
   };
 
   const currentPreviewType = panelData.ticketTypesConfig[previewTicketTypeIdx] || panelData.ticketTypesConfig[0];
+  const welcomeColor = currentPreviewType?.welcomeColor || panelData.welcomeColor || "#5865F2";
 
   return (
     <div className="w-1/2 flex flex-col bg-[#050507] overflow-hidden">
@@ -120,10 +121,10 @@ export function DiscordSimulator({
 
                 {/* ROOT CONTAINER (Type 17) */}
                 <div
-                  className={`mt-2 rounded-lg bg-[#242429] p-3.5 border-l-4 shadow-md space-y-3 transition-all ${
+                  className={`mt-2 rounded-lg bg-[#242429] p-3.5 shadow-md space-y-3 transition-all ${panelData.accentColor === null ? "" : "border-l-4"} ${
                     panelData.spoiler ? "blur-sm hover:blur-none transition-all cursor-pointer" : ""
                   }`}
-                  style={{ borderColor: panelData.accentColor || "#5865F2" }}
+                  style={panelData.accentColor === null ? undefined : { borderColor: panelData.accentColor || "#5865F2" }}
                 >
                   {panelData.containerConfig.map((block, bIdx) => (
                     <div key={block.id || bIdx} className="space-y-2">
@@ -274,8 +275,8 @@ export function DiscordSimulator({
 
                 {/* Welcome Embed */}
                 <div
-                  className="rounded-lg bg-[#242429] p-3.5 border-l-4 shadow space-y-2"
-                  style={{ borderColor: currentPreviewType?.welcomeColor || "#5865F2" }}
+                  className={`rounded-lg bg-[#242429] p-3.5 shadow space-y-2 ${welcomeColor === "none" ? "" : "border-l-4"}`}
+                  style={{ borderColor: welcomeColor === "none" ? undefined : welcomeColor }}
                 >
                   <h3 className="text-sm font-bold text-white">
                     {currentPreviewType?.welcomeTitle || "👋 Welcome to your ticket!"}

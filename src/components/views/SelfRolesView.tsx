@@ -1,5 +1,7 @@
 "use client";
 
+import { AccentColorToggle } from "@/components/AccentColorToggle";
+
 import React, { useState, useEffect } from "react";
 import {
   Tag,
@@ -473,7 +475,7 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
                       <h3 className="text-xs font-bold truncate flex items-center gap-1.5">
                         <span
                           className="w-2.5 h-2.5 rounded-full shrink-0"
-                          style={{ backgroundColor: p.embedColor || "#5865F2" }}
+                          style={{ backgroundColor: p.embedColor === "none" ? "transparent" : (p.embedColor || "#5865F2") }}
                         />
                         {p.name}
                       </h3>
@@ -760,34 +762,34 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
 
                 {/* Embed Color Picker */}
                 <div>
-                  <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 block">
-                    Embed Akzentfarbe
-                  </label>
-                  <div className="flex items-center gap-3 mb-2">
-                    <input
-                      type="color"
-                      value={formData.embedColor || "#5865F2"}
-                      onChange={(e) => setFormData({ ...formData, embedColor: e.target.value })}
-                      className="w-9 h-9 rounded-lg cursor-pointer bg-transparent border-0"
-                    />
-                    <input
-                      type="text"
-                      value={formData.embedColor || "#5865F2"}
-                      onChange={(e) => setFormData({ ...formData, embedColor: e.target.value })}
-                      className="bg-[#111724] border border-[#1e293b] focus:border-indigo-500 rounded-xl p-2.5 text-xs text-white outline-none font-mono w-32"
-                    />
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {COLOR_PRESETS.map((c) => (
-                      <button
-                        key={c}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, embedColor: c })}
-                        className="w-6 h-6 rounded-full border border-black/40 shadow-sm transition-transform hover:scale-110 cursor-pointer"
-                        style={{ backgroundColor: c }}
+                  <AccentColorToggle checked={formData.embedColor !== "none"} onChange={(checked) => setFormData({ ...formData, embedColor: checked ? "#5865F2" : "none" })} />
+                  <fieldset disabled={formData.embedColor === "none"} className="space-y-2 disabled:opacity-40">
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="color"
+                        value={formData.embedColor === "none" ? "#5865F2" : (formData.embedColor || "#5865F2")}
+                        onChange={(e) => setFormData({ ...formData, embedColor: e.target.value })}
+                        className="w-9 h-9 rounded-lg cursor-pointer bg-transparent border-0"
                       />
-                    ))}
-                  </div>
+                      <input
+                        type="text"
+                        value={formData.embedColor === "none" ? "#5865F2" : (formData.embedColor || "#5865F2")}
+                        onChange={(e) => setFormData({ ...formData, embedColor: e.target.value })}
+                        className="bg-[#111724] border border-[#1e293b] focus:border-indigo-500 rounded-xl p-2.5 text-xs text-white outline-none font-mono w-32"
+                      />
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      {COLOR_PRESETS.map((c) => (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setFormData({ ...formData, embedColor: c })}
+                          className="w-6 h-6 rounded-full border border-black/40 shadow-sm transition-transform hover:scale-110 cursor-pointer"
+                          style={{ backgroundColor: c }}
+                        />
+                      ))}
+                    </div>
+                  </fieldset>
                 </div>
 
                 {/* Main Banner Graphic Image URL */}
@@ -1143,8 +1145,8 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
           <div className="flex-1 p-4 bg-[#0d121c] overflow-y-auto space-y-3">
             {/* Discord Live Embed / Component V2 Container */}
             <div className="bg-[#111724] rounded-2xl p-4 border border-[#1e293b] shadow-md relative space-y-3 font-sans">
-              {/* Colored Left Border (Hidden if Neutral Dark #242429 or V2 layout) */}
-              {formData.embedColor && formData.embedColor.toLowerCase() !== "#242429" && formData.embedColor.toLowerCase() !== "#2b2d31" && formData.embedColor !== "none" && formData.layoutMode === "embed" && (
+              {/* Accent color */}
+              {formData.embedColor && formData.embedColor.toLowerCase() !== "#242429" && formData.embedColor.toLowerCase() !== "#2b2d31" && formData.embedColor !== "none" && (
                 <div
                   className="absolute top-0 bottom-0 left-0 w-1.5 rounded-l-2xl"
                   style={{ backgroundColor: formData.embedColor }}

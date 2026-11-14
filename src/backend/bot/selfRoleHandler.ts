@@ -197,6 +197,10 @@ export async function buildSelfRoleEmbedAndComponents(guild: Guild, panel: any) 
   });
 
   const container = new ContainerBuilder();
+  const color = panel.embedColor?.toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(color || "") && color !== "#242429" && color !== "#2b2d31") {
+    container.setAccentColor(Number.parseInt(color.slice(1), 16));
+  }
   (container as any).components = containerInnerComponents;
 
   console.log("[SEND] Components V2 payload created");

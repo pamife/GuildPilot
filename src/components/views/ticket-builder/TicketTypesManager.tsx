@@ -1,5 +1,7 @@
 "use client";
 
+import { AccentColorToggle } from "@/components/AccentColorToggle";
+
 import React, { useState } from "react";
 import {
   Sparkles,
@@ -322,10 +324,11 @@ export function TicketTypesManager({
                         />
                       </div>
                       <div>
-                        <label className="text-[10px] font-bold text-zinc-400 block mb-1">Farbe</label>
+                        <AccentColorToggle checked={t.welcomeColor !== "none"} onChange={(checked) => updateTicketType(tIdx, { welcomeColor: checked ? "#5865F2" : "none" })} />
                         <input
                           type="text"
-                          value={t.welcomeColor || "#5865F2"}
+                          disabled={t.welcomeColor === "none"}
+                          value={t.welcomeColor === "none" ? "" : (t.welcomeColor || "#5865F2")}
                           onChange={(e) => updateTicketType(tIdx, { welcomeColor: e.target.value })}
                           placeholder="#5865F2"
                           className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs font-mono text-white outline-none"
