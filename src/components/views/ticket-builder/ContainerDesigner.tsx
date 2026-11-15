@@ -158,7 +158,7 @@ export function ContainerDesigner({
   return (
     <div className="space-y-5">
       {/* Root Container Style Options */}
-      <div className="p-4 rounded-xl bg-[#0e0f15] border border-[#27272a] space-y-3">
+      <div className="p-4 rounded-xl bg-panel border border-line space-y-3">
         <div className="flex items-center justify-between">
           <span className="text-xs font-bold text-zinc-300 flex items-center gap-2">
             <Palette className="w-4 h-4 text-indigo-400" /> Container Akzentfarbe & Spoiler
@@ -168,7 +168,7 @@ export function ContainerDesigner({
               type="checkbox"
               checked={!!panelData.spoiler}
               onChange={(e) => setPanelData({ ...panelData, spoiler: e.target.checked })}
-              className="rounded border-[#27272a] bg-[#14151b] text-indigo-600 focus:ring-0 cursor-pointer"
+              className="rounded border-line bg-panel text-indigo-600 focus:ring-0 cursor-pointer"
             />
             <span>Spoiler Container</span>
           </label>
@@ -199,7 +199,7 @@ export function ContainerDesigner({
               type="text"
               value={panelData.accentColor || "#5865F2"}
               onChange={(e) => setPanelData({ ...panelData, accentColor: e.target.value })}
-              className="w-24 bg-[#14151b] border border-[#27272a] px-2 py-1 rounded text-xs font-mono text-white outline-none"
+              className="w-24 bg-panel border border-line px-2 py-1 rounded text-xs font-mono text-white outline-none"
             />
           </div>
         </fieldset>
@@ -218,7 +218,7 @@ export function ContainerDesigner({
           <button
             type="button"
             onClick={() => addComponentBlock("text")}
-            className="p-2.5 rounded-xl bg-[#0e0f15] hover:bg-[#151722] border border-[#27272a] hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
+            className="p-2.5 rounded-xl bg-panel hover:bg-[#151722] border border-line hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-indigo-400">
               <Type className="w-3.5 h-3.5" /> + Text Display
@@ -229,7 +229,7 @@ export function ContainerDesigner({
           <button
             type="button"
             onClick={() => addComponentBlock("section", "button")}
-            className="p-2.5 rounded-xl bg-[#0e0f15] hover:bg-[#151722] border border-[#27272a] hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
+            className="p-2.5 rounded-xl bg-panel hover:bg-[#151722] border border-line hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-indigo-400">
               <Split className="w-3.5 h-3.5" /> + Section (Button)
@@ -240,7 +240,7 @@ export function ContainerDesigner({
           <button
             type="button"
             onClick={() => addComponentBlock("section", "thumbnail")}
-            className="p-2.5 rounded-xl bg-[#0e0f15] hover:bg-[#151722] border border-[#27272a] hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
+            className="p-2.5 rounded-xl bg-panel hover:bg-[#151722] border border-line hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-indigo-400">
               <ImageIcon className="w-3.5 h-3.5" /> + Section (Thumbnail)
@@ -251,7 +251,7 @@ export function ContainerDesigner({
           <button
             type="button"
             onClick={() => addComponentBlock("action_row", "buttons")}
-            className="p-2.5 rounded-xl bg-[#0e0f15] hover:bg-[#151722] border border-[#27272a] hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
+            className="p-2.5 rounded-xl bg-panel hover:bg-[#151722] border border-line hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-indigo-400">
               <MousePointerClick className="w-3.5 h-3.5" /> + Buttons Row
@@ -262,7 +262,7 @@ export function ContainerDesigner({
           <button
             type="button"
             onClick={() => addComponentBlock("action_row", "select")}
-            className="p-2.5 rounded-xl bg-[#0e0f15] hover:bg-[#151722] border border-[#27272a] hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
+            className="p-2.5 rounded-xl bg-panel hover:bg-[#151722] border border-line hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-indigo-400">
               <ListFilter className="w-3.5 h-3.5" /> + Select Menu
@@ -273,7 +273,7 @@ export function ContainerDesigner({
           <button
             type="button"
             onClick={() => addComponentBlock("separator")}
-            className="p-2.5 rounded-xl bg-[#0e0f15] hover:bg-[#151722] border border-[#27272a] hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
+            className="p-2.5 rounded-xl bg-panel hover:bg-[#151722] border border-line hover:border-indigo-500/40 text-left transition-all group cursor-pointer"
           >
             <div className="flex items-center gap-1.5 text-xs font-bold text-white group-hover:text-indigo-400">
               <Sliders className="w-3.5 h-3.5" /> + Trennlinie
@@ -288,10 +288,10 @@ export function ContainerDesigner({
         {panelData.containerConfig.map((block, idx) => (
           <div
             key={block.id || idx}
-            className="rounded-xl bg-[#0e0f15] border border-[#27272a] overflow-hidden shadow-md"
+            className="rounded-xl bg-panel border border-line overflow-hidden shadow-md"
           >
             {/* Block Header */}
-            <div className="p-3 bg-[#12131a] border-b border-[#1f2029] flex items-center justify-between">
+            <div className="p-3 bg-panel border-b border-[#1f2029] flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-mono px-1.5 py-0.5 rounded bg-[#1b1c26] text-zinc-400">
                   #{idx + 1}
@@ -351,7 +351,7 @@ export function ContainerDesigner({
                     value={block.content || ""}
                     onChange={(e) => updateBlock(idx, { content: e.target.value })}
                     placeholder="# Große Überschrift&#10;Dein formatierter Text hier..."
-                    className="w-full bg-[#14151b] border border-[#27272a] p-3 rounded-lg text-xs text-white outline-none focus:border-indigo-500 leading-relaxed font-mono"
+                    className="w-full bg-panel border border-line p-3 rounded-lg text-xs text-white outline-none focus:border-indigo-500 leading-relaxed font-mono"
                   />
                 </div>
               )}
@@ -366,12 +366,12 @@ export function ContainerDesigner({
                       value={block.content || ""}
                       onChange={(e) => updateBlock(idx, { content: e.target.value })}
                       placeholder="Section Beschreibung..."
-                      className="w-full bg-[#14151b] border border-[#27272a] p-2.5 rounded-lg text-xs text-white outline-none focus:border-indigo-500"
+                      className="w-full bg-panel border border-line p-2.5 rounded-lg text-xs text-white outline-none focus:border-indigo-500"
                     />
                   </div>
 
                   {/* Accessory Editor */}
-                  <div className="p-3 bg-[#14151b] rounded-lg border border-[#27272a] space-y-2.5">
+                  <div className="p-3 bg-panel rounded-lg border border-line space-y-2.5">
                     <div className="flex items-center justify-between">
                       <span className="text-[11px] font-bold text-zinc-300">Accessory Element (Rechtsbündig)</span>
                       <select
@@ -387,7 +387,7 @@ export function ContainerDesigner({
                             },
                           })
                         }
-                        className="bg-[#0e0f15] border border-[#27272a] px-2 py-1 rounded text-xs text-white outline-none"
+                        className="bg-panel border border-line px-2 py-1 rounded text-xs text-white outline-none"
                       >
                         <option value="button">Button (Aktion)</option>
                         <option value="thumbnail">Thumbnail (Bild)</option>
@@ -406,7 +406,7 @@ export function ContainerDesigner({
                             })
                           }
                           placeholder="https://images.unsplash.com/..."
-                          className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                          className="w-full bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                         />
                       </div>
                     ) : (
@@ -422,7 +422,7 @@ export function ContainerDesigner({
                               })
                             }
                             placeholder="Button Label"
-                            className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
+                            className="w-full bg-panel border border-line px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
                           />
                         </div>
                         <div className="col-span-3">
@@ -434,7 +434,7 @@ export function ContainerDesigner({
                                 accessory: { ...block.accessory, type: "button", style: e.target.value as any },
                               })
                             }
-                            className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
+                            className="w-full bg-panel border border-line px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
                           >
                             <option value="Primary">Primary (Blau)</option>
                             <option value="Secondary">Secondary (Grau)</option>
@@ -454,7 +454,7 @@ export function ContainerDesigner({
                               })
                             }
                             placeholder="📩"
-                            className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-center text-white outline-none"
+                            className="w-full bg-panel border border-line px-2.5 py-1.5 rounded-lg text-xs text-center text-white outline-none"
                           />
                         </div>
                         <div className="col-span-3">
@@ -466,7 +466,7 @@ export function ContainerDesigner({
                                 accessory: { ...block.accessory, type: "button", ticketTypeId: e.target.value },
                               })
                             }
-                            className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
+                            className="w-full bg-panel border border-line px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
                           >
                             {panelData.ticketTypesConfig.map((t) => (
                               <option key={t.id} value={t.id}>
@@ -501,7 +501,7 @@ export function ContainerDesigner({
                                 },
                               })
                             }
-                            className="w-full bg-[#14151b] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                            className="w-full bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                           >
                             <option value="string_select">String Select (Optionen mit Ticket-Typen)</option>
                             <option value="channel_select">Channel Select</option>
@@ -527,7 +527,7 @@ export function ContainerDesigner({
                               })
                             }
                             placeholder="Wähle eine Kategorie..."
-                            className="w-full bg-[#14151b] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                            className="w-full bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                           />
                         </div>
                       </div>
@@ -571,7 +571,7 @@ export function ContainerDesigner({
                             {(block.selectMenu?.options || []).map((opt, oIdx) => (
                               <div
                                 key={oIdx}
-                                className="p-2.5 bg-[#14151b] rounded-lg border border-[#27272a] space-y-2"
+                                className="p-2.5 bg-panel rounded-lg border border-line space-y-2"
                               >
                                 <div className="grid grid-cols-12 gap-2 items-center">
                                   <div className="col-span-1">
@@ -591,7 +591,7 @@ export function ContainerDesigner({
                                         });
                                       }}
                                       placeholder="📌"
-                                      className="w-full bg-[#0e0f15] border border-[#27272a] p-1.5 rounded text-xs text-center text-white outline-none"
+                                      className="w-full bg-panel border border-line p-1.5 rounded text-xs text-center text-white outline-none"
                                     />
                                   </div>
                                   <div className="col-span-4">
@@ -611,7 +611,7 @@ export function ContainerDesigner({
                                         });
                                       }}
                                       placeholder="Label"
-                                      className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded text-xs text-white outline-none"
+                                      className="w-full bg-panel border border-line px-2.5 py-1.5 rounded text-xs text-white outline-none"
                                     />
                                   </div>
                                   <div className="col-span-3">
@@ -629,7 +629,7 @@ export function ContainerDesigner({
                                           },
                                         });
                                       }}
-                                      className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded text-xs text-white outline-none"
+                                      className="w-full bg-panel border border-line px-2 py-1.5 rounded text-xs text-white outline-none"
                                     >
                                       <option value="CREATE_TICKET">Ticket erstellen</option>
                                       <option value="EPHEMERAL_REPLY">Info senden</option>
@@ -650,7 +650,7 @@ export function ContainerDesigner({
                                           },
                                         });
                                       }}
-                                      className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded text-xs text-white outline-none"
+                                      className="w-full bg-panel border border-line px-2 py-1.5 rounded text-xs text-white outline-none"
                                     >
                                       {panelData.ticketTypesConfig.map((t) => (
                                         <option key={t.id} value={t.id}>
@@ -696,7 +696,7 @@ export function ContainerDesigner({
                                     });
                                   }}
                                   placeholder="Option Beschreibung"
-                                  className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1 rounded text-[11px] text-zinc-300 outline-none"
+                                  className="w-full bg-panel border border-line px-2.5 py-1 rounded text-[11px] text-zinc-300 outline-none"
                                 />
                               </div>
                             ))}
@@ -711,7 +711,7 @@ export function ContainerDesigner({
                         {(block.buttons || []).map((btn, bIdx) => (
                           <div
                             key={btn.id || bIdx}
-                            className="p-2.5 bg-[#14151b] rounded-lg border border-[#27272a] grid grid-cols-12 gap-2 items-center"
+                            className="p-2.5 bg-panel rounded-lg border border-line grid grid-cols-12 gap-2 items-center"
                           >
                             <div className="col-span-1">
                               <input
@@ -723,7 +723,7 @@ export function ContainerDesigner({
                                   updateBlock(idx, { buttons: nextBtns });
                                 }}
                                 placeholder="📩"
-                                className="w-full bg-[#0e0f15] border border-[#27272a] p-1.5 rounded text-xs text-center text-white outline-none"
+                                className="w-full bg-panel border border-line p-1.5 rounded text-xs text-center text-white outline-none"
                               />
                             </div>
                             <div className="col-span-3">
@@ -736,7 +736,7 @@ export function ContainerDesigner({
                                   updateBlock(idx, { buttons: nextBtns });
                                 }}
                                 placeholder="Label"
-                                className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded text-xs text-white outline-none"
+                                className="w-full bg-panel border border-line px-2.5 py-1.5 rounded text-xs text-white outline-none"
                               />
                             </div>
                             <div className="col-span-2">
@@ -747,7 +747,7 @@ export function ContainerDesigner({
                                   nextBtns[bIdx] = { ...nextBtns[bIdx], style: e.target.value as any };
                                   updateBlock(idx, { buttons: nextBtns });
                                 }}
-                                className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded text-xs text-white outline-none"
+                                className="w-full bg-panel border border-line px-2 py-1.5 rounded text-xs text-white outline-none"
                               >
                                 <option value="Primary">Primary (Blau)</option>
                                 <option value="Secondary">Secondary (Grau)</option>
@@ -764,7 +764,7 @@ export function ContainerDesigner({
                                   nextBtns[bIdx] = { ...nextBtns[bIdx], actionType: e.target.value as any };
                                   updateBlock(idx, { buttons: nextBtns });
                                 }}
-                                className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded text-xs text-white outline-none"
+                                className="w-full bg-panel border border-line px-2 py-1.5 rounded text-xs text-white outline-none"
                               >
                                 <option value="CREATE_TICKET">Ticket erstellen</option>
                                 <option value="CLOSE_TICKET">Ticket schließen</option>
@@ -781,7 +781,7 @@ export function ContainerDesigner({
                                   nextBtns[bIdx] = { ...nextBtns[bIdx], ticketTypeId: e.target.value };
                                   updateBlock(idx, { buttons: nextBtns });
                                 }}
-                                className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded text-xs text-white outline-none"
+                                className="w-full bg-panel border border-line px-2 py-1.5 rounded text-xs text-white outline-none"
                               >
                                 {panelData.ticketTypesConfig.map((t) => (
                                   <option key={t.id} value={t.id}>
@@ -835,13 +835,13 @@ export function ContainerDesigner({
 
               {/* 4. Separator */}
               {block.type === "separator" && (
-                <div className="flex items-center justify-between p-2 bg-[#14151b] rounded-lg text-xs">
+                <div className="flex items-center justify-between p-2 bg-panel rounded-lg text-xs">
                   <label className="flex items-center gap-2 cursor-pointer text-zinc-300">
                     <input
                       type="checkbox"
                       checked={block.divider !== false}
                       onChange={(e) => updateBlock(idx, { divider: e.target.checked })}
-                      className="rounded bg-[#0e0f15] border-[#27272a] text-indigo-600 cursor-pointer"
+                      className="rounded bg-panel border-line text-indigo-600 cursor-pointer"
                     />
                     <span>Optische Trennlinie zeichnen</span>
                   </label>
@@ -864,7 +864,7 @@ export function ContainerDesigner({
                           updateBlock(idx, { items: nextItems });
                         }}
                         placeholder="https://images.unsplash.com/..."
-                        className="flex-1 bg-[#14151b] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                        className="flex-1 bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                       />
                       <button
                         type="button"

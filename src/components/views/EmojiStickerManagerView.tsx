@@ -134,9 +134,9 @@ export function EmojiStickerManagerView({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#0b0f17] text-slate-200">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-canvas text-slate-200">
       {/* Header Banner */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[#0d121c] border border-[#1e293b] shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-canvas border border-line shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
             <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
@@ -148,7 +148,7 @@ export function EmojiStickerManagerView({
         </div>
 
         {/* Tab Selector */}
-        <div className="flex items-center p-1 bg-[#111724] rounded-xl border border-[#1e293b] gap-1">
+        <div className="flex items-center p-1 bg-panel rounded-xl border border-line gap-1">
           <button
             onClick={() => setActiveTab("emojis")}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
@@ -184,7 +184,7 @@ export function EmojiStickerManagerView({
             {emojis.map((e) => (
               <div
                 key={e.id}
-                className="group relative bg-[#111724] border border-[#1e293b] hover:border-indigo-500/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm transition-all"
+                className="group relative bg-panel border border-line hover:border-indigo-500/40 rounded-2xl p-4 flex flex-col items-center justify-center text-center shadow-sm transition-all"
               >
                 <img src={e.url} alt={e.name} className="w-12 h-12 object-contain mb-2" />
                 <span className="text-xs font-mono font-semibold text-slate-200 truncate w-full">:{e.name}:</span>
@@ -194,7 +194,7 @@ export function EmojiStickerManagerView({
                   </span>
                 )}
 
-                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 flex items-center gap-1 bg-[#0d121c]/90 backdrop-blur-md p-1 rounded-lg border border-[#1e293b]">
+                <div className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 flex items-center gap-1 bg-canvas/90 backdrop-blur-md p-1 rounded-lg border border-line">
                   <button
                     onClick={() => {
                       setEditingEmoji(e);
@@ -235,7 +235,7 @@ export function EmojiStickerManagerView({
             {stickers.map((s) => (
               <div
                 key={s.id}
-                className="group relative bg-[#111724] border border-[#1e293b] hover:border-indigo-500/40 rounded-2xl p-5 flex flex-col items-center text-center shadow-sm transition-all"
+                className="group relative bg-panel border border-line hover:border-indigo-500/40 rounded-2xl p-5 flex flex-col items-center text-center shadow-sm transition-all"
               >
                 <img src={s.url} alt={s.name} className="w-24 h-24 object-contain mb-3" />
                 <p className="text-sm font-bold text-white">{s.name}</p>
@@ -246,7 +246,7 @@ export function EmojiStickerManagerView({
 
                 <button
                   onClick={() => handleDeleteStickerClick(s)}
-                  className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 p-1.5 bg-[#0d121c]/90 backdrop-blur-md rounded-lg border border-[#1e293b] text-slate-400 hover:text-rose-400 cursor-pointer"
+                  className="opacity-0 group-hover:opacity-100 transition-opacity absolute top-2 right-2 p-1.5 bg-canvas/90 backdrop-blur-md rounded-lg border border-line text-slate-400 hover:text-rose-400 cursor-pointer"
                   title="Sticker löschen"
                 >
                   <Trash2 className="w-4 h-4" />
@@ -260,8 +260,8 @@ export function EmojiStickerManagerView({
       {/* UPLOAD EMOJI MODAL */}
       {isUploadEmojiOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
+          <div className="bg-[#0f1626] border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <h3 className="text-base font-bold text-white">Emoji hochladen</h3>
               <button onClick={() => setIsUploadEmojiOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2333]">
                 <X className="w-5 h-5" />
@@ -278,7 +278,7 @@ export function EmojiStickerManagerView({
                   placeholder="z. B. poggers"
                   value={emojiName}
                   onChange={(e) => setEmojiName(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
                 />
               </div>
 
@@ -290,24 +290,24 @@ export function EmojiStickerManagerView({
                   type="file"
                   accept="image/png, image/jpeg, image/gif"
                   onChange={(e) => handleFileUpload(e, setEmojiImage)}
-                  className="w-full text-xs text-slate-400 bg-[#0d121c] border border-[#1e293b] rounded-xl p-2 cursor-pointer mb-2"
+                  className="w-full text-xs text-slate-400 bg-canvas border border-line rounded-xl p-2 cursor-pointer mb-2"
                 />
                 <input
                   type="url"
                   placeholder="Oder Bild-URL einfügen (https://...)"
                   value={emojiImage.startsWith("data:") ? "" : emojiImage}
                   onChange={(e) => setEmojiImage(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2 text-xs transition-all outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2 text-xs transition-all outline-none"
                 />
               </div>
 
               {emojiImage && (
-                <div className="flex justify-center p-4 bg-[#0d121c] border border-[#1e293b] rounded-xl">
+                <div className="flex justify-center p-4 bg-canvas border border-line rounded-xl">
                   <img src={emojiImage} alt="Preview" className="w-12 h-12 object-contain" />
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1e293b]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setIsUploadEmojiOpen(false)}
@@ -330,8 +330,8 @@ export function EmojiStickerManagerView({
       {/* RENAME EMOJI MODAL */}
       {editingEmoji && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
+          <div className="bg-[#0f1626] border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <h3 className="text-base font-bold text-white">Emoji umbenennen</h3>
               <button onClick={() => setEditingEmoji(null)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2333]">
                 <X className="w-5 h-5" />
@@ -347,10 +347,10 @@ export function EmojiStickerManagerView({
                   required
                   value={renameEmojiName}
                   onChange={(e) => setRenameEmojiName(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
                 />
               </div>
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1e293b]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setEditingEmoji(null)}
@@ -373,8 +373,8 @@ export function EmojiStickerManagerView({
       {/* UPLOAD STICKER MODAL */}
       {isUploadStickerOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
+          <div className="bg-[#0f1626] border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <h3 className="text-base font-bold text-white">Sticker hochladen</h3>
               <button onClick={() => setIsUploadStickerOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2333]">
                 <X className="w-5 h-5" />
@@ -391,7 +391,7 @@ export function EmojiStickerManagerView({
                   placeholder="z. B. Wave Hello"
                   value={stickerName}
                   onChange={(e) => setStickerName(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
                 />
               </div>
 
@@ -404,7 +404,7 @@ export function EmojiStickerManagerView({
                   placeholder="Sticker-Beschreibung..."
                   value={stickerDesc}
                   onChange={(e) => setStickerDesc(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
                 />
               </div>
 
@@ -417,7 +417,7 @@ export function EmojiStickerManagerView({
                   placeholder="z. B. 👋 oder Welle"
                   value={stickerTags}
                   onChange={(e) => setStickerTags(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
                 />
               </div>
 
@@ -429,11 +429,11 @@ export function EmojiStickerManagerView({
                   type="file"
                   accept="image/png, image/apng"
                   onChange={(e) => handleFileUpload(e, setStickerFile)}
-                  className="w-full text-xs text-slate-400 bg-[#0d121c] border border-[#1e293b] rounded-xl p-2 cursor-pointer"
+                  className="w-full text-xs text-slate-400 bg-canvas border border-line rounded-xl p-2 cursor-pointer"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1e293b]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setIsUploadStickerOpen(false)}

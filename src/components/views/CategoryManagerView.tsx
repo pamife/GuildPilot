@@ -87,7 +87,7 @@ export function CategoryManagerView({
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#0b0f17] text-slate-200">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-canvas text-slate-200">
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
@@ -111,8 +111,8 @@ export function CategoryManagerView({
         {categories.map((cat) => {
           const childChannels = channels.filter((c) => c.parentId === cat.id);
           return (
-            <div key={cat.id} className="bg-[#111724] border border-[#1e293b] hover:border-indigo-500/30 rounded-2xl p-5 shadow-sm space-y-4 transition-all">
-              <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
+            <div key={cat.id} className="bg-panel border border-line hover:border-indigo-500/30 rounded-2xl p-5 shadow-sm space-y-4 transition-all">
+              <div className="flex items-center justify-between border-b border-line pb-3">
                 <div className="flex items-center gap-2.5">
                   <FolderTree className="w-5 h-5 text-indigo-400" />
                   <span className="text-xs font-bold text-white uppercase tracking-wider">{cat.name}</span>
@@ -123,7 +123,7 @@ export function CategoryManagerView({
                       setEditingCategory(cat);
                       setRenameName(cat.name);
                     }}
-                    className="p-1.5 text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-lg transition-colors cursor-pointer"
+                    className="p-1.5 text-slate-400 hover:text-white hover:bg-raised rounded-lg transition-colors cursor-pointer"
                     title="Kategorie umbenennen"
                   >
                     <Edit2 className="w-3.5 h-3.5" />
@@ -147,7 +147,7 @@ export function CategoryManagerView({
                     {childChannels.map((ch) => (
                       <div
                         key={ch.id}
-                        className="flex items-center justify-between p-2.5 rounded-xl bg-[#0d121c] border border-[#1a2333] text-xs hover:border-[#27272a] transition-all"
+                        className="flex items-center justify-between p-2.5 rounded-xl bg-canvas border border-line text-xs hover:border-line transition-all"
                       >
                         <div className="flex items-center gap-2">
                           <Hash className="w-3.5 h-3.5 text-slate-400" />
@@ -175,7 +175,7 @@ export function CategoryManagerView({
       {/* CREATE CATEGORY MODAL */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+          <div className="bg-[#0f1626] border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-[#1f2c44] pb-3">
               <h3 className="text-sm font-bold text-white">Neue Kategorie erstellen</h3>
               <button onClick={() => setIsCreateOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a253b]">
@@ -193,14 +193,14 @@ export function CategoryManagerView({
                   placeholder="z. B. TEXTKANÄLE"
                   value={newCatName}
                   onChange={(e) => setNewCatName(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none"
                 />
               </div>
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#1e293b]">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-xl font-medium"
+                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-raised rounded-xl font-medium"
                 >
                   Abbrechen
                 </button>
@@ -219,7 +219,7 @@ export function CategoryManagerView({
       {/* RENAME CATEGORY MODAL */}
       {editingCategory && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+          <div className="bg-[#0f1626] border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-[#1f2c44] pb-3">
               <h3 className="text-sm font-bold text-white">Kategorie umbenennen</h3>
               <button onClick={() => setEditingCategory(null)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a253b]">
@@ -236,14 +236,14 @@ export function CategoryManagerView({
                   required
                   value={renameName}
                   onChange={(e) => setRenameName(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none"
                 />
               </div>
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#1e293b]">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setEditingCategory(null)}
-                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-xl font-medium"
+                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-raised rounded-xl font-medium"
                 >
                   Abbrechen
                 </button>
@@ -262,7 +262,7 @@ export function CategoryManagerView({
       {/* MOVE CHANNEL MODAL */}
       {movingChannel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+          <div className="bg-[#0f1626] border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
             <div className="flex items-center justify-between border-b border-[#1f2c44] pb-3">
               <h3 className="text-sm font-bold text-white">#{movingChannel.name} verschieben</h3>
               <button onClick={() => setMovingChannel(null)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a253b]">
@@ -277,7 +277,7 @@ export function CategoryManagerView({
                 <select
                   value={targetCategory}
                   onChange={(e) => setTargetCategory(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
                 >
                   <option value="">(Keine Kategorie - Unkategorisiert)</option>
                   {categories.map((cat) => (
@@ -287,11 +287,11 @@ export function CategoryManagerView({
                   ))}
                 </select>
               </div>
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#1e293b]">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setMovingChannel(null)}
-                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-xl font-medium"
+                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-raised rounded-xl font-medium"
                 >
                   Abbrechen
                 </button>

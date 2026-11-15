@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { api } from "@/lib/api";
 import { useToast } from "@/components/ToastContainer";
 
-const input = "w-full bg-[#18181b] border border-[#35353b] rounded-lg p-2.5 text-white";
+const input = "w-full bg-panel border border-[#35353b] rounded-lg p-2.5 text-white";
 const button = "px-3 py-2 rounded-lg bg-[#27272a] hover:bg-[#35353b] font-semibold text-white disabled:opacity-50";
 
 export function ApplicationDmSettings({ value, onChange, channels, roles }: {
@@ -25,7 +25,7 @@ export function ApplicationDmSettings({ value, onChange, channels, roles }: {
   const roleSelect = (key: string, label: string) => (
     <fieldset className="grid gap-1">
       <legend>{label}</legend>
-      <div className="max-h-28 overflow-y-auto rounded-lg border border-[#35353b] bg-[#18181b] p-2">
+      <div className="max-h-28 overflow-y-auto rounded-lg border border-[#35353b] bg-panel p-2">
         {roles.filter(role => role.name !== "@everyone").map(role => (
           <label key={role.id} className="flex items-center gap-2 py-1">
             <input type="checkbox" checked={value[key]?.includes(role.id) ?? false} onChange={e =>
@@ -117,7 +117,7 @@ export function ApplicationReviewControls({ app, onUpdate }: { app: any; onUpdat
   };
 
   return (
-    <section className="space-y-3 rounded-xl border border-[#1f1f23] bg-[#0d0d11] p-4">
+    <section className="space-y-3 rounded-xl border border-[#1f1f23] bg-canvas p-4">
       <h4 className="text-sm font-bold text-white">Review actions</h4>
       <div className="flex flex-wrap gap-2">
         {options.map(option => <button key={option} className={button} onClick={() => choose(option)}
@@ -128,7 +128,7 @@ export function ApplicationReviewControls({ app, onUpdate }: { app: any; onUpdat
       </div>
       {ticketUrl && <a href={ticketUrl} target="_blank" rel="noreferrer" className="text-indigo-300 underline">Open linked ticket in Discord</a>}
       {action && (
-        <form onSubmit={submit} className="space-y-3 border-t border-[#27272a] pt-3">
+        <form onSubmit={submit} className="space-y-3 border-t border-line pt-3">
           <h5 className="font-semibold">{titles[action]} · Application #{app.appNumber}</h5>
           {["dm", "accept", "deny", "waitlist", "close"].includes(action) && (
             <label className="grid gap-1">{action === "dm" ? "Message to the applicant" : "Reason (optional)"}

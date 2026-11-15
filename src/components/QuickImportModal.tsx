@@ -176,9 +176,9 @@ export function QuickImportModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-      <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-slate-200">
+      <div className="bg-[#0f1626] border border-line rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh] text-slate-200">
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-[#1f2c44] bg-[#0d121c]">
+        <div className="flex items-center justify-between p-5 border-b border-[#1f2c44] bg-canvas">
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
               <Download className="w-5 h-5" />
@@ -194,7 +194,7 @@ export function QuickImportModal({
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a253a] transition-colors"
+            className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-raised transition-colors"
           >
             <X className="w-4 h-4" />
           </button>
@@ -224,7 +224,7 @@ export function QuickImportModal({
                       className={`flex items-center gap-3 p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
                         isSelected
                           ? "bg-indigo-600/20 border-indigo-500 text-white shadow-sm"
-                          : "bg-[#0d121c] border-[#1e293b] hover:border-slate-500 text-slate-300"
+                          : "bg-canvas border-line hover:border-slate-500 text-slate-300"
                       }`}
                     >
                       {g.icon ? (
@@ -276,7 +276,7 @@ export function QuickImportModal({
                   </div>
 
                   {summary.tickets?.panels?.length === 0 ? (
-                    <p className="text-xs text-slate-500 p-3 bg-[#0d121c] rounded-xl text-center">
+                    <p className="text-xs text-slate-500 p-3 bg-canvas rounded-xl text-center">
                       Keine Ticket-Panels auf diesem Server gefunden.
                     </p>
                   ) : (
@@ -290,7 +290,7 @@ export function QuickImportModal({
                             className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                               isChecked
                                 ? "bg-indigo-600/10 border-indigo-500/40 text-white"
-                                : "bg-[#0d121c] border-[#1e293b] hover:border-slate-600 text-slate-300"
+                                : "bg-canvas border-line hover:border-slate-600 text-slate-300"
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -318,7 +318,7 @@ export function QuickImportModal({
                   )}
 
                   {summary.tickets?.hasSettings && (
-                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0d121c] border border-[#1e293b] cursor-pointer">
+                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-canvas border border-line cursor-pointer">
                       <input
                         type="checkbox"
                         checked={includeSettings}
@@ -361,7 +361,7 @@ export function QuickImportModal({
                   </div>
 
                   {summary.applications?.forms?.length === 0 ? (
-                    <p className="text-xs text-slate-500 p-3 bg-[#0d121c] rounded-xl text-center">
+                    <p className="text-xs text-slate-500 p-3 bg-canvas rounded-xl text-center">
                       Keine Formulare auf diesem Server gefunden.
                     </p>
                   ) : (
@@ -375,7 +375,7 @@ export function QuickImportModal({
                             className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                               isChecked
                                 ? "bg-indigo-600/10 border-indigo-500/40 text-white"
-                                : "bg-[#0d121c] border-[#1e293b] hover:border-slate-600 text-slate-300"
+                                : "bg-canvas border-line hover:border-slate-600 text-slate-300"
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -401,7 +401,7 @@ export function QuickImportModal({
                   )}
 
                   {summary.applications?.hasSettings && (
-                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0d121c] border border-[#1e293b] cursor-pointer">
+                    <label className="flex items-center gap-2.5 p-3 rounded-xl bg-canvas border border-line cursor-pointer">
                       <input
                         type="checkbox"
                         checked={includeSettings}
@@ -428,7 +428,7 @@ export function QuickImportModal({
                     Willkommens- & Abschiedskarten-Konfiguration
                   </label>
 
-                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0d121c] border border-[#1e293b] cursor-pointer">
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-canvas border border-line cursor-pointer">
                     <input
                       type="checkbox"
                       checked={includeWelcome}
@@ -447,7 +447,7 @@ export function QuickImportModal({
                     </div>
                   </label>
 
-                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#0d121c] border border-[#1e293b] cursor-pointer">
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-canvas border border-line cursor-pointer">
                     <input
                       type="checkbox"
                       checked={includeLeave}
@@ -491,7 +491,7 @@ export function QuickImportModal({
                   </div>
 
                   {summary.customMessages?.length === 0 ? (
-                    <p className="text-xs text-slate-500 p-3 bg-[#0d121c] rounded-xl text-center">
+                    <p className="text-xs text-slate-500 p-3 bg-canvas rounded-xl text-center">
                       Keine benutzerdefinierten Nachrichten gefunden.
                     </p>
                   ) : (
@@ -505,7 +505,7 @@ export function QuickImportModal({
                             className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                               isChecked
                                 ? "bg-indigo-600/10 border-indigo-500/40 text-white"
-                                : "bg-[#0d121c] border-[#1e293b] hover:border-slate-600 text-slate-300"
+                                : "bg-canvas border-line hover:border-slate-600 text-slate-300"
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -553,7 +553,7 @@ export function QuickImportModal({
                   </div>
 
                   {summary.autoReact?.length === 0 ? (
-                    <p className="text-xs text-slate-500 p-3 bg-[#0d121c] rounded-xl text-center">
+                    <p className="text-xs text-slate-500 p-3 bg-canvas rounded-xl text-center">
                       Keine Auto-Reaktionsregeln auf diesem Server gefunden.
                     </p>
                   ) : (
@@ -567,7 +567,7 @@ export function QuickImportModal({
                             className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                               isChecked
                                 ? "bg-indigo-600/10 border-indigo-500/40 text-white"
-                                : "bg-[#0d121c] border-[#1e293b] hover:border-slate-600 text-slate-300"
+                                : "bg-canvas border-line hover:border-slate-600 text-slate-300"
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -596,7 +596,7 @@ export function QuickImportModal({
         </div>
 
         {/* Footer */}
-        <div className="flex items-center justify-between p-4 border-t border-[#1f2c44] bg-[#0d121c]">
+        <div className="flex items-center justify-between p-4 border-t border-[#1f2c44] bg-canvas">
           <p className="text-[11px] text-slate-400">
             Rollen & Kanäle werden automatisch nach Namen zugeordnet.
           </p>

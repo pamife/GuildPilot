@@ -452,9 +452,9 @@ export function MemberManagerView({
   }, [members, bans]);
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#0b0f17] text-slate-200 select-none">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-canvas text-slate-200 select-none">
       {/* Top Header */}
-      <div className="p-6 border-b border-[#1e293b] bg-[#0d121c] shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-6 border-b border-line bg-canvas shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
@@ -463,7 +463,7 @@ export function MemberManagerView({
             <div>
               <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                 Mitglieder-Manager
-                <span className="text-xs font-mono font-normal bg-[#111724] border border-[#1e293b] text-slate-400 px-2.5 py-0.5 rounded-full">
+                <span className="text-xs font-mono font-normal bg-panel border border-line text-slate-400 px-2.5 py-0.5 rounded-full">
                   {members.length} Mitglieder geladen
                 </span>
               </h1>
@@ -480,7 +480,7 @@ export function MemberManagerView({
               fetchBans();
               setIsBansModalOpen(true);
             }}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#111724] hover:bg-[#1a253a] border border-[#1e293b] hover:border-rose-500/40 text-xs font-semibold text-slate-300 hover:text-rose-300 transition-all shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-panel hover:bg-raised border border-line hover:border-rose-500/40 text-xs font-semibold text-slate-300 hover:text-rose-300 transition-all shadow-sm cursor-pointer"
           >
             <Ban className="w-4 h-4 text-rose-400" />
             <span>Bans verwalten</span>
@@ -493,7 +493,7 @@ export function MemberManagerView({
             onClick={fetchMembers}
             disabled={loading}
             title="Mitgliederliste aktualisieren"
-            className="p-2.5 rounded-xl bg-[#111724] hover:bg-[#1a253a] border border-[#1e293b] text-slate-400 hover:text-white transition-all shadow-sm cursor-pointer disabled:opacity-50"
+            className="p-2.5 rounded-xl bg-panel hover:bg-raised border border-line text-slate-400 hover:text-white transition-all shadow-sm cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-indigo-400" : ""}`} />
           </button>
@@ -501,38 +501,38 @@ export function MemberManagerView({
       </div>
 
       {/* Stats Ribbon */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 p-4 bg-[#0d121c] border-b border-[#1e293b] text-xs">
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+      <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-6 gap-2 p-4 bg-canvas border-b border-line text-xs">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <Users className="w-3.5 h-3.5 text-indigo-400" /> Gesamt
           </span>
           <span className="font-bold text-white font-mono">{stats.total}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <UserCheck className="w-3.5 h-3.5 text-emerald-400" /> Menschen
           </span>
           <span className="font-bold text-emerald-300 font-mono">{stats.humans}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <Bot className="w-3.5 h-3.5 text-sky-400" /> Bots
           </span>
           <span className="font-bold text-sky-300 font-mono">{stats.bots}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <Sparkles className="w-3.5 h-3.5 text-pink-400" /> Booster
           </span>
           <span className="font-bold text-pink-300 font-mono">{stats.boosters}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <Volume2 className="w-3.5 h-3.5 text-teal-400" /> Im Voice
           </span>
           <span className="font-bold text-teal-300 font-mono">{stats.inVoice}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <Clock className="w-3.5 h-3.5 text-amber-400" /> Timeouts
           </span>
@@ -541,7 +541,7 @@ export function MemberManagerView({
       </div>
 
       {/* Search & Filter Toolbar */}
-      <div className="p-4 bg-[#0b0f17] border-b border-[#1e293b] flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div className="p-4 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="flex flex-wrap items-center gap-2.5 flex-1 min-w-[300px]">
           {/* Search Box */}
           <div className="relative flex-1 min-w-[220px]">
@@ -551,7 +551,7 @@ export function MemberManagerView({
               placeholder="Suchen nach Name, Nickname oder ID..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full bg-[#12131a] border border-[#27272a] focus:border-discord-brand text-zinc-100 placeholder-zinc-500 rounded-xl pl-9 pr-8 py-2 text-xs transition-all outline-none"
+              className="w-full bg-panel border border-line focus:border-discord-brand text-zinc-100 placeholder-zinc-500 rounded-xl pl-9 pr-8 py-2 text-xs transition-all outline-none"
             />
             {searchQuery && (
               <button
@@ -568,7 +568,7 @@ export function MemberManagerView({
             <select
               value={selectedRoleFilter}
               onChange={(e) => setSelectedRoleFilter(e.target.value)}
-              className="bg-[#12131a] border border-[#27272a] text-zinc-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-discord-brand cursor-pointer appearance-none pr-8"
+              className="bg-panel border border-line text-zinc-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-discord-brand cursor-pointer appearance-none pr-8"
             >
               <option value="all">Alle Rollen ({roles.length})</option>
               {roles
@@ -583,7 +583,7 @@ export function MemberManagerView({
           </div>
 
           {/* Member Type Filters */}
-          <div className="flex items-center bg-[#12131a] border border-[#27272a] rounded-xl p-1 text-xs">
+          <div className="flex items-center bg-panel border border-line rounded-xl p-1 text-xs">
             {(
               [
                 { id: "all", label: "Alle" },
@@ -616,7 +616,7 @@ export function MemberManagerView({
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value as any)}
-            className="bg-[#12131a] border border-[#27272a] text-zinc-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-discord-brand cursor-pointer"
+            className="bg-panel border border-line text-zinc-200 text-xs rounded-xl px-3 py-2 outline-none focus:border-discord-brand cursor-pointer"
           >
             <option value="joined_desc">Neueste Mitglieder zuerst</option>
             <option value="joined_asc">Älteste Mitglieder zuerst</option>
@@ -699,7 +699,7 @@ export function MemberManagerView({
                           <img
                             src={member.avatar}
                             alt=""
-                            className="w-10 h-10 rounded-full object-cover border border-[#27272a]"
+                            className="w-10 h-10 rounded-full object-cover border border-line"
                           />
                         ) : (
                           <div className="w-10 h-10 rounded-full bg-discord-brand/20 border border-discord-brand/40 flex items-center justify-center font-bold text-discord-brand">
@@ -785,7 +785,7 @@ export function MemberManagerView({
                             setRolesModalMember(member);
                             setSelectedRoleIds(member.roles.map((r) => r.id));
                           }}
-                          className="px-1.5 py-0.5 rounded bg-[#181924] border border-[#27272a] text-[10px] text-zinc-400 hover:text-white"
+                          className="px-1.5 py-0.5 rounded bg-[#181924] border border-line text-[10px] text-zinc-400 hover:text-white"
                         >
                           +{member.roles.length - 3} weitere
                         </button>
@@ -796,7 +796,7 @@ export function MemberManagerView({
                           setSelectedRoleIds(member.roles.map((r) => r.id));
                         }}
                         title="Rollen anpassen"
-                        className="p-1 rounded bg-[#181924] hover:bg-[#222332] text-zinc-400 hover:text-white border border-[#27272a] cursor-pointer"
+                        className="p-1 rounded bg-[#181924] hover:bg-[#222332] text-zinc-400 hover:text-white border border-line cursor-pointer"
                       >
                         <Plus className="w-3 h-3" />
                       </button>
@@ -843,7 +843,7 @@ export function MemberManagerView({
                           setNewNickname(member.nickname || "");
                         }}
                         title="Nickname bearbeiten"
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-[#1e1f2b] transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-white hover:bg-raised transition-colors cursor-pointer"
                       >
                         <Edit3 className="w-4 h-4" />
                       </button>
@@ -858,7 +858,7 @@ export function MemberManagerView({
                         className={`p-1.5 rounded-lg transition-colors cursor-pointer ${
                           member.isTimedOut
                             ? "text-amber-400 hover:bg-amber-500/20"
-                            : "text-zinc-400 hover:text-amber-300 hover:bg-[#1e1f2b]"
+                            : "text-zinc-400 hover:text-amber-300 hover:bg-raised"
                         }`}
                       >
                         <Clock className="w-4 h-4" />
@@ -870,7 +870,7 @@ export function MemberManagerView({
                           setDmMessage("");
                         }}
                         title="Direktnachricht senden"
-                        className="p-1.5 rounded-lg text-zinc-400 hover:text-sky-300 hover:bg-[#1e1f2b] transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-zinc-400 hover:text-sky-300 hover:bg-raised transition-colors cursor-pointer"
                       >
                         <MessageSquare className="w-4 h-4" />
                       </button>
@@ -909,7 +909,7 @@ export function MemberManagerView({
       {/* Bulk Action Floating Toolbar */}
       {selectedMemberIds.size > 0 && (
         <div className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-[#0b0c14] border border-discord-brand/50 rounded-2xl shadow-2xl p-3 flex items-center gap-3 z-40 animate-in slide-in-from-bottom-4 duration-200">
-          <div className="flex items-center gap-2 pl-2 pr-3 border-r border-[#27272a] text-xs font-bold text-white">
+          <div className="flex items-center gap-2 pl-2 pr-3 border-r border-line text-xs font-bold text-white">
             <CheckSquare className="w-4 h-4 text-discord-brand" />
             <span>{selectedMemberIds.size} ausgewählt</span>
           </div>
@@ -929,7 +929,7 @@ export function MemberManagerView({
               setBulkActionType("removeRole");
               setIsBulkModalOpen(true);
             }}
-            className="px-3 py-1.5 rounded-xl bg-[#1e1f2b] hover:bg-[#2a2b3c] text-zinc-200 font-semibold text-xs transition-colors cursor-pointer"
+            className="px-3 py-1.5 rounded-xl bg-raised hover:bg-[#2a2b3c] text-zinc-200 font-semibold text-xs transition-colors cursor-pointer"
           >
             - Rolle entfernen
           </button>
@@ -956,7 +956,7 @@ export function MemberManagerView({
 
           <button
             onClick={() => setSelectedMemberIds(new Set())}
-            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-[#18181b] transition-colors ml-1 cursor-pointer"
+            className="p-1.5 rounded-xl text-zinc-400 hover:text-white hover:bg-panel transition-colors ml-1 cursor-pointer"
             title="Auswahl aufheben"
           >
             <X className="w-4 h-4" />
@@ -992,7 +992,7 @@ export function MemberManagerView({
                 placeholder={nicknameModalMember.user.username}
                 value={newNickname}
                 onChange={(e) => setNewNickname(e.target.value)}
-                className="w-full bg-[#12131a] border border-[#27272a] focus:border-discord-brand text-zinc-100 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
+                className="w-full bg-panel border border-line focus:border-discord-brand text-zinc-100 rounded-xl px-3.5 py-2.5 text-sm outline-none transition-all"
               />
             </div>
 
@@ -1065,7 +1065,7 @@ export function MemberManagerView({
                       className={`p-3 rounded-xl border flex items-center justify-between cursor-pointer transition-all ${
                         isChecked
                           ? "bg-discord-brand/10 border-discord-brand/50 text-white"
-                          : "bg-[#12131a] border-[#1e1f2b] text-zinc-400 hover:border-[#27272a]"
+                          : "bg-panel border-[#1e1f2b] text-zinc-400 hover:border-line"
                       }`}
                     >
                       <div className="flex items-center gap-3">
@@ -1075,7 +1075,7 @@ export function MemberManagerView({
                         />
                         <span className="text-xs font-semibold text-zinc-200">@{role.name}</span>
                         {role.managed && (
-                          <span className="text-[9px] bg-[#18181b] border border-[#27272a] text-zinc-500 px-1.5 py-0.5 rounded uppercase">
+                          <span className="text-[9px] bg-panel border border-line text-zinc-500 px-1.5 py-0.5 rounded uppercase">
                             Managed
                           </span>
                         )}
@@ -1083,7 +1083,7 @@ export function MemberManagerView({
 
                       <div
                         className={`w-5 h-5 rounded-lg flex items-center justify-center ${
-                          isChecked ? "bg-discord-brand text-white" : "border border-[#27272a]"
+                          isChecked ? "bg-discord-brand text-white" : "border border-line"
                         }`}
                       >
                         {isChecked && <Check className="w-3.5 h-3.5" />}
@@ -1151,7 +1151,7 @@ export function MemberManagerView({
                       className={`p-2.5 rounded-xl border font-semibold transition-all cursor-pointer ${
                         timeoutDuration === preset.mins
                           ? "bg-amber-500/20 border-amber-500/50 text-amber-300 font-bold"
-                          : "bg-[#12131a] border-[#1e1f2b] text-zinc-400 hover:text-white"
+                          : "bg-panel border-[#1e1f2b] text-zinc-400 hover:text-white"
                       }`}
                     >
                       {preset.label}
@@ -1169,7 +1169,7 @@ export function MemberManagerView({
                   placeholder="z. B. Spamming im Chat"
                   value={timeoutReason}
                   onChange={(e) => setTimeoutReason(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] focus:border-amber-500 text-zinc-100 rounded-xl px-3.5 py-2.5 text-xs outline-none"
+                  className="w-full bg-panel border border-line focus:border-amber-500 text-zinc-100 rounded-xl px-3.5 py-2.5 text-xs outline-none"
                 />
               </div>
             </div>
@@ -1238,7 +1238,7 @@ export function MemberManagerView({
                   placeholder="z. B. Regelverstoß"
                   value={kickReason}
                   onChange={(e) => setKickReason(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] focus:border-orange-500 text-zinc-100 rounded-xl px-3.5 py-2.5 text-xs outline-none"
+                  className="w-full bg-panel border border-line focus:border-orange-500 text-zinc-100 rounded-xl px-3.5 py-2.5 text-xs outline-none"
                 />
               </div>
             </div>
@@ -1292,7 +1292,7 @@ export function MemberManagerView({
                 <select
                   value={banDeleteSeconds}
                   onChange={(e) => setBanDeleteSeconds(Number(e.target.value))}
-                  className="w-full bg-[#12131a] border border-[#27272a] text-zinc-200 text-xs rounded-xl p-2.5 outline-none focus:border-rose-500 cursor-pointer"
+                  className="w-full bg-panel border border-line text-zinc-200 text-xs rounded-xl p-2.5 outline-none focus:border-rose-500 cursor-pointer"
                 >
                   <option value={0}>Keine Nachrichten löschen</option>
                   <option value={86400}>Letzte 24 Stunden löschen</option>
@@ -1309,7 +1309,7 @@ export function MemberManagerView({
                   placeholder="z. B. Schwerer Verstoß gegen Server-Richtlinien"
                   value={banReason}
                   onChange={(e) => setBanReason(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] focus:border-rose-500 text-zinc-100 rounded-xl px-3.5 py-2.5 text-xs outline-none"
+                  className="w-full bg-panel border border-line focus:border-rose-500 text-zinc-100 rounded-xl px-3.5 py-2.5 text-xs outline-none"
                 />
               </div>
             </div>
@@ -1357,7 +1357,7 @@ export function MemberManagerView({
                 placeholder="Schreibe deine Nachricht..."
                 value={dmMessage}
                 onChange={(e) => setDmMessage(e.target.value)}
-                className="w-full bg-[#12131a] border border-[#27272a] focus:border-sky-500 text-zinc-100 rounded-xl p-3 text-xs outline-none resize-none"
+                className="w-full bg-panel border border-line focus:border-sky-500 text-zinc-100 rounded-xl p-3 text-xs outline-none resize-none"
               />
             </div>
 
@@ -1397,7 +1397,7 @@ export function MemberManagerView({
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 bg-[#12131a] border border-[#1e1f2b] rounded-xl flex items-center justify-between">
+              <div className="p-3 bg-panel border border-[#1e1f2b] rounded-xl flex items-center justify-between">
                 <span className="text-zinc-400">Aktueller Sprachkanal:</span>
                 <span className="font-bold text-white">{voiceModalMember.voice.channelName}</span>
               </div>
@@ -1408,7 +1408,7 @@ export function MemberManagerView({
                   className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 font-semibold transition-all cursor-pointer ${
                     voiceModalMember.voice.mute
                       ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
-                      : "bg-[#12131a] border-[#1e1f2b] text-zinc-300 hover:text-white"
+                      : "bg-panel border-[#1e1f2b] text-zinc-300 hover:text-white"
                   }`}
                 >
                   {voiceModalMember.voice.mute ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
@@ -1420,7 +1420,7 @@ export function MemberManagerView({
                   className={`p-2.5 rounded-xl border flex items-center justify-center gap-2 font-semibold transition-all cursor-pointer ${
                     voiceModalMember.voice.deaf
                       ? "bg-amber-500/20 border-amber-500/40 text-amber-300"
-                      : "bg-[#12131a] border-[#1e1f2b] text-zinc-300 hover:text-white"
+                      : "bg-panel border-[#1e1f2b] text-zinc-300 hover:text-white"
                   }`}
                 >
                   {voiceModalMember.voice.deaf ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
@@ -1436,7 +1436,7 @@ export function MemberManagerView({
                   <select
                     value={targetVoiceChannelId}
                     onChange={(e) => setTargetVoiceChannelId(e.target.value)}
-                    className="flex-1 bg-[#12131a] border border-[#27272a] text-zinc-200 text-xs rounded-xl p-2.5 outline-none focus:border-emerald-500 cursor-pointer"
+                    className="flex-1 bg-panel border border-line text-zinc-200 text-xs rounded-xl p-2.5 outline-none focus:border-emerald-500 cursor-pointer"
                   >
                     {voiceChannels.map((c) => (
                       <option key={c.id} value={c.id}>
@@ -1488,7 +1488,7 @@ export function MemberManagerView({
               </button>
             </div>
 
-            <div className="p-4 bg-[#090a0f] border-b border-[#1e1f2b]">
+            <div className="p-4 bg-canvas border-b border-[#1e1f2b]">
               <div className="relative">
                 <Search className="w-4 h-4 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 <input
@@ -1496,7 +1496,7 @@ export function MemberManagerView({
                   placeholder="Bann-Liste durchsuchen..."
                   value={banSearchQuery}
                   onChange={(e) => setBanSearchQuery(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] focus:border-rose-500 text-zinc-100 placeholder-zinc-500 rounded-xl pl-9 pr-4 py-2 text-xs outline-none"
+                  className="w-full bg-panel border border-line focus:border-rose-500 text-zinc-100 placeholder-zinc-500 rounded-xl pl-9 pr-4 py-2 text-xs outline-none"
                 />
               </div>
             </div>
@@ -1525,14 +1525,14 @@ export function MemberManagerView({
                   .map((banItem) => (
                     <div
                       key={banItem.user.id}
-                      className="p-3 bg-[#12131a] border border-[#1e1f2b] rounded-xl flex items-center justify-between gap-3 text-xs"
+                      className="p-3 bg-panel border border-[#1e1f2b] rounded-xl flex items-center justify-between gap-3 text-xs"
                     >
                       <div className="flex items-center gap-3 overflow-hidden">
                         {banItem.user.avatar ? (
                           <img
                             src={banItem.user.avatar}
                             alt=""
-                            className="w-9 h-9 rounded-full object-cover border border-[#27272a]"
+                            className="w-9 h-9 rounded-full object-cover border border-line"
                           />
                         ) : (
                           <div className="w-9 h-9 rounded-full bg-rose-500/20 border border-rose-500/40 flex items-center justify-center font-bold text-rose-400">
@@ -1587,7 +1587,7 @@ export function MemberManagerView({
                 <select
                   value={bulkActionType}
                   onChange={(e) => setBulkActionType(e.target.value as any)}
-                  className="w-full bg-[#12131a] border border-[#27272a] text-zinc-200 text-xs rounded-xl p-2.5 outline-none focus:border-discord-brand cursor-pointer"
+                  className="w-full bg-panel border border-line text-zinc-200 text-xs rounded-xl p-2.5 outline-none focus:border-discord-brand cursor-pointer"
                 >
                   <option value="addRole">Rolle hinzufügen</option>
                   <option value="removeRole">Rolle entfernen</option>
@@ -1605,7 +1605,7 @@ export function MemberManagerView({
                   <select
                     value={bulkRoleId}
                     onChange={(e) => setBulkRoleId(e.target.value)}
-                    className="w-full bg-[#12131a] border border-[#27272a] text-zinc-200 text-xs rounded-xl p-2.5 outline-none focus:border-discord-brand cursor-pointer"
+                    className="w-full bg-panel border border-line text-zinc-200 text-xs rounded-xl p-2.5 outline-none focus:border-discord-brand cursor-pointer"
                   >
                     <option value="">-- Rolle wählen --</option>
                     {roles
@@ -1630,7 +1630,7 @@ export function MemberManagerView({
                     max={40320}
                     value={bulkDurationMinutes}
                     onChange={(e) => setBulkDurationMinutes(Number(e.target.value))}
-                    className="w-full bg-[#12131a] border border-[#27272a] focus:border-amber-500 text-zinc-100 rounded-xl px-3.5 py-2.5 text-xs outline-none"
+                    className="w-full bg-panel border border-line focus:border-amber-500 text-zinc-100 rounded-xl px-3.5 py-2.5 text-xs outline-none"
                   />
                 </div>
               )}
@@ -1644,7 +1644,7 @@ export function MemberManagerView({
                   placeholder="z. B. Massen-Aktion via Dashboard"
                   value={bulkReason}
                   onChange={(e) => setBulkReason(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] focus:border-discord-brand text-zinc-100 rounded-xl px-3.5 py-2.5 text-xs outline-none"
+                  className="w-full bg-panel border border-line focus:border-discord-brand text-zinc-100 rounded-xl px-3.5 py-2.5 text-xs outline-none"
                 />
               </div>
             </div>

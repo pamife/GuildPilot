@@ -191,9 +191,9 @@ export function AutoReactView({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#0b0f17] text-slate-200 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-canvas text-slate-200 overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-[#1e293b] bg-[#0d121c] flex flex-wrap items-center justify-between gap-4">
+      <div className="p-6 border-b border-line bg-canvas flex flex-wrap items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400">
             <Smile className="w-5 h-5" />
@@ -211,7 +211,7 @@ export function AutoReactView({
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#111724] hover:bg-[#1a2333] text-slate-300 hover:text-white border border-[#1e293b] transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-panel hover:bg-[#1a2333] text-slate-300 hover:text-white border border-line transition-all cursor-pointer shadow-sm"
             title="Auto-Reaktionen von einem anderen Server importieren"
           >
             <Download className="w-4 h-4 text-amber-400" />
@@ -236,7 +236,7 @@ export function AutoReactView({
             <p className="text-xs">Lade Auto-Reaktionsregeln...</p>
           </div>
         ) : rules.length === 0 ? (
-          <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-10 text-center max-w-lg mx-auto my-8 space-y-4 shadow-sm">
+          <div className="bg-panel border border-line rounded-2xl p-10 text-center max-w-lg mx-auto my-8 space-y-4 shadow-sm">
             <div className="w-14 h-14 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-2xl flex items-center justify-center mx-auto">
               <Smile className="w-7 h-7" />
             </div>
@@ -268,10 +268,10 @@ export function AutoReactView({
               return (
                 <div
                   key={rule.id}
-                  className={`bg-[#111724] border rounded-2xl p-5 space-y-4 transition-all flex flex-col justify-between shadow-sm ${
+                  className={`bg-panel border rounded-2xl p-5 space-y-4 transition-all flex flex-col justify-between shadow-sm ${
                     rule.enabled
-                      ? "border-[#1e293b] hover:border-indigo-500/40"
-                      : "border-[#1e293b]/50 opacity-60 bg-[#0d121c]"
+                      ? "border-line hover:border-indigo-500/40"
+                      : "border-line/50 opacity-60 bg-canvas"
                   }`}
                 >
                   <div className="space-y-3">
@@ -324,7 +324,7 @@ export function AutoReactView({
                       </span>
                       <div className="flex flex-wrap gap-1">
                         {ruleChannels.length === 0 ? (
-                          <span className="px-2 py-0.5 rounded-md bg-[#0d121c] text-[11px] text-slate-400 font-medium">
+                          <span className="px-2 py-0.5 rounded-md bg-canvas text-[11px] text-slate-400 font-medium">
                             🌐 Alle Kanäle
                           </span>
                         ) : (
@@ -333,7 +333,7 @@ export function AutoReactView({
                             return (
                               <span
                                 key={cId}
-                                className="px-2 py-0.5 rounded-md bg-[#0d121c] border border-[#1e293b] text-[11px] text-indigo-300 font-mono flex items-center gap-1"
+                                className="px-2 py-0.5 rounded-md bg-canvas border border-line text-[11px] text-indigo-300 font-mono flex items-center gap-1"
                               >
                                 <Hash className="w-3 h-3 text-slate-500" />
                                 {c ? c.name : cId}
@@ -349,11 +349,11 @@ export function AutoReactView({
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
                         Reaktions-Emojis ({ruleEmojis.length})
                       </span>
-                      <div className="flex flex-wrap gap-1.5 bg-[#0d121c] p-2.5 rounded-xl border border-[#1e293b]">
+                      <div className="flex flex-wrap gap-1.5 bg-canvas p-2.5 rounded-xl border border-line">
                         {ruleEmojis.map((emojiStr, idx) => (
                           <span
                             key={idx}
-                            className="text-sm p-1 rounded bg-[#111724] border border-[#1e293b] flex items-center justify-center min-w-[28px] select-none shadow-sm"
+                            className="text-sm p-1 rounded bg-panel border border-line flex items-center justify-center min-w-[28px] select-none shadow-sm"
                           >
                             {emojiStr}
                           </span>
@@ -362,7 +362,7 @@ export function AutoReactView({
                     </div>
                   </div>
 
-                  <div className="pt-2 text-[10px] text-slate-500 flex items-center justify-between border-t border-[#1e293b]">
+                  <div className="pt-2 text-[10px] text-slate-500 flex items-center justify-between border-t border-line">
                     <span>{rule.ignoreBots ? "🤖 Ignoriert Bots" : "🤖 Reagiert auf alle"}</span>
                     <span>{new Date(rule.createdAt).toLocaleDateString()}</span>
                   </div>
@@ -376,7 +376,7 @@ export function AutoReactView({
       {/* Create / Edit Modal */}
       {isEditing && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl animate-in fade-in duration-150 max-h-[90vh] overflow-y-auto">
+          <div className="bg-[#0f1626] border border-line rounded-2xl max-w-xl w-full p-6 space-y-5 shadow-2xl animate-in fade-in duration-150 max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between border-b border-[#1f2c44] pb-4">
               <div className="flex items-center gap-2">
@@ -406,7 +406,7 @@ export function AutoReactView({
                     value={formName}
                     onChange={(e) => setFormName(e.target.value)}
                     placeholder="z. B. Meme-Kanal Reaktionen"
-                    className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-canvas border border-line rounded-xl px-3.5 py-2 text-xs font-semibold text-white focus:outline-none focus:border-indigo-500"
                   />
                 </div>
 
@@ -420,7 +420,7 @@ export function AutoReactView({
                     className={`w-full py-2 px-3 rounded-xl text-xs font-bold border transition-colors flex items-center justify-center gap-2 cursor-pointer ${
                       formEnabled
                         ? "bg-emerald-600/20 border-emerald-500 text-emerald-400"
-                        : "bg-[#0d121c] border-[#1e293b] text-slate-400"
+                        : "bg-canvas border-line text-slate-400"
                     }`}
                   >
                     <span
@@ -438,7 +438,7 @@ export function AutoReactView({
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
                   Zielkanäle (Leer lassen für Alle Kanäle)
                 </label>
-                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-[#0d121c] rounded-xl border border-[#1e293b]">
+                <div className="flex flex-wrap gap-1.5 max-h-36 overflow-y-auto p-2 bg-canvas rounded-xl border border-line">
                   {textChannels.map((c) => {
                     const isSelected = formChannelIds.includes(c.id);
                     return (
@@ -449,7 +449,7 @@ export function AutoReactView({
                         className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                           isSelected
                             ? "bg-indigo-500/20 border-indigo-400 text-indigo-300 font-bold"
-                            : "bg-[#111724] border-[#1e293b] text-slate-400 hover:text-white"
+                            : "bg-panel border-line text-slate-400 hover:text-white"
                         }`}
                       >
                         <Hash className="w-3 h-3 text-slate-500" />
@@ -473,7 +473,7 @@ export function AutoReactView({
                 </div>
 
                 {/* Selected Emojis Box */}
-                <div className="min-h-[50px] bg-[#0d121c] border border-[#1e293b] rounded-xl p-3 flex flex-wrap items-center gap-2">
+                <div className="min-h-[50px] bg-canvas border border-line rounded-xl p-3 flex flex-wrap items-center gap-2">
                   {formEmojis.length === 0 ? (
                     <span className="text-xs text-slate-500 italic">
                       Klicke auf Emojis unten oder tippe eines ein
@@ -482,7 +482,7 @@ export function AutoReactView({
                     formEmojis.map((emoji, idx) => (
                       <div
                         key={idx}
-                        className="flex items-center gap-1.5 bg-[#111724] border border-[#1e293b] px-2.5 py-1 rounded-lg text-xs text-white shadow-sm"
+                        className="flex items-center gap-1.5 bg-panel border border-line px-2.5 py-1 rounded-lg text-xs text-white shadow-sm"
                       >
                         <span>{emoji}</span>
                         <button
@@ -502,13 +502,13 @@ export function AutoReactView({
                   <span className="text-[10px] uppercase font-bold text-slate-400">
                     Beliebte Reaktionen:
                   </span>
-                  <div className="flex flex-wrap gap-1.5 bg-[#0d121c] p-2 rounded-xl border border-[#1e293b]">
+                  <div className="flex flex-wrap gap-1.5 bg-canvas p-2 rounded-xl border border-line">
                     {COMMON_EMOJIS.map((emoji) => (
                       <button
                         key={emoji}
                         type="button"
                         onClick={() => addEmoji(emoji)}
-                        className="text-base p-1 hover:bg-[#111724] rounded-lg transition-transform active:scale-125 cursor-pointer"
+                        className="text-base p-1 hover:bg-panel rounded-lg transition-transform active:scale-125 cursor-pointer"
                       >
                         {emoji}
                       </button>
@@ -522,14 +522,14 @@ export function AutoReactView({
                     <span className="text-[10px] uppercase font-bold text-slate-400">
                       Servereigene Emojis:
                     </span>
-                    <div className="flex flex-wrap gap-1.5 bg-[#0d121c] p-2 rounded-xl border border-[#1e293b] max-h-24 overflow-y-auto">
+                    <div className="flex flex-wrap gap-1.5 bg-canvas p-2 rounded-xl border border-line max-h-24 overflow-y-auto">
                       {guildCustomEmojis.map((e) => (
                         <button
                           key={e.id}
                           type="button"
                           onClick={() => addEmoji(`<:${e.name}:${e.id}>`)}
                           title={`:${e.name}:`}
-                          className="p-1 hover:bg-[#111724] rounded-lg transition-all cursor-pointer"
+                          className="p-1 hover:bg-panel rounded-lg transition-all cursor-pointer"
                         >
                           {e.url ? (
                             <img src={e.url} alt={e.name} className="w-5 h-5 object-contain" />
@@ -555,12 +555,12 @@ export function AutoReactView({
                       }
                     }}
                     placeholder="Emoji eintippen oder einfügen..."
-                    className="flex-1 bg-[#0d121c] border border-[#1e293b] rounded-xl px-3.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
+                    className="flex-1 bg-canvas border border-line rounded-xl px-3.5 py-1.5 text-xs text-white focus:outline-none focus:border-indigo-500"
                   />
                   <button
                     type="button"
                     onClick={handleAddCustomInputEmoji}
-                    className="px-3.5 py-1.5 bg-[#111724] hover:bg-indigo-600 text-white text-xs font-semibold rounded-xl border border-[#1e293b] transition-colors cursor-pointer"
+                    className="px-3.5 py-1.5 bg-panel hover:bg-indigo-600 text-white text-xs font-semibold rounded-xl border border-line transition-colors cursor-pointer"
                   >
                     Hinzufügen
                   </button>
@@ -568,7 +568,7 @@ export function AutoReactView({
               </div>
 
               {/* Ignore Bots Toggle */}
-              <div className="flex items-center justify-between pt-2 border-t border-[#1e293b]">
+              <div className="flex items-center justify-between pt-2 border-t border-line">
                 <div className="flex items-center gap-2">
                   <Bot className="w-4 h-4 text-slate-400" />
                   <span className="text-xs font-semibold text-slate-300">

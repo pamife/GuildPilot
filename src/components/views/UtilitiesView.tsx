@@ -226,8 +226,8 @@ export function UtilitiesView({
     purgeDbConfigs;
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 select-none bg-[#0b0f17] text-slate-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[#0d121c] border border-[#1e293b] shadow-sm">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 select-none bg-canvas text-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-canvas border border-line shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
             <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
@@ -272,7 +272,7 @@ export function UtilitiesView({
       </div>
 
       {/* Instant Search Bar */}
-      <div className="bg-[#111724] border border-[#1e293b] hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
+      <div className="bg-panel border border-line hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
         <h3 className="text-base font-bold text-white flex items-center gap-2">
           <Search className="w-5 h-5 text-indigo-400" /> Universelle Suche
         </h3>
@@ -282,7 +282,7 @@ export function UtilitiesView({
             placeholder="Kanäle, Rollen, Emojis durchsuchen..."
             value={searchQuery}
             onChange={handleSearchChange}
-            className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl pl-11 pr-4 py-3 text-xs transition-all outline-none"
+            className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl pl-11 pr-4 py-3 text-xs transition-all outline-none"
           />
           <Search className="w-4 h-4 text-slate-500 absolute left-4 top-3.5" />
           {isSearching && <RefreshCw className="w-4 h-4 animate-spin text-indigo-400 absolute right-4 top-3.5" />}
@@ -299,7 +299,7 @@ export function UtilitiesView({
                 {searchResults.channels.map((c) => (
                   <span
                     key={c.id}
-                    className="bg-[#0d121c] px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-1.5 border border-[#1e293b]"
+                    className="bg-canvas px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-1.5 border border-line"
                   >
                     <Hash className="w-3.5 h-3.5 text-indigo-400" /> #{c.name}
                   </span>
@@ -316,7 +316,7 @@ export function UtilitiesView({
                 {searchResults.roles.map((r) => (
                   <span
                     key={r.id}
-                    className="bg-[#0d121c] px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-2 border border-[#1e293b]"
+                    className="bg-canvas px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-2 border border-line"
                   >
                     <span
                       className="w-2.5 h-2.5 rounded-full"
@@ -337,7 +337,7 @@ export function UtilitiesView({
                 {searchResults.emojis.map((e) => (
                   <span
                     key={e.id}
-                    className="bg-[#0d121c] px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-2 border border-[#1e293b]"
+                    className="bg-canvas px-3 py-1.5 rounded-xl text-xs font-semibold text-slate-200 flex items-center gap-2 border border-line"
                   >
                     <img src={e.url} alt={e.name} className="w-4 h-4 object-contain" />
                     :{e.name}:
@@ -352,8 +352,8 @@ export function UtilitiesView({
       {/* Bulk Tools Row */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {/* Bulk Channel Creator */}
-        <div className="bg-[#111724] border border-[#1e293b] hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
-          <h3 className="text-base font-bold text-white flex items-center gap-2 border-b border-[#1e293b] pb-3">
+        <div className="bg-panel border border-line hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
+          <h3 className="text-base font-bold text-white flex items-center gap-2 border-b border-line pb-3">
             <Layers className="w-5 h-5 text-emerald-400" /> Kanäle massenhaft erstellen
           </h3>
           <form onSubmit={handleBulkCreateSubmit} className="space-y-4">
@@ -367,7 +367,7 @@ export function UtilitiesView({
                 placeholder="willkommen&#10;regeln&#10;ankündigungen&#10;general&#10;memes"
                 value={bulkInput}
                 onChange={(e) => setBulkInput(e.target.value)}
-                className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl p-3 text-xs font-mono transition-all outline-none resize-none"
+                className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl p-3 text-xs font-mono transition-all outline-none resize-none"
               />
             </div>
 
@@ -379,7 +379,7 @@ export function UtilitiesView({
                 <select
                   value={bulkType}
                   onChange={(e) => setBulkType(Number(e.target.value))}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-2.5 text-xs transition-all outline-none cursor-pointer"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-2.5 text-xs transition-all outline-none cursor-pointer"
                 >
                   <option value={0}>Textkanäle (#)</option>
                   <option value={2}>Sprachkanäle (🔊)</option>
@@ -393,7 +393,7 @@ export function UtilitiesView({
                 <select
                   value={bulkParentId}
                   onChange={(e) => setBulkParentId(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-2.5 text-xs transition-all outline-none cursor-pointer"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-2.5 text-xs transition-all outline-none cursor-pointer"
                 >
                   <option value="">(Ohne Kategorie)</option>
                   {channels
@@ -417,8 +417,8 @@ export function UtilitiesView({
         </div>
 
         {/* Bulk Channel Rename */}
-        <div className="bg-[#111724] border border-[#1e293b] hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
-          <h3 className="text-base font-bold text-white flex items-center gap-2 border-b border-[#1e293b] pb-3">
+        <div className="bg-panel border border-line hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
+          <h3 className="text-base font-bold text-white flex items-center gap-2 border-b border-line pb-3">
             <Edit3 className="w-5 h-5 text-amber-400" /> Kanäle im Batch umbenennen
           </h3>
           <form onSubmit={handleBulkRenameSubmit} className="space-y-4">
@@ -432,7 +432,7 @@ export function UtilitiesView({
                 placeholder="z. B. alt-prefix"
                 value={findPattern}
                 onChange={(e) => setFindPattern(e.target.value)}
-                className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
+                className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
               />
             </div>
 
@@ -445,7 +445,7 @@ export function UtilitiesView({
                 placeholder="z. B. neu-prefix (oder leer lassen zum Entfernen)"
                 value={replacePattern}
                 onChange={(e) => setReplacePattern(e.target.value)}
-                className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
+                className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-4 py-2.5 text-xs transition-all outline-none"
               />
             </div>
 
@@ -529,7 +529,7 @@ export function UtilitiesView({
                     </p>
 
                     {/* Channels */}
-                    <label className="flex items-center justify-between p-3 bg-[#12131a] border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
+                    <label className="flex items-center justify-between p-3 bg-panel border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
                       <div className="flex items-center gap-2.5">
                         <Hash className="w-4 h-4 text-rose-400" />
                         <div>
@@ -563,7 +563,7 @@ export function UtilitiesView({
                     )}
 
                     {/* Categories */}
-                    <label className="flex items-center justify-between p-3 bg-[#12131a] border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
+                    <label className="flex items-center justify-between p-3 bg-panel border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
                       <div className="flex items-center gap-2.5">
                         <FolderTree className="w-4 h-4 text-rose-400" />
                         <div>
@@ -582,7 +582,7 @@ export function UtilitiesView({
                     </label>
 
                     {/* Roles */}
-                    <label className="flex items-center justify-between p-3 bg-[#12131a] border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
+                    <label className="flex items-center justify-between p-3 bg-panel border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
                       <div className="flex items-center gap-2.5">
                         <Shield className="w-4 h-4 text-rose-400" />
                         <div>
@@ -601,7 +601,7 @@ export function UtilitiesView({
                     </label>
 
                     {/* Emojis */}
-                    <label className="flex items-center justify-between p-3 bg-[#12131a] border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
+                    <label className="flex items-center justify-between p-3 bg-panel border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
                       <div className="flex items-center gap-2.5">
                         <Smile className="w-4 h-4 text-rose-400" />
                         <div>
@@ -620,7 +620,7 @@ export function UtilitiesView({
                     </label>
 
                     {/* Stickers */}
-                    <label className="flex items-center justify-between p-3 bg-[#12131a] border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
+                    <label className="flex items-center justify-between p-3 bg-panel border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
                       <div className="flex items-center gap-2.5">
                         <Sticker className="w-4 h-4 text-rose-400" />
                         <div>
@@ -639,7 +639,7 @@ export function UtilitiesView({
                     </label>
 
                     {/* Invites */}
-                    <label className="flex items-center justify-between p-3 bg-[#12131a] border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
+                    <label className="flex items-center justify-between p-3 bg-panel border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
                       <div className="flex items-center gap-2.5">
                         <Link className="w-4 h-4 text-rose-400" />
                         <div>
@@ -658,7 +658,7 @@ export function UtilitiesView({
                     </label>
 
                     {/* Database Module Configs */}
-                    <label className="flex items-center justify-between p-3 bg-[#12131a] border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
+                    <label className="flex items-center justify-between p-3 bg-panel border border-[#1e1f2b] hover:border-[#2a2b3d] rounded-xl cursor-pointer transition-colors">
                       <div className="flex items-center gap-2.5">
                         <Database className="w-4 h-4 text-rose-400" />
                         <div>

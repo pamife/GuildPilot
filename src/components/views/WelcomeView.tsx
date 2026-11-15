@@ -250,9 +250,9 @@ export function WelcomeView({
   const currentConfig = activeTab === "welcome" ? welcomeConfig : leaveConfig;
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#0b0f17] text-slate-200 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-canvas text-slate-200 overflow-hidden">
       {/* Header */}
-      <div className="p-6 border-b border-[#1e293b] bg-[#0d121c] flex flex-wrap items-center justify-between gap-4">
+      <div className="p-6 border-b border-line bg-canvas flex flex-wrap items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
             <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
@@ -273,7 +273,7 @@ export function WelcomeView({
         <div className="flex items-center gap-2.5 flex-wrap">
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-[#111724] hover:bg-[#1a2333] text-slate-300 hover:text-white border border-[#1e293b] transition-all cursor-pointer shadow-sm"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl text-xs font-semibold bg-panel hover:bg-[#1a2333] text-slate-300 hover:text-white border border-line transition-all cursor-pointer shadow-sm"
             title="Einstellungen von einem anderen Server importieren"
           >
             <Download className="w-4 h-4 text-indigo-400" />
@@ -283,7 +283,7 @@ export function WelcomeView({
           <button
             onClick={handleTest}
             disabled={testing || !currentConfig.channelId}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-[#111724] hover:bg-[#1a2333] text-slate-200 hover:text-white border border-[#1e293b] transition-all disabled:opacity-50 cursor-pointer shadow-sm"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold bg-panel hover:bg-[#1a2333] text-slate-200 hover:text-white border border-line transition-all disabled:opacity-50 cursor-pointer shadow-sm"
             title="Eine Testnachricht in den ausgewählten Discord-Kanal senden"
           >
             {testing ? (
@@ -310,12 +310,12 @@ export function WelcomeView({
       </div>
 
       {/* Tabs */}
-      <div className="flex border-b border-[#1e293b] bg-[#0d121c] px-6 gap-2">
+      <div className="flex border-b border-line bg-canvas px-6 gap-2">
         <button
           onClick={() => setActiveTab("welcome")}
           className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
             activeTab === "welcome"
-              ? "border-indigo-500 text-indigo-400 bg-[#111724]"
+              ? "border-indigo-500 text-indigo-400 bg-panel"
               : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
@@ -330,7 +330,7 @@ export function WelcomeView({
           onClick={() => setActiveTab("leave")}
           className={`flex items-center gap-2 py-3 px-4 text-xs font-bold border-b-2 transition-all cursor-pointer ${
             activeTab === "leave"
-              ? "border-rose-500 text-rose-400 bg-[#111724]"
+              ? "border-rose-500 text-rose-400 bg-panel"
               : "border-transparent text-slate-400 hover:text-white"
           }`}
         >
@@ -370,7 +370,7 @@ export function WelcomeView({
           </div>
 
           {/* Main Toggle & Channel Picker */}
-          <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-5 space-y-4 shadow-sm">
+          <div className="bg-panel border border-line rounded-2xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center justify-between">
               <div>
                 <label className="text-sm font-bold text-white block">
@@ -432,7 +432,7 @@ export function WelcomeView({
             </div>
 
             {/* Target Channel */}
-            <div className="pt-3 border-t border-[#1e293b]">
+            <div className="pt-3 border-t border-line">
               <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-1.5 flex items-center gap-1.5">
                 <Hash className="w-3.5 h-3.5 text-slate-400" />
                 Zielkanal auf Discord
@@ -456,7 +456,7 @@ export function WelcomeView({
                     }));
                   }
                 }}
-                className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl px-3 py-2 text-xs font-semibold text-slate-100 focus:outline-none focus:border-indigo-500 cursor-pointer"
+                className="w-full bg-canvas border border-line rounded-xl px-3 py-2 text-xs font-semibold text-slate-100 focus:outline-none focus:border-indigo-500 cursor-pointer"
               >
                 <option value="">Kanal auswählen...</option>
                 {textChannels.map((c) => (
@@ -469,7 +469,7 @@ export function WelcomeView({
           </div>
 
           {/* Text Message Configuration */}
-          <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-5 space-y-4 shadow-sm">
+          <div className="bg-panel border border-line rounded-2xl p-5 space-y-4 shadow-sm">
             <div>
               <div className="flex items-center justify-between mb-1.5">
                 <label className="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
@@ -498,7 +498,7 @@ export function WelcomeView({
                   }
                 }}
                 placeholder="Willkommen {user} auf {server}!"
-                className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl p-3 text-xs font-medium text-slate-100 focus:outline-none focus:border-indigo-500 resize-none font-mono"
+                className="w-full bg-canvas border border-line rounded-xl p-3 text-xs font-medium text-slate-100 focus:outline-none focus:border-indigo-500 resize-none font-mono"
               />
             </div>
 
@@ -514,7 +514,7 @@ export function WelcomeView({
                       key={ph}
                       type="button"
                       onClick={() => insertPlaceholder(ph, "messageText")}
-                      className="px-2.5 py-1 rounded-lg bg-[#0d121c] hover:bg-[#1a253a] border border-[#1e293b] text-[11px] font-mono text-indigo-400 transition-colors cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-canvas hover:bg-raised border border-line text-[11px] font-mono text-indigo-400 transition-colors cursor-pointer"
                     >
                       + {ph}
                     </button>
@@ -525,7 +525,7 @@ export function WelcomeView({
           </div>
 
           {/* Card Customization */}
-          <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-5 space-y-5 shadow-sm">
+          <div className="bg-panel border border-line rounded-2xl p-5 space-y-5 shadow-sm">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Palette className="w-4 h-4 text-indigo-400" />
@@ -590,7 +590,7 @@ export function WelcomeView({
                       }));
                     }
                   }}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-canvas border border-line rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>
 
@@ -618,7 +618,7 @@ export function WelcomeView({
                       }));
                     }
                   }}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                  className="w-full bg-canvas border border-line rounded-xl px-3 py-2 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                 />
               </div>
             </div>
@@ -654,7 +654,7 @@ export function WelcomeView({
                       className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium border transition-all cursor-pointer ${
                         isSelected
                           ? "border-indigo-500 text-white font-bold bg-indigo-500/20 shadow-sm"
-                          : "border-transparent text-slate-400 hover:text-white bg-[#0d121c]"
+                          : "border-transparent text-slate-400 hover:text-white bg-canvas"
                       }`}
                     >
                       <span
@@ -667,7 +667,7 @@ export function WelcomeView({
                 })}
 
                 {/* Custom Hex Picker */}
-                <div className="flex items-center gap-1 bg-[#0d121c] border border-[#1e293b] rounded-lg px-2 py-0.5">
+                <div className="flex items-center gap-1 bg-canvas border border-line rounded-lg px-2 py-0.5">
                   <input
                     type="color"
                     value={
@@ -748,7 +748,7 @@ export function WelcomeView({
                         }));
                       }
                     }}
-                    className="flex-1 bg-[#0d121c] border border-[#1e293b] rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none font-mono"
+                    className="flex-1 bg-canvas border border-line rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none font-mono"
                   />
                 </div>
               </div>
@@ -780,7 +780,7 @@ export function WelcomeView({
                         }));
                       }
                     }}
-                    className="flex-1 bg-[#0d121c] border border-[#1e293b] rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
+                    className="flex-1 bg-canvas border border-line rounded-xl px-3 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               </div>
@@ -789,7 +789,7 @@ export function WelcomeView({
 
           {/* Auto Roles (Welcome Tab Only) */}
           {activeTab === "welcome" && (
-            <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-5 space-y-4 shadow-sm">
+            <div className="bg-panel border border-line rounded-2xl p-5 space-y-4 shadow-sm">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <Shield className="w-4 h-4 text-emerald-400" />
@@ -815,7 +815,7 @@ export function WelcomeView({
                         className={`flex items-center gap-2 px-3 py-1.5 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${
                           isSelected
                             ? "bg-emerald-600/20 border-emerald-500 text-emerald-300 font-bold"
-                            : "bg-[#0d121c] border-[#1e293b] text-slate-400 hover:text-white"
+                            : "bg-canvas border-line text-slate-400 hover:text-white"
                         }`}
                       >
                         <span
@@ -833,7 +833,7 @@ export function WelcomeView({
 
           {/* DM Greeting (Welcome Tab Only) */}
           {activeTab === "welcome" && (
-            <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-5 space-y-4 shadow-sm">
+            <div className="bg-panel border border-line rounded-2xl p-5 space-y-4 shadow-sm">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <Mail className="w-4 h-4 text-indigo-400" />
@@ -875,7 +875,7 @@ export function WelcomeView({
                       }))
                     }
                     placeholder="Willkommen auf {server}, {user}!"
-                    className="w-full bg-[#0d121c] border border-[#1e293b] rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 resize-none font-mono"
+                    className="w-full bg-canvas border border-line rounded-xl p-3 text-xs text-slate-100 focus:outline-none focus:border-indigo-500 resize-none font-mono"
                   />
                 </div>
               )}
@@ -884,7 +884,7 @@ export function WelcomeView({
         </div>
 
         {/* Right Column: Live Discord Message Simulation Preview */}
-        <div className="lg:col-span-5 p-6 bg-[#0d121c] space-y-4 flex flex-col justify-start">
+        <div className="lg:col-span-5 p-6 bg-canvas space-y-4 flex flex-col justify-start">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Eye className="w-4 h-4 text-indigo-400" />
@@ -900,7 +900,7 @@ export function WelcomeView({
           </div>
 
           {/* Discord Message Chat Bubble Simulator */}
-          <div className="bg-[#111724] border border-[#1e293b] rounded-2xl p-4 space-y-3 shadow-md">
+          <div className="bg-panel border border-line rounded-2xl p-4 space-y-3 shadow-md">
             {/* Top Text Content */}
             <div className="text-xs text-slate-200 font-sans leading-relaxed">
               <span className="font-semibold">
@@ -922,7 +922,7 @@ export function WelcomeView({
 
             {/* Generated Image Card */}
             {(activeTab === "welcome" ? welcomeConfig.sendCard : leaveConfig.sendCard) && (
-              <div className="relative rounded-xl overflow-hidden border border-[#1e293b] bg-[#0b0f17] flex items-center justify-center min-h-[160px] shadow-sm">
+              <div className="relative rounded-xl overflow-hidden border border-line bg-canvas flex items-center justify-center min-h-[160px] shadow-sm">
                 {previewUrl ? (
                   <img
                     src={previewUrl}
@@ -940,17 +940,17 @@ export function WelcomeView({
 
             {/* Discord Reaction Simulation */}
             <div className="flex items-center gap-1.5 pt-1">
-              <div className="flex items-center gap-1 bg-[#0d121c] hover:bg-[#1a2333] border border-[#1e293b] rounded-lg px-2 py-0.5 text-xs text-slate-300 select-none">
+              <div className="flex items-center gap-1 bg-canvas hover:bg-[#1a2333] border border-line rounded-lg px-2 py-0.5 text-xs text-slate-300 select-none">
                 <span>👋</span>
                 <span className="text-[11px] font-bold text-indigo-400">1</span>
               </div>
-              <div className="flex items-center gap-1 bg-[#0d121c] hover:bg-[#1a2333] border border-[#1e293b] rounded-lg px-2 py-0.5 text-xs text-slate-400 select-none">
+              <div className="flex items-center gap-1 bg-canvas hover:bg-[#1a2333] border border-line rounded-lg px-2 py-0.5 text-xs text-slate-400 select-none">
                 <span>😊</span>
               </div>
             </div>
           </div>
 
-          <div className="p-3.5 rounded-xl bg-[#111724] border border-[#1e293b] text-[11px] text-slate-400 space-y-1">
+          <div className="p-3.5 rounded-xl bg-panel border border-line text-[11px] text-slate-400 space-y-1">
             <p className="font-semibold text-slate-300">💡 Pro-Tipp:</p>
             <p>
               Du kannst das System sofort im ausgewählten Discord-Kanal ausprobieren, indem du oben rechts auf{" "}

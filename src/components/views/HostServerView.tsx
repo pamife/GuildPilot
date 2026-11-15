@@ -288,9 +288,9 @@ export function HostServerView() {
     { id: 5, title: "Production Build", desc: "Kompilieren von Frontend & Backend binaries" },
     { id: 6, title: "Service Neustart", desc: "PM2 Dienst-Neustart & System-Verifikation" },
   ];  return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#0b0f17] text-slate-200">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-canvas text-slate-200">
       {/* Header Banner */}
-      <div className="flex flex-wrap items-center justify-between gap-4 p-6 rounded-2xl bg-[#0d121c] border border-[#1e293b] shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-4 p-6 rounded-2xl bg-canvas border border-line shadow-sm">
         <div className="flex items-center gap-4">
           <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
             <Server className="w-6 h-6" />
@@ -309,12 +309,12 @@ export function HostServerView() {
         </div>
 
         <div className="flex items-center gap-3 flex-wrap">
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#111724] border border-[#1e293b] text-xs text-slate-400">
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-panel border border-line text-xs text-slate-400">
             <Clock className="w-4 h-4 text-indigo-400" />
             <span>Laufzeit: <strong className="text-white font-mono">{formatUptime(metrics?.uptime)}</strong></span>
           </div>
 
-          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#111724] border border-[#1e293b] text-xs text-slate-400" title="Automatischer stündlicher System-Neustart">
+          <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-panel border border-line text-xs text-slate-400" title="Automatischer stündlicher System-Neustart">
             <RotateCcw className="w-4 h-4 text-sky-400" />
             <span>Auto-Neustart: <strong className="text-white font-mono">in {hourlyRestartInfo?.minutesRemaining ?? "--"} Min</strong></span>
           </div>
@@ -330,7 +330,7 @@ export function HostServerView() {
           </button>
 
           {metrics?.battery?.hasBattery && (
-            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#111724] border border-[#1e293b] text-xs text-slate-400">
+            <div className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-panel border border-line text-xs text-slate-400">
               <Zap className={`w-4 h-4 ${metrics.battery.isCharging ? "text-emerald-400 animate-pulse" : "text-amber-400"}`} />
               <span className="text-white font-medium">{metrics.battery.percent}% {metrics.battery.isCharging ? "⚡" : ""}</span>
             </div>
@@ -341,7 +341,7 @@ export function HostServerView() {
       {/* Main Metric Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         {/* CPU Card */}
-        <div className="p-5 rounded-2xl bg-[#111724] border border-[#1e293b] space-y-3.5 shadow-sm">
+        <div className="p-5 rounded-2xl bg-panel border border-line space-y-3.5 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-sky-500/10 text-sky-400">
@@ -354,7 +354,7 @@ export function HostServerView() {
             </span>
           </div>
 
-          <div className="w-full bg-[#0d121c] h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-canvas h-2 rounded-full overflow-hidden">
             <div
               className="bg-sky-400 h-full rounded-full transition-all duration-300"
               style={{ width: `${metrics?.cpu?.totalLoad || 0}%` }}
@@ -371,7 +371,7 @@ export function HostServerView() {
           {metrics?.cpu?.cores && (
             <div className="grid grid-cols-8 gap-1 pt-1">
               {metrics.cpu.cores.map((load: number, idx: number) => (
-                <div key={idx} className="h-6 bg-[#0d121c] rounded overflow-hidden flex items-end" title={`Kern ${idx + 1}: ${load}%`}>
+                <div key={idx} className="h-6 bg-canvas rounded overflow-hidden flex items-end" title={`Kern ${idx + 1}: ${load}%`}>
                   <div className="w-full bg-sky-400 transition-all duration-300" style={{ height: `${load}%` }} />
                 </div>
               ))}
@@ -380,7 +380,7 @@ export function HostServerView() {
         </div>
 
         {/* RAM Memory Card */}
-        <div className="p-5 rounded-2xl bg-[#111724] border border-[#1e293b] space-y-3.5 shadow-sm">
+        <div className="p-5 rounded-2xl bg-panel border border-line space-y-3.5 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-400">
@@ -393,14 +393,14 @@ export function HostServerView() {
             </span>
           </div>
 
-          <div className="w-full bg-[#0d121c] h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-canvas h-2 rounded-full overflow-hidden">
             <div
               className="bg-emerald-400 h-full rounded-full transition-all duration-300"
               style={{ width: `${metrics?.memory?.usedPercent || 0}%` }}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs bg-[#0d121c] border border-[#1e293b] p-2.5 rounded-xl">
+          <div className="grid grid-cols-2 gap-2 text-xs bg-canvas border border-line p-2.5 rounded-xl">
             <div>
               <span className="text-slate-400 block">Belegt</span>
               <span className="font-mono text-white font-semibold">{formatBytes(metrics?.memory?.used)}</span>
@@ -413,7 +413,7 @@ export function HostServerView() {
         </div>
 
         {/* Disk Storage Card */}
-        <div className="p-5 rounded-2xl bg-[#111724] border border-[#1e293b] space-y-3.5 shadow-sm">
+        <div className="p-5 rounded-2xl bg-panel border border-line space-y-3.5 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-amber-500/10 text-amber-400">
@@ -426,14 +426,14 @@ export function HostServerView() {
             </span>
           </div>
 
-          <div className="w-full bg-[#0d121c] h-2 rounded-full overflow-hidden">
+          <div className="w-full bg-canvas h-2 rounded-full overflow-hidden">
             <div
               className="bg-amber-400 h-full rounded-full transition-all duration-300"
               style={{ width: `${metrics?.disks?.[0]?.usePercent || 0}%` }}
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-2 text-xs bg-[#0d121c] border border-[#1e293b] p-2.5 rounded-xl">
+          <div className="grid grid-cols-2 gap-2 text-xs bg-canvas border border-line p-2.5 rounded-xl">
             <div>
               <span className="text-slate-400 block">Belegt</span>
               <span className="font-mono text-white font-semibold">{formatBytes(metrics?.disks?.[0]?.used)}</span>
@@ -446,7 +446,7 @@ export function HostServerView() {
         </div>
 
         {/* Network Card */}
-        <div className="p-5 rounded-2xl bg-[#111724] border border-[#1e293b] space-y-3.5 shadow-sm">
+        <div className="p-5 rounded-2xl bg-panel border border-line space-y-3.5 shadow-sm">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <div className="p-2 rounded-xl bg-indigo-500/10 text-indigo-400">
@@ -457,7 +457,7 @@ export function HostServerView() {
           </div>
 
           <div className="grid grid-cols-2 gap-2 text-xs">
-            <div className="p-2.5 rounded-xl bg-[#0d121c] border border-[#1e293b] flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-canvas border border-line flex items-center gap-2">
               <ArrowDownLeft className="w-4 h-4 text-sky-400" />
               <div>
                 <span className="text-slate-400 block text-[10px]">Download</span>
@@ -465,7 +465,7 @@ export function HostServerView() {
               </div>
             </div>
 
-            <div className="p-2.5 rounded-xl bg-[#0d121c] border border-[#1e293b] flex items-center gap-2">
+            <div className="p-2.5 rounded-xl bg-canvas border border-line flex items-center gap-2">
               <ArrowUpRight className="w-4 h-4 text-indigo-400" />
               <div>
                 <span className="text-slate-400 block text-[10px]">Upload</span>
@@ -482,7 +482,7 @@ export function HostServerView() {
       </div>
 
       {/* GitHub Auto-Sync & Update Status Card with Live Steps & Progress */}
-      <div className="p-6 rounded-2xl bg-[#111724] border border-[#1e293b] shadow-sm space-y-4">
+      <div className="p-6 rounded-2xl bg-panel border border-line shadow-sm space-y-4">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className={`p-3 rounded-xl border ${
@@ -523,7 +523,7 @@ export function HostServerView() {
             {updateProgress?.logs && updateProgress.logs.length > 0 && (
               <button
                 onClick={() => setShowLogs(!showLogs)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#0d121c] hover:bg-[#1a253a] border border-[#1e293b] text-xs text-indigo-400 font-medium transition-all cursor-pointer"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-canvas hover:bg-raised border border-line text-xs text-indigo-400 font-medium transition-all cursor-pointer"
               >
                 <Terminal className="w-3.5 h-3.5" />
                 <span>Logs ({updateProgress.logs.length})</span>
@@ -535,7 +535,7 @@ export function HostServerView() {
               onClick={handleResetUpdateState}
               disabled={resettingState}
               title="Falls der Status hängenbleibt: Engine & Cache zurücksetzen"
-              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[#0d121c] hover:bg-amber-500/20 border border-[#1e293b] hover:border-amber-500/40 text-slate-400 hover:text-amber-300 font-semibold text-xs transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-canvas hover:bg-amber-500/20 border border-line hover:border-amber-500/40 text-slate-400 hover:text-amber-300 font-semibold text-xs transition-all shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <RotateCcw className={`w-3.5 h-3.5 ${resettingState ? "animate-spin text-amber-400" : ""}`} />
               <span>Status reparieren</span>
@@ -545,7 +545,7 @@ export function HostServerView() {
               onClick={handleForceRebuild}
               disabled={rebuilding || (updateProgress?.isUpdating && updateProgress?.percent !== 100)}
               title="Kompiliert Frontend und Backend komplett neu und startet die Dienste neu"
-              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-[#0d121c] hover:bg-sky-500/20 border border-[#1e293b] hover:border-sky-500/40 text-slate-300 hover:text-sky-300 font-semibold text-xs transition-all shadow-sm disabled:opacity-50 cursor-pointer"
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-canvas hover:bg-sky-500/20 border border-line hover:border-sky-500/40 text-slate-300 hover:text-sky-300 font-semibold text-xs transition-all shadow-sm disabled:opacity-50 cursor-pointer"
             >
               <Wrench className={`w-3.5 h-3.5 ${rebuilding ? "animate-spin text-sky-400" : "text-sky-400"}`} />
               <span>{rebuilding ? "Wird gebaut..." : "Neu kompilieren (Build)"}</span>
@@ -564,7 +564,7 @@ export function HostServerView() {
 
         {/* Real-Time Progress Bar & Steps (Shown during update or when checked) */}
         {(updateProgress?.isUpdating || checkingUpdate || (updateProgress?.percent !== undefined && updateProgress.percent > 0)) && (
-          <div className="space-y-3 pt-2 border-t border-[#1e293b]">
+          <div className="space-y-3 pt-2 border-t border-line">
             <div className="flex items-center justify-between text-xs">
               <span className="font-semibold text-white flex items-center gap-2">
                 {updateProgress?.isUpdating && updateProgress?.percent !== 100 ? (
@@ -588,7 +588,7 @@ export function HostServerView() {
             </div>
 
             {/* Progress Bar Container */}
-            <div className="w-full bg-[#0d121c] h-2.5 rounded-full overflow-hidden p-0.5 border border-[#1e293b]">
+            <div className="w-full bg-canvas h-2.5 rounded-full overflow-hidden p-0.5 border border-line">
               <div
                 className={`h-full rounded-full transition-all duration-500 ease-out ${
                   updateProgress?.status === "error"
@@ -620,7 +620,7 @@ export function HostServerView() {
                         ? "bg-indigo-500/10 border-indigo-500/50 text-white shadow-sm"
                         : isError
                         ? "bg-rose-500/10 border-rose-500/40 text-rose-400"
-                        : "bg-[#0d121c] border-[#1e293b] text-slate-500 opacity-60"
+                        : "bg-canvas border-line text-slate-500 opacity-60"
                     }`}
                   >
                     <div className="flex items-center gap-2 font-semibold">
@@ -647,7 +647,7 @@ export function HostServerView() {
 
         {/* Live Terminal Logs Drawer */}
         {showLogs && updateProgress?.logs && updateProgress.logs.length > 0 && (
-          <div className="pt-2 border-t border-[#1e293b]">
+          <div className="pt-2 border-t border-line">
             <div className="flex items-center justify-between pb-1.5 text-xs text-slate-400">
               <span className="font-mono flex items-center gap-1.5 text-indigo-400 font-semibold">
                 <Terminal className="w-3.5 h-3.5" /> Live Update Output Log
@@ -659,7 +659,7 @@ export function HostServerView() {
                 Ausblenden
               </button>
             </div>
-            <div className="bg-[#0b0f17] border border-[#1e293b] rounded-xl p-3 font-mono text-[11px] text-emerald-400 max-h-48 overflow-y-auto space-y-1 shadow-inner">
+            <div className="bg-canvas border border-line rounded-xl p-3 font-mono text-[11px] text-emerald-400 max-h-48 overflow-y-auto space-y-1 shadow-inner">
               {updateProgress.logs.map((logLine, idx) => (
                 <div key={idx} className="leading-relaxed break-words flex gap-2">
                   <span className="text-slate-600 select-none">&gt;</span>
@@ -676,11 +676,11 @@ export function HostServerView() {
       {/* Live Charts */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {/* CPU Load Sparkline */}
-        <div className="p-5 rounded-2xl bg-[#111724] border border-[#1e293b] space-y-2 shadow-sm">
+        <div className="p-5 rounded-2xl bg-panel border border-line space-y-2 shadow-sm">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Cpu className="w-3.5 h-3.5 text-sky-400" /> CPU-Verlauf (Letzte 30s)
           </h3>
-          <div className="h-24 flex items-end gap-1 bg-[#0d121c] p-2 rounded-xl border border-[#1e293b]">
+          <div className="h-24 flex items-end gap-1 bg-canvas p-2 rounded-xl border border-line">
             {cpuHistory.map((val, i) => (
               <div
                 key={i}
@@ -693,11 +693,11 @@ export function HostServerView() {
         </div>
 
         {/* Network RX/TX Sparkline */}
-        <div className="p-5 rounded-2xl bg-[#111724] border border-[#1e293b] space-y-2 shadow-sm">
+        <div className="p-5 rounded-2xl bg-panel border border-line space-y-2 shadow-sm">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
             <Activity className="w-3.5 h-3.5 text-indigo-400" /> Netzwerk-Bandbreite (KB/s)
           </h3>
-          <div className="h-24 flex items-end gap-1 bg-[#0d121c] p-2 rounded-xl border border-[#1e293b]">
+          <div className="h-24 flex items-end gap-1 bg-canvas p-2 rounded-xl border border-line">
             {netRxHistory.map((val, i) => {
               const maxVal = Math.max(...netRxHistory, 100);
               const heightPct = Math.min(Math.max((val / maxVal) * 100, 4), 100);
@@ -717,14 +717,14 @@ export function HostServerView() {
       {/* Services & Process List */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Monitored System Services */}
-        <div className="p-5 rounded-2xl bg-[#111724] border border-[#1e293b] space-y-3 shadow-sm">
+        <div className="p-5 rounded-2xl bg-panel border border-line space-y-3 shadow-sm">
           <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-2">
             <ShieldCheck className="w-4 h-4 text-emerald-400" /> Systemd-Dienste
           </h3>
 
           <div className="space-y-2">
             {(metrics?.services || []).map((s: any, idx: number) => (
-              <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-[#0d121c] border border-[#1e293b]">
+              <div key={idx} className="flex items-center justify-between p-2.5 rounded-xl bg-canvas border border-line">
                 <div className="flex items-center gap-2">
                   <span className={`w-2 h-2 rounded-full ${s.running ? "bg-emerald-400" : "bg-rose-500"}`} />
                   <span className="text-xs font-mono text-white font-medium">{s.name}</span>
@@ -745,7 +745,7 @@ export function HostServerView() {
               <p className="text-slate-400 text-[11px] leading-relaxed">
                 Der Dienst verhindert Standby & Ruhezustand auf dem Server. Zur Aktivierung führe folgendes auf dem Host aus:
               </p>
-              <code className="block bg-[#0d121c] p-2 rounded-lg text-[10px] font-mono text-amber-200 select-all border border-[#1e293b]">
+              <code className="block bg-canvas p-2 rounded-lg text-[10px] font-mono text-amber-200 select-all border border-line">
                 sudo cp systemd/keep-awake.service /etc/systemd/system/ && sudo systemctl enable --now keep-awake
               </code>
             </div>
@@ -753,12 +753,12 @@ export function HostServerView() {
         </div>
 
         {/* Top Processes Table */}
-        <div className="lg:col-span-2 p-5 rounded-2xl bg-[#111724] border border-[#1e293b] space-y-3 shadow-sm">
+        <div className="lg:col-span-2 p-5 rounded-2xl bg-panel border border-line space-y-3 shadow-sm">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h3 className="text-xs font-bold uppercase tracking-wider text-slate-400">
               Top Systemprozesse
             </h3>
-            <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-[#0d121c] border border-[#1e293b] text-xs">
+            <div className="flex items-center gap-2 px-3 py-1 rounded-xl bg-canvas border border-line text-xs">
               <Search className="w-3.5 h-3.5 text-slate-400" />
               <input
                 type="text"
@@ -772,7 +772,7 @@ export function HostServerView() {
 
           <div className="overflow-x-auto max-h-60 overflow-y-auto">
             <table className="w-full text-left text-xs">
-              <thead className="sticky top-0 bg-[#0d121c] text-slate-400">
+              <thead className="sticky top-0 bg-canvas text-slate-400">
                 <tr>
                   <th className="p-2.5">PID</th>
                   <th className="p-2.5">Name</th>
@@ -783,7 +783,7 @@ export function HostServerView() {
               </thead>
               <tbody className="divide-y divide-[#1e293b] font-mono">
                 {filteredProcesses.map((proc: any, i: number) => (
-                  <tr key={i} className="hover:bg-[#0d121c]/50">
+                  <tr key={i} className="hover:bg-canvas/50">
                     <td className="p-2.5 text-slate-500">{proc.pid}</td>
                     <td className="p-2.5 text-white font-medium">{proc.name}</td>
                     <td className="p-2.5 text-slate-400">{proc.user}</td>

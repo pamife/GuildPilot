@@ -21,7 +21,7 @@ export function PanelSettings({
   return (
     <div className="space-y-5">
       {/* Supporter Roles */}
-      <div className="p-4 rounded-xl bg-[#0e0f15] border border-[#27272a] space-y-3">
+      <div className="p-4 rounded-xl bg-panel border border-line space-y-3">
         <div>
           <label className="text-xs font-bold text-white flex items-center gap-1.5">
             <Shield className="w-4 h-4 text-indigo-400" /> Supporter-Rollen (Zugriff & Erwähnungen)
@@ -46,7 +46,7 @@ export function PanelSettings({
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   isSelected
                     ? "bg-indigo-600 text-white shadow-md border border-indigo-400/40"
-                    : "bg-[#14151b] text-zinc-400 border border-[#27272a] hover:text-white"
+                    : "bg-panel text-zinc-400 border border-line hover:text-white"
                 }`}
               >
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color || "#5865F2" }} />
@@ -59,7 +59,7 @@ export function PanelSettings({
       </div>
 
       {/* Allowed Roles to Open Tickets */}
-      <div className="p-4 rounded-xl bg-[#0e0f15] border border-[#27272a] space-y-3">
+      <div className="p-4 rounded-xl bg-panel border border-line space-y-3">
         <div>
           <label className="text-xs font-bold text-white flex items-center gap-1.5">
             <Users className="w-4 h-4 text-indigo-400" /> Berechtigte Rollen (Panel-Zugriff)
@@ -84,7 +84,7 @@ export function PanelSettings({
                 className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                   isSelected
                     ? "bg-emerald-600 text-white shadow-md border border-emerald-400/40"
-                    : "bg-[#14151b] text-zinc-400 border border-[#27272a] hover:text-white"
+                    : "bg-panel text-zinc-400 border border-line hover:text-white"
                 }`}
               >
                 <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color || "#5865F2" }} />
@@ -98,7 +98,7 @@ export function PanelSettings({
 
       {/* Limits & Fallback Category */}
       <div className="grid grid-cols-2 gap-4">
-        <div className="p-4 rounded-xl bg-[#0e0f15] border border-[#27272a] space-y-2">
+        <div className="p-4 rounded-xl bg-panel border border-line space-y-2">
           <label className="text-xs font-bold text-zinc-300 block">Max. offene Tickets pro User</label>
           <input
             type="number"
@@ -106,16 +106,16 @@ export function PanelSettings({
             max={10}
             value={panelData.maxOpenTickets || 1}
             onChange={(e) => setPanelData({ ...panelData, maxOpenTickets: Number(e.target.value) })}
-            className="w-full bg-[#14151b] border border-[#27272a] p-2 rounded-lg text-xs text-white outline-none"
+            className="w-full bg-panel border border-line p-2 rounded-lg text-xs text-white outline-none"
           />
         </div>
 
-        <div className="p-4 rounded-xl bg-[#0e0f15] border border-[#27272a] space-y-2">
+        <div className="p-4 rounded-xl bg-panel border border-line space-y-2">
           <label className="text-xs font-bold text-zinc-300 block">Standard-Kategorie</label>
           <select
             value={panelData.categoryId || ""}
             onChange={(e) => setPanelData({ ...panelData, categoryId: e.target.value })}
-            className="w-full bg-[#14151b] border border-[#27272a] p-2 rounded-lg text-xs text-white outline-none"
+            className="w-full bg-panel border border-line p-2 rounded-lg text-xs text-white outline-none"
           >
             <option value="">-- Keine Standard-Kategorie --</option>
             {categoryChannels.map((c) => (

@@ -57,7 +57,7 @@ export function ServerSettingsView({ guildDetails, channels, onSaveSettings }: S
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#0b0f17] text-slate-200">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-canvas text-slate-200">
       <div>
         <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
           <div className="p-2 rounded-lg bg-indigo-500/10 text-indigo-400">
@@ -70,8 +70,8 @@ export function ServerSettingsView({ guildDetails, channels, onSaveSettings }: S
 
       <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
         {/* Identity Section */}
-        <div className="bg-[#111724] border border-[#1e293b] hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
-          <h3 className="text-sm font-bold text-white border-b border-[#1e293b] pb-3">
+        <div className="bg-panel border border-line hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
+          <h3 className="text-sm font-bold text-white border-b border-line pb-3">
             Server-Identität
           </h3>
 
@@ -85,7 +85,7 @@ export function ServerSettingsView({ guildDetails, channels, onSaveSettings }: S
                 required
                 value={name}
                 onChange={(e) => setName(e.target.value)}
-                className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all outline-none"
+                className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all outline-none"
               />
             </div>
             <div>
@@ -97,7 +97,7 @@ export function ServerSettingsView({ guildDetails, channels, onSaveSettings }: S
                 placeholder="https://..."
                 value={icon}
                 onChange={(e) => setIcon(e.target.value)}
-                className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none"
+                className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none"
               />
             </div>
           </div>
@@ -111,14 +111,14 @@ export function ServerSettingsView({ guildDetails, channels, onSaveSettings }: S
               placeholder="Beschreibe deine Server-Community..."
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none resize-none"
+              className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none resize-none"
             />
           </div>
         </div>
 
         {/* Security & Verification */}
-        <div className="bg-[#111724] border border-[#1e293b] hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1e293b] pb-3">
+        <div className="bg-panel border border-line hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-line pb-3">
             <ShieldAlert className="w-4 h-4 text-amber-400" />
             Sicherheits- & Verifizierungsstufe
           </h3>
@@ -130,7 +130,7 @@ export function ServerSettingsView({ guildDetails, channels, onSaveSettings }: S
             <select
               value={verificationLevel}
               onChange={(e) => setVerificationLevel(Number(e.target.value))}
-              className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
+              className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
             >
               <option value={0}>0 - Keine (Uneingeschränkter Zutritt)</option>
               <option value={1}>1 - Niedrig (Muss verifizierte E-Mail haben)</option>
@@ -142,8 +142,8 @@ export function ServerSettingsView({ guildDetails, channels, onSaveSettings }: S
         </div>
 
         {/* Notifications & AFK Settings */}
-        <div className="bg-[#111724] border border-[#1e293b] hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
-          <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-[#1e293b] pb-3">
+        <div className="bg-panel border border-line hover:border-indigo-500/30 rounded-2xl p-6 shadow-sm space-y-4 transition-all">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2 border-b border-line pb-3">
             <Bell className="w-4 h-4 text-indigo-400" />
             Benachrichtigungen & AFK-Kanal
           </h3>
@@ -156,7 +156,7 @@ export function ServerSettingsView({ guildDetails, channels, onSaveSettings }: S
               <select
                 value={defaultNotifications}
                 onChange={(e) => setDefaultNotifications(Number(e.target.value))}
-                className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
+                className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
               >
                 <option value={0}>Alle Nachrichten</option>
                 <option value={1}>Nur @Erwähnungen</option>
@@ -170,7 +170,7 @@ export function ServerSettingsView({ guildDetails, channels, onSaveSettings }: S
               <select
                 value={afkChannelId || ""}
                 onChange={(e) => setAfkChannelId(e.target.value || null)}
-                className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
+                className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
               >
                 <option value="">(Kein AFK-Kanal)</option>
                 {voiceChannels.map((vc) => (
@@ -188,7 +188,7 @@ export function ServerSettingsView({ guildDetails, channels, onSaveSettings }: S
               <select
                 value={afkTimeout}
                 onChange={(e) => setAfkTimeout(Number(e.target.value))}
-                className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
+                className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
               >
                 <option value={60}>1 Minute</option>
                 <option value={300}>5 Minuten</option>

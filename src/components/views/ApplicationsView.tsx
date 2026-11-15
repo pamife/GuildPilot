@@ -681,9 +681,9 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
   const selectedForm = forms.find((f) => f.id === selectedFormId) || forms[0];
 
   return (
-    <div className="flex-1 flex flex-col h-full bg-[#0b0f17] text-slate-200 overflow-hidden">
+    <div className="flex-1 flex flex-col h-full bg-canvas text-slate-200 overflow-hidden">
       {/* Top Navbar Header */}
-      <header className="min-h-16 py-2 flex-wrap gap-2 bg-[#0d121c] border-b border-[#1e293b] px-6 flex items-center justify-between shrink-0 shadow-sm">
+      <header className="min-h-16 py-2 flex-wrap gap-2 bg-canvas border-b border-line px-6 flex items-center justify-between shrink-0 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
             <ClipboardList className="w-5 h-5" />
@@ -702,7 +702,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
         </div>
 
         {/* Sub-Pages Navigation Bar */}
-        <div className="flex flex-wrap items-center gap-1 bg-[#111724] p-1 rounded-xl border border-[#1e293b]">
+        <div className="flex flex-wrap items-center gap-1 bg-panel p-1 rounded-xl border border-line">
           {[
             { id: "dashboard", label: "Übersicht", icon: LayoutDashboard },
             { id: "panels", label: "Panels", icon: Layers },
@@ -741,7 +741,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
         {canManage && activeSubPage === "dashboard" && (
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
+              <div className="bg-canvas border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Total Panels</p>
                   <h3 className="text-3xl font-extrabold text-white mt-1">{panels.length}</h3>
@@ -751,7 +751,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 </div>
               </div>
 
-              <div className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
+              <div className="bg-canvas border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Total Forms</p>
                   <h3 className="text-3xl font-extrabold text-white mt-1">{forms.length}</h3>
@@ -761,7 +761,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 </div>
               </div>
 
-              <div className="bg-[#09090b] border border-[#1f1f23] hover:border-emerald-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
+              <div className="bg-canvas border border-[#1f1f23] hover:border-emerald-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Accepted</p>
                   <h3 className="text-3xl font-extrabold text-emerald-400 mt-1">{stats.accepted || 0}</h3>
@@ -771,7 +771,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 </div>
               </div>
 
-              <div className="bg-[#09090b] border border-[#1f1f23] hover:border-rose-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
+              <div className="bg-canvas border border-[#1f1f23] hover:border-rose-500/30 rounded-2xl p-5 shadow-lg flex items-center justify-between transition-all">
                 <div>
                   <p className="text-xs font-bold uppercase tracking-wider text-zinc-400">Denied</p>
                   <h3 className="text-3xl font-extrabold text-rose-400 mt-1">{stats.denied || 0}</h3>
@@ -802,7 +802,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {panels.map((p) => (
-                <div key={p.id} className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-6 shadow-lg space-y-4 transition-all">
+                <div key={p.id} className="bg-canvas border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-6 shadow-lg space-y-4 transition-all">
                   <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
                     <div>
                       <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 px-2.5 py-0.5 rounded-full bg-indigo-500/10 border border-indigo-500/30">
@@ -819,7 +819,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                       </button>
                       <button
                         onClick={() => handleOpenPanelModal(p)}
-                        className="p-2 rounded-xl bg-[#0d0d11] text-zinc-300 hover:text-white border border-[#1f1f23] cursor-pointer"
+                        className="p-2 rounded-xl bg-canvas text-zinc-300 hover:text-white border border-[#1f1f23] cursor-pointer"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
@@ -849,7 +849,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                         {p.forms.map((f: any) => (
                           <div
                             key={f.id}
-                            className="p-3 bg-[#0d0d11] rounded-xl border border-[#1f1f23] flex items-center justify-between text-xs"
+                            className="p-3 bg-canvas rounded-xl border border-[#1f1f23] flex items-center justify-between text-xs"
                           >
                             <div className="flex items-center gap-2.5">
                               <span className="text-base">{f.emoji || "📝"}</span>
@@ -861,7 +861,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                             <div className="flex items-center gap-1.5">
                               <button
                                 onClick={() => handleOpenFormModal(f)}
-                                className="p-1.5 rounded-lg bg-[#18181b] text-zinc-300 hover:text-white cursor-pointer"
+                                className="p-1.5 rounded-lg bg-panel text-zinc-300 hover:text-white cursor-pointer"
                               >
                                 <Edit className="w-3.5 h-3.5" />
                               </button>
@@ -876,7 +876,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                         ))}
                       </div>
                     ) : (
-                      <div className="text-center py-4 bg-[#0d0d11] rounded-xl border border-[#1f1f23] text-xs text-zinc-400">
+                      <div className="text-center py-4 bg-canvas rounded-xl border border-[#1f1f23] text-xs text-zinc-400">
                         No forms attached. Click "+ Add Form to Panel" above!
                       </div>
                     )}
@@ -898,7 +898,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
               <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => setIsImportModalOpen(true)}
-                  className="flex items-center gap-2 px-3.5 py-2.5 bg-[#121217] hover:bg-[#1f1f28] text-zinc-300 hover:text-white font-semibold text-xs rounded-xl border border-[#27272a] shadow-md transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-3.5 py-2.5 bg-[#121217] hover:bg-[#1f1f28] text-zinc-300 hover:text-white font-semibold text-xs rounded-xl border border-line shadow-md transition-all cursor-pointer"
                   title="Import application forms & panels from another server"
                 >
                   <Download className="w-4 h-4 text-indigo-400" /> Import from Server
@@ -914,7 +914,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
 
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {forms.map((f) => (
-                <div key={f.id} className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 space-y-4 shadow-lg transition-all">
+                <div key={f.id} className="bg-canvas border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 space-y-4 shadow-lg transition-all">
                   <div className="flex items-center justify-between">
                     <span className="text-base">{f.emoji || "📝"}</span>
                     <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-500/10 text-indigo-400 border border-indigo-500/30">
@@ -926,7 +926,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                     <p className="text-xs text-zinc-400 mt-1 line-clamp-2">{f.description || "No description."}</p>
                   </div>
                   <div className="flex items-center justify-between pt-3 border-t border-[#1f1f23] text-xs">
-                    <button onClick={() => handleOpenFormModal(f)} className="px-3 py-1.5 bg-[#0d0d11] border border-[#27272a] text-white rounded-xl font-semibold hover:bg-[#18181b] cursor-pointer">Edit</button>
+                    <button onClick={() => handleOpenFormModal(f)} className="px-3 py-1.5 bg-canvas border border-line text-white rounded-xl font-semibold hover:bg-panel cursor-pointer">Edit</button>
                     {f.dmPanelChannelId && <button disabled={formBusy} onClick={() => publishExistingPanel(f.id)} className="px-3 py-1.5 rounded-xl bg-indigo-600 text-white disabled:opacity-50">{f.dmPanelMessageId ? "Update Discord panel" : "Publish Discord panel"}</button>}
                     <button onClick={() => handleDeleteForm(f.id)} className="px-3 py-1.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 rounded-xl font-semibold hover:bg-rose-600 hover:text-white cursor-pointer">Delete</button>
                   </div>
@@ -939,7 +939,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
         {/* APPLICATIONS & REVIEW QUEUE SUB-PAGE */}
         {(activeSubPage === "applications" || activeSubPage === "review-queue") && (
           <div className="space-y-6">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-[#09090b] p-5 rounded-2xl border border-[#1f1f23] shadow-lg">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-canvas p-5 rounded-2xl border border-[#1f1f23] shadow-lg">
               <div>
                 <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
                   {activeSubPage === "review-queue" ? <UserCheck className="w-6 h-6 text-indigo-400" /> : <ClipboardList className="w-6 h-6 text-indigo-400" />}
@@ -959,7 +959,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                     placeholder="Search by tag, ID, or form..."
                     value={appSearchQuery}
                     onChange={(e) => setAppSearchQuery(e.target.value)}
-                    className="bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none w-64"
+                    className="bg-canvas border border-line focus:border-indigo-500 rounded-xl pl-9 pr-3 py-2 text-xs text-white outline-none w-64"
                   />
                 </div>
 
@@ -967,7 +967,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 <select
                   value={appStatusFilter}
                   onChange={(e) => setAppStatusFilter(e.target.value)}
-                  className="bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white outline-none font-semibold cursor-pointer"
+                  className="bg-canvas border border-line focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white outline-none font-semibold cursor-pointer"
                 >
                   <option value="ALL">All Statuses ({applications.length})</option>
                   <option value="PENDING">🟡 Pending Review</option>
@@ -1014,7 +1014,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                   .map((app) => (
                     <div
                       key={app.id}
-                      className="bg-[#09090b] border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 space-y-4 shadow-lg transition-all flex flex-col justify-between"
+                      className="bg-canvas border border-[#1f1f23] hover:border-indigo-500/30 rounded-2xl p-5 space-y-4 shadow-lg transition-all flex flex-col justify-between"
                     >
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
@@ -1034,7 +1034,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
 
                         <div className="flex items-center gap-3">
                           {app.userAvatar ? (
-                            <img src={app.userAvatar} alt="" className="w-10 h-10 rounded-full border border-[#27272a]" />
+                            <img src={app.userAvatar} alt="" className="w-10 h-10 rounded-full border border-line" />
                           ) : (
                             <div className="w-10 h-10 rounded-full bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold">
                               {app.userTag?.substring(0, 2).toUpperCase()}
@@ -1046,7 +1046,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                           </div>
                         </div>
 
-                        <div className="text-[11px] text-zinc-400 space-y-1 bg-[#0d0d11] p-3 rounded-xl border border-[#1f1f23]">
+                        <div className="text-[11px] text-zinc-400 space-y-1 bg-canvas p-3 rounded-xl border border-[#1f1f23]">
                           <p><span className="font-semibold text-zinc-300">User ID:</span> {app.userId}</p>
                           <p><span className="font-semibold text-zinc-300">Submitted:</span> {new Date(app.submittedAt).toLocaleDateString()}</p>
                           <p>{app.answers?.length || 0} questions · {app.files?.length || 0} attachments</p>
@@ -1065,7 +1065,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                   ))}
               </div>
             ) : (
-              <div className="text-center py-16 bg-[#09090b] rounded-2xl border border-[#1f1f23] space-y-3">
+              <div className="text-center py-16 bg-canvas rounded-2xl border border-[#1f1f23] space-y-3">
                 <ClipboardList className="w-12 h-12 text-zinc-500 mx-auto" />
                 <h3 className="text-base font-bold text-white">No Applications Found</h3>
                 <p className="text-xs text-zinc-400 max-w-sm mx-auto">
@@ -1079,7 +1079,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
         {/* QUESTIONS SUB-PAGE */}
         {activeSubPage === "questions" && (
           <div className="space-y-6">
-            <div className="flex items-center justify-between bg-[#09090b] p-5 rounded-2xl border border-[#1f1f23] shadow-lg">
+            <div className="flex items-center justify-between bg-canvas p-5 rounded-2xl border border-[#1f1f23] shadow-lg">
               <div>
                 <h2 className="text-xl font-bold text-white tracking-tight">Question Builder</h2>
                 <p className="text-xs text-zinc-400 mt-0.5">
@@ -1091,7 +1091,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 <select
                   value={selectedFormId || ""}
                   onChange={(e) => setSelectedFormId(e.target.value)}
-                  className="bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white outline-none font-semibold cursor-pointer"
+                  className="bg-canvas border border-line focus:border-indigo-500 rounded-xl px-3 py-2 text-xs text-white outline-none font-semibold cursor-pointer"
                 >
                   {forms.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -1111,7 +1111,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
 
             <div className="space-y-3">
               {questions.map((q, idx) => (
-                <div key={q.id} className="bg-[#09090b] border border-[#1f1f23] rounded-2xl p-4 flex items-center justify-between shadow-lg">
+                <div key={q.id} className="bg-canvas border border-[#1f1f23] rounded-2xl p-4 flex items-center justify-between shadow-lg">
                   <div className="flex items-center gap-4">
                     <div>
                       <h4 className="font-bold text-white text-sm">{q.label}</h4>
@@ -1119,7 +1119,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => handleOpenQuestionModal(q)} className="p-2 rounded-xl bg-[#0d0d11] border border-[#27272a] text-zinc-300 hover:text-white cursor-pointer"><Edit className="w-4 h-4" /></button>
+                    <button onClick={() => handleOpenQuestionModal(q)} className="p-2 rounded-xl bg-canvas border border-line text-zinc-300 hover:text-white cursor-pointer"><Edit className="w-4 h-4" /></button>
                     <button onClick={() => handleDeleteQuestion(q.id)} className="p-2 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-600 hover:text-white cursor-pointer"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
@@ -1564,13 +1564,13 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
       {/* Question Editor Modal */}
       {isQuestionModalOpen && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+          <div className="bg-canvas border border-[#1f1f23] rounded-2xl max-w-xl w-full p-6 space-y-4 shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
             <div className="flex items-center justify-between border-b border-[#1f1f23] pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <HelpCircle className="w-5 h-5 text-indigo-400" />
                 {editingQuestion ? "Full Question Customizer & Settings" : "Create New Question"}
               </h3>
-              <button onClick={() => setIsQuestionModalOpen(false)} className="p-1.5 rounded-lg bg-[#0d0d11] border border-[#27272a] text-zinc-400 hover:text-white cursor-pointer">✕</button>
+              <button onClick={() => setIsQuestionModalOpen(false)} className="p-1.5 rounded-lg bg-canvas border border-line text-zinc-400 hover:text-white cursor-pointer">✕</button>
             </div>
 
             <div className="space-y-4 text-xs overflow-y-auto pr-1">
@@ -1579,7 +1579,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 <select
                   value={selectedFormId || ""}
                   onChange={(e) => setSelectedFormId(e.target.value)}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white font-semibold outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white font-semibold outline-none"
                 >
                   {forms.map((f) => (
                     <option key={f.id} value={f.id}>
@@ -1596,7 +1596,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                   placeholder="e.g. Why do you want to join our team? or What is your Roblox Username?"
                   value={questionPayload.label}
                   onChange={(e) => setQuestionPayload({ ...questionPayload, label: e.target.value })}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
                 />
               </div>
 
@@ -1605,7 +1605,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 <select
                   value={questionPayload.type}
                   onChange={(e) => setQuestionPayload({ ...questionPayload, type: e.target.value })}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white font-bold outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white font-bold outline-none"
                 >
                   <option value="SHORT_TEXT">Short Text (Single Line Input)</option>
                   <option value="PARAGRAPH">Paragraph Text (Multi-Line Essay)</option>
@@ -1624,7 +1624,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                   placeholder="e.g. Enter your detailed answer here..."
                   value={questionPayload.placeholder}
                   onChange={(e) => setQuestionPayload({ ...questionPayload, placeholder: e.target.value })}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
                 />
               </div>
 
@@ -1635,7 +1635,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                   placeholder="e.g. Please provide at least 2 sentences explaining your experience."
                   value={questionPayload.helpText}
                   onChange={(e) => setQuestionPayload({ ...questionPayload, helpText: e.target.value })}
-                  className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
                 />
               </div>
 
@@ -1647,7 +1647,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                     placeholder={`Option 1\nOption 2\nOption 3`}
                     value={questionPayload.options}
                     onChange={(e) => setQuestionPayload({ ...questionPayload, options: e.target.value })}
-                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white font-mono outline-none"
+                    className="w-full bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white font-mono outline-none"
                   />
                 </div>
               )}
@@ -1660,7 +1660,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                     placeholder="e.g. 10"
                     value={questionPayload.minLength}
                     onChange={(e) => setQuestionPayload({ ...questionPayload, minLength: e.target.value })}
-                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                    className="w-full bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
                   />
                 </div>
                 <div>
@@ -1670,7 +1670,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                     placeholder="e.g. 1000"
                     value={questionPayload.maxLength}
                     onChange={(e) => setQuestionPayload({ ...questionPayload, maxLength: e.target.value })}
-                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                    className="w-full bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
                   />
                 </div>
               </div>
@@ -1683,7 +1683,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                     placeholder="e.g. ^[0-9]+$"
                     value={questionPayload.validationRegex}
                     onChange={(e) => setQuestionPayload({ ...questionPayload, validationRegex: e.target.value })}
-                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white font-mono outline-none"
+                    className="w-full bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white font-mono outline-none"
                   />
                 </div>
                 <div>
@@ -1693,7 +1693,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                     placeholder="e.g. Must be a valid number!"
                     value={questionPayload.validationError}
                     onChange={(e) => setQuestionPayload({ ...questionPayload, validationError: e.target.value })}
-                    className="w-full bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                    className="w-full bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
                   />
                 </div>
               </div>
@@ -1704,7 +1704,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                   id="req_check"
                   checked={questionPayload.required}
                   onChange={(e) => setQuestionPayload({ ...questionPayload, required: e.target.checked })}
-                  className="w-4 h-4 rounded border-[#27272a] bg-[#0d0d11] text-indigo-600 focus:ring-0 cursor-pointer"
+                  className="w-4 h-4 rounded border-line bg-canvas text-indigo-600 focus:ring-0 cursor-pointer"
                 />
                 <label htmlFor="req_check" className="font-bold text-zinc-200 cursor-pointer">
                   Required Question (Must be answered before submitting)
@@ -1713,7 +1713,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
             </div>
 
             <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1f1f23]">
-              <button onClick={() => setIsQuestionModalOpen(false)} className="px-4 py-2 bg-[#0d0d11] border border-[#27272a] text-zinc-300 rounded-xl font-bold text-xs cursor-pointer">Cancel</button>
+              <button onClick={() => setIsQuestionModalOpen(false)} className="px-4 py-2 bg-canvas border border-line text-zinc-300 rounded-xl font-bold text-xs cursor-pointer">Cancel</button>
               <button onClick={handleSaveQuestion} className="px-5 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-xs shadow-lg shadow-indigo-600/20 cursor-pointer">Save Question</button>
             </div>
           </div>
@@ -1723,12 +1723,12 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
       {/* APPLICATION INSPECTION & REVIEW MODAL */}
       {selectedApp && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-50 animate-in fade-in duration-150">
-          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
+          <div className="bg-canvas border border-[#1f1f23] rounded-2xl max-w-4xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden">
             {/* Modal Header */}
-            <div className="p-5 border-b border-[#1f1f23] bg-[#0d0d11] flex items-center justify-between">
+            <div className="p-5 border-b border-[#1f1f23] bg-canvas flex items-center justify-between">
               <div className="flex items-center gap-3">
                 {selectedApp.userAvatar ? (
-                  <img src={selectedApp.userAvatar} alt="" className="w-10 h-10 rounded-full border border-[#27272a]" />
+                  <img src={selectedApp.userAvatar} alt="" className="w-10 h-10 rounded-full border border-line" />
                 ) : (
                   <div className="w-10 h-10 rounded-full bg-indigo-600/20 text-indigo-400 flex items-center justify-center font-bold text-sm">
                     {selectedApp.userTag?.substring(0, 2).toUpperCase()}
@@ -1747,7 +1747,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
 
               <button
                 onClick={() => setSelectedApp(null)}
-                className="p-1.5 rounded-lg bg-[#18181b] text-zinc-400 hover:text-white cursor-pointer"
+                className="p-1.5 rounded-lg bg-panel text-zinc-400 hover:text-white cursor-pointer"
               >
                 ✕
               </button>
@@ -1756,7 +1756,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
             {/* Modal Body: Q&A Answers + Candidate Info + Staff Notes */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6 text-xs">
               {/* Candidate Metadata */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-[#0d0d11] p-4 rounded-xl border border-[#1f1f23]">
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-canvas p-4 rounded-xl border border-[#1f1f23]">
                 <div>
                   <span className="text-[10px] uppercase font-bold text-zinc-400 block">User ID</span>
                   <span className="font-mono text-white font-semibold">{selectedApp.userId}</span>
@@ -1784,11 +1784,11 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 <div className="space-y-3">
                   {selectedApp.answers && selectedApp.answers.length > 0 ? (
                     selectedApp.answers.map((a: any, idx: number) => (
-                      <div key={a.id || idx} className="p-4 bg-[#0d0d11] rounded-xl border border-[#1f1f23] space-y-1.5">
+                      <div key={a.id || idx} className="p-4 bg-canvas rounded-xl border border-[#1f1f23] space-y-1.5">
                         <p className="font-bold text-indigo-400 text-xs">
                           ❓ Question {idx + 1}: {a.questionLabel}
                         </p>
-                        <p className="break-words text-zinc-200 bg-[#18181b] p-3 rounded-lg border border-[#27272a] whitespace-pre-wrap leading-relaxed font-sans text-xs">
+                        <p className="break-words text-zinc-200 bg-panel p-3 rounded-lg border border-line whitespace-pre-wrap leading-relaxed font-sans text-xs">
                           {a.value || (selectedApp.files?.some((file: any) => !file.followupId && file.position === (a.position ?? idx)) ? "Attachment answer" : "No answer provided.")}
                         </p>
                         {selectedApp.files?.filter((file: any) => !file.followupId && file.position === (a.position ?? idx))
@@ -1821,7 +1821,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 onUpdate={app => setSelectedApp((current: any) => current?.id === app.id ? app : current)} />
               {selectedApp.followups?.length > 0 && <section className="space-y-2">
                 <h4 className="font-bold text-sm text-white">Requested replies</h4>
-                {selectedApp.followups.map((reply: any) => <div key={reply.id} className="space-y-1 rounded-lg border border-[#27272a] p-3">
+                {selectedApp.followups.map((reply: any) => <div key={reply.id} className="space-y-1 rounded-lg border border-line p-3">
                   <p className="whitespace-pre-wrap break-words">{reply.question}</p>
                   <p className="whitespace-pre-wrap break-words text-zinc-400">{reply.answeredAt ? reply.answer || "Attachment reply" : "Awaiting reply"}</p>
                   {selectedApp.files?.filter((file: any) => file.followupId === reply.id)
@@ -1830,7 +1830,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
               </section>}
               <section className="space-y-2">
                 <h4 className="font-bold text-sm text-white">Review history</h4>
-                {selectedApp.history?.map((entry: any) => <div key={entry.id} className="space-y-1 rounded-lg border border-[#27272a] p-3">
+                {selectedApp.history?.map((entry: any) => <div key={entry.id} className="space-y-1 rounded-lg border border-line p-3">
                   <p>{entry.status} · {entry.actorTag} · {new Date(entry.timestamp).toLocaleString()}</p>
                   {entry.details && <p className="whitespace-pre-wrap break-words text-zinc-400">{entry.details}</p>}
                 </div>)}
@@ -1848,7 +1848,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                     placeholder="Add an internal staff note..."
                     value={newNoteContent}
                     onChange={(e) => setNewNoteContent(e.target.value)}
-                    className="flex-1 bg-[#0d0d11] border border-[#27272a] focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
+                    className="flex-1 bg-canvas border border-line focus:border-indigo-500 rounded-xl p-2.5 text-white outline-none"
                   />
                   <button
                     onClick={() => handleAddNote(selectedApp.id)}
@@ -1861,7 +1861,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                 <div className="space-y-2">
                   {selectedApp.notes && selectedApp.notes.length > 0 ? (
                     selectedApp.notes.map((note: any) => (
-                      <div key={note.id} className="p-3 bg-[#0d0d11] rounded-xl border border-[#1f1f23] space-y-1">
+                      <div key={note.id} className="p-3 bg-canvas rounded-xl border border-[#1f1f23] space-y-1">
                         <div className="flex items-center justify-between text-[11px]">
                           <span className="font-bold text-indigo-400">{note.authorTag}</span>
                           <span className="text-zinc-500">{new Date(note.createdAt).toLocaleString()}</span>
@@ -1877,10 +1877,10 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
             </div>
 
             {/* Modal Footer */}
-            <div className="p-4 border-t border-[#1f1f23] bg-[#0d0d11] flex items-center justify-end">
+            <div className="p-4 border-t border-[#1f1f23] bg-canvas flex items-center justify-end">
               <button
                 onClick={() => setSelectedApp(null)}
-                className="px-5 py-2 bg-[#18181b] border border-[#27272a] text-white font-bold rounded-xl text-xs cursor-pointer"
+                className="px-5 py-2 bg-panel border border-line text-white font-bold rounded-xl text-xs cursor-pointer"
               >
                 Close Inspector
               </button>

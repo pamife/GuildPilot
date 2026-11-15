@@ -179,7 +179,7 @@ function GuildEmojiPicker({
   return (
     <details className="relative shrink-0">
       <summary
-        className="list-none p-1.5 rounded-lg bg-[#0e0f15] border border-[#27272a] text-zinc-400 hover:text-white hover:border-discord-brand cursor-pointer"
+        className="list-none p-1.5 rounded-lg bg-panel border border-line text-zinc-400 hover:text-white hover:border-discord-brand cursor-pointer"
         title="Server-Emoji auswählen"
       >
         <Smile className="w-3.5 h-3.5" />
@@ -924,9 +924,9 @@ export function CustomMessagesView({
   };
 
   return (
-    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-[#0b0f17] text-slate-200">
+    <div className="flex-1 flex flex-col h-screen overflow-hidden bg-canvas text-slate-200">
       {/* Top Header Bar */}
-      <header className="h-16 border-b border-[#1e293b] bg-[#0d121c] px-6 flex items-center justify-between shrink-0 z-20">
+      <header className="h-16 border-b border-line bg-canvas px-6 flex items-center justify-between shrink-0 z-20">
         <div className="flex items-center gap-3">
           <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
             <MessageSquareText className="w-5 h-5" />
@@ -944,7 +944,7 @@ export function CustomMessagesView({
 
         <div className="flex items-center gap-2.5">
           {/* Top View Toggle: Designer vs Saved Library */}
-          <div className="flex items-center p-1 bg-[#111724] rounded-xl border border-[#1e293b]">
+          <div className="flex items-center p-1 bg-panel rounded-xl border border-line">
             <button
               onClick={() => setActiveTab("editor")}
               className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
@@ -971,12 +971,12 @@ export function CustomMessagesView({
 
           {/* Preset Templates Dropdown */}
           <div className="relative group">
-            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111724] hover:bg-[#1a253a] text-slate-300 text-xs font-semibold border border-[#1e293b] transition-all cursor-pointer">
+            <button className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel hover:bg-raised text-slate-300 text-xs font-semibold border border-line transition-all cursor-pointer">
               <Bookmark className="w-3.5 h-3.5 text-amber-400" />
               <span>Vorlagen</span>
               <ChevronDown className="w-3 h-3 text-slate-500" />
             </button>
-            <div className="absolute right-0 top-full mt-1 w-64 bg-[#0f1626] border border-[#212d45] rounded-xl shadow-2xl p-1.5 hidden group-hover:block z-50 animate-in fade-in duration-100">
+            <div className="absolute right-0 top-full mt-1 w-64 bg-[#0f1626] border border-line rounded-xl shadow-2xl p-1.5 hidden group-hover:block z-50 animate-in fade-in duration-100">
               <div className="text-[10px] font-bold uppercase text-slate-400 px-2 py-1">Schnellvorlagen</div>
               {PRESET_TEMPLATES.map((p, idx) => (
                 <button
@@ -994,7 +994,7 @@ export function CustomMessagesView({
           {/* New Message Button */}
           <button
             onClick={handleNewMessage}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#111724] hover:bg-[#1a253a] text-slate-300 text-xs font-semibold border border-[#1e293b] transition-all cursor-pointer"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-panel hover:bg-raised text-slate-300 text-xs font-semibold border border-line transition-all cursor-pointer"
           >
             <Plus className="w-3.5 h-3.5 text-emerald-400" />
             <span>Neu</span>
@@ -1015,7 +1015,7 @@ export function CustomMessagesView({
       {/* Main Content Area */}
       {activeTab === "library" ? (
         /* SAVED MESSAGES LIBRARY VIEW */
-        <div className="flex-1 p-8 overflow-y-auto bg-[#090a0f] space-y-6">
+        <div className="flex-1 p-8 overflow-y-auto bg-canvas space-y-6">
           <div className="flex items-center justify-between max-w-6xl mx-auto">
             <div>
               <h2 className="text-xl font-bold text-white flex items-center gap-2">
@@ -1026,7 +1026,7 @@ export function CustomMessagesView({
             <div className="flex items-center gap-2.5">
               <button
                 onClick={() => setIsImportModalOpen(true)}
-                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#141419] hover:bg-[#1f1f28] text-zinc-300 hover:text-white text-xs font-semibold border border-[#27272a] shadow-md transition-all cursor-pointer"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#141419] hover:bg-[#1f1f28] text-zinc-300 hover:text-white text-xs font-semibold border border-line shadow-md transition-all cursor-pointer"
                 title="Import custom messages from another server"
               >
                 <Download className="w-4 h-4 text-indigo-400" />
@@ -1044,7 +1044,7 @@ export function CustomMessagesView({
 
           <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {savedMessages.length === 0 ? (
-              <div className="col-span-full py-16 text-center text-zinc-500 text-xs bg-[#0e0f15] rounded-2xl border border-[#27272a] p-8 space-y-3">
+              <div className="col-span-full py-16 text-center text-zinc-500 text-xs bg-panel rounded-2xl border border-line p-8 space-y-3">
                 <MessageSquareText className="w-10 h-10 mx-auto text-zinc-600" />
                 <p className="text-sm font-bold text-zinc-400">No saved custom messages found.</p>
                 <p className="text-xs text-zinc-500 max-w-md mx-auto">
@@ -1061,7 +1061,7 @@ export function CustomMessagesView({
               savedMessages.map((msg) => (
                 <div
                   key={msg.id}
-                  className="bg-[#0e0f15] border border-[#27272a] hover:border-discord-brand/60 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-xl transition-all group"
+                  className="bg-panel border border-line hover:border-discord-brand/60 rounded-2xl p-5 flex flex-col justify-between space-y-4 shadow-xl transition-all group"
                 >
                   <div className="space-y-2">
                     <div className="flex items-start justify-between gap-2">
@@ -1082,7 +1082,7 @@ export function CustomMessagesView({
 
                     <div className="flex items-center gap-2 pt-1 flex-wrap">
                       {msg.channelId && (
-                        <span className="text-[11px] text-zinc-400 bg-[#14151b] px-2 py-0.5 rounded-md border border-[#27272a] flex items-center gap-1">
+                        <span className="text-[11px] text-zinc-400 bg-panel px-2 py-0.5 rounded-md border border-line flex items-center gap-1">
                           <Hash className="w-3 h-3 text-discord-brand" />
                           {channels.find((c) => c.id === msg.channelId)?.name || "channel"}
                         </span>
@@ -1111,14 +1111,14 @@ export function CustomMessagesView({
                     <div className="flex items-center gap-1">
                       <button
                         onClick={() => handleDuplicateMessage(msg.id!)}
-                        className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-[#18181b] transition-colors"
+                        className="p-1.5 text-zinc-400 hover:text-white rounded-lg hover:bg-panel transition-colors"
                         title="Duplicate"
                       >
                         <Copy className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeleteMessage(msg.id!)}
-                        className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-[#18181b] transition-colors"
+                        className="p-1.5 text-zinc-400 hover:text-rose-400 rounded-lg hover:bg-panel transition-colors"
                         title="Delete"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1134,7 +1134,7 @@ export function CustomMessagesView({
         /* DESIGNER SPLIT VIEW */
         <div className="flex-1 flex overflow-hidden">
           {/* Left Column: Config & Components Builder */}
-          <div className="w-1/2 flex flex-col border-r border-[#18181b] bg-[#090a0f] overflow-y-auto">
+          <div className="w-1/2 flex flex-col border-r border-[#18181b] bg-canvas overflow-y-auto">
             {/* Secondary Subheader / Message Name Bar */}
             <div className="p-4 border-b border-[#18181b] bg-[#0c0d12] flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -1143,12 +1143,12 @@ export function CustomMessagesView({
                   value={currentMessage.name}
                   onChange={(e) => setCurrentMessage({ ...currentMessage, name: e.target.value })}
                   placeholder="Message Title / Reference Name"
-                  className="bg-[#14151b] border border-[#27272a] focus:border-discord-brand px-3 py-1.5 rounded-lg text-sm font-bold text-white outline-none w-64 transition-all"
+                  className="bg-panel border border-line focus:border-discord-brand px-3 py-1.5 rounded-lg text-sm font-bold text-white outline-none w-64 transition-all"
                 />
               </div>
 
               {/* Mode Switcher */}
-              <div className="flex items-center p-1 bg-[#14151b] rounded-xl border border-[#27272a]">
+              <div className="flex items-center p-1 bg-panel rounded-xl border border-line">
                 <button
                   onClick={() => setCurrentMessage({ ...currentMessage, mode: "components_v2" })}
                   className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-xs font-bold transition-all ${
@@ -1177,7 +1177,7 @@ export function CustomMessagesView({
             {/* Builder Body */}
             <div className="p-6 space-y-6 flex-1 overflow-y-auto">
               {/* Target Channel Selector & Deployment Box */}
-              <div className="p-4 rounded-xl bg-[#0e0f15] border border-[#27272a] space-y-3">
+              <div className="p-4 rounded-xl bg-panel border border-line space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
                     <Hash className="w-4 h-4 text-discord-brand" /> Target Discord Channel
@@ -1193,7 +1193,7 @@ export function CustomMessagesView({
                   <select
                     value={currentMessage.channelId || ""}
                     onChange={(e) => setCurrentMessage({ ...currentMessage, channelId: e.target.value })}
-                    className="flex-1 bg-[#14151b] border border-[#27272a] focus:border-discord-brand px-3 py-2 rounded-lg text-xs font-semibold text-white outline-none"
+                    className="flex-1 bg-panel border border-line focus:border-discord-brand px-3 py-2 rounded-lg text-xs font-semibold text-white outline-none"
                   >
                     <option value="">-- Select a channel --</option>
                     {textChannels.map((ch) => (
@@ -1218,7 +1218,7 @@ export function CustomMessagesView({
               {currentMessage.mode === "components_v2" ? (
                 <>
                   {/* Root Container Options (Accent Color & Spoiler) */}
-                  <div className="p-4 rounded-xl bg-[#0e0f15] border border-[#27272a] space-y-4">
+                  <div className="p-4 rounded-xl bg-panel border border-line space-y-4">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-zinc-300 flex items-center gap-2">
                         <Palette className="w-4 h-4 text-discord-brand" /> Root Container Style
@@ -1228,7 +1228,7 @@ export function CustomMessagesView({
                           type="checkbox"
                           checked={!!currentMessage.spoiler}
                           onChange={(e) => setCurrentMessage({ ...currentMessage, spoiler: e.target.checked })}
-                          className="rounded border-[#27272a] bg-[#14151b] text-discord-brand focus:ring-0"
+                          className="rounded border-line bg-panel text-discord-brand focus:ring-0"
                         />
                         <span>Spoiler Container (Blur)</span>
                       </label>
@@ -1248,7 +1248,7 @@ export function CustomMessagesView({
                                 accentColor: e.target.checked ? "#5865F2" : null,
                               })
                             }
-                            className="rounded border-[#27272a] bg-[#14151b] text-discord-brand focus:ring-0"
+                            className="rounded border-line bg-panel text-discord-brand focus:ring-0"
                           />
                           <span>Accent-Farbe anzeigen</span>
                         </label>
@@ -1273,7 +1273,7 @@ export function CustomMessagesView({
                         ))}
 
                         {/* Custom Hex input */}
-                        <div className="flex items-center gap-1.5 ml-2 bg-[#14151b] border border-[#27272a] px-2 py-1 rounded-lg">
+                        <div className="flex items-center gap-1.5 ml-2 bg-panel border border-line px-2 py-1 rounded-lg">
                           <span className="text-xs text-zinc-500 font-mono">#</span>
                           <input
                             type="text"
@@ -1302,7 +1302,7 @@ export function CustomMessagesView({
                       <div className="flex items-center gap-1.5 flex-wrap">
                         <button
                           onClick={() => addComponentBlock("text")}
-                          className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] flex items-center gap-1 transition-all"
+                          className="px-2.5 py-1 rounded-lg bg-panel hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-line flex items-center gap-1 transition-all"
                           title="Add Rich Text Display Block"
                         >
                           <Type className="w-3.5 h-3.5 text-sky-400" />
@@ -1310,7 +1310,7 @@ export function CustomMessagesView({
                         </button>
                         <button
                           onClick={() => addComponentBlock("text_button" as any)}
-                          className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-discord-brand/40 text-discord-brand hover:text-white flex items-center gap-1 transition-all shadow-sm"
+                          className="px-2.5 py-1 rounded-lg bg-panel hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-discord-brand/40 text-discord-brand hover:text-white flex items-center gap-1 transition-all shadow-sm"
                           title="Add Row with Left Text and Right Action Button"
                         >
                           <MousePointerClick className="w-3.5 h-3.5 text-discord-brand" />
@@ -1318,7 +1318,7 @@ export function CustomMessagesView({
                         </button>
                         <button
                           onClick={() => addComponentBlock("text_thumbnail" as any)}
-                          className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] flex items-center gap-1 transition-all"
+                          className="px-2.5 py-1 rounded-lg bg-panel hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-line flex items-center gap-1 transition-all"
                           title="Add Row with Left Text and Right Thumbnail Image"
                         >
                           <Split className="w-3.5 h-3.5 text-violet-400" />
@@ -1326,7 +1326,7 @@ export function CustomMessagesView({
                         </button>
                         <button
                           onClick={() => addComponentBlock("media_gallery")}
-                          className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] flex items-center gap-1 transition-all"
+                          className="px-2.5 py-1 rounded-lg bg-panel hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-line flex items-center gap-1 transition-all"
                           title="Add Media Gallery Grid"
                         >
                           <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
@@ -1334,7 +1334,7 @@ export function CustomMessagesView({
                         </button>
                         <button
                           onClick={() => addComponentBlock("separator")}
-                          className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] flex items-center gap-1 transition-all"
+                          className="px-2.5 py-1 rounded-lg bg-panel hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-line flex items-center gap-1 transition-all"
                           title="Add Divider / Spacing"
                         >
                           <span className="text-zinc-400 font-bold">—</span>
@@ -1342,7 +1342,7 @@ export function CustomMessagesView({
                         </button>
                         <button
                           onClick={() => addComponentBlock("action_row")}
-                          className="px-2.5 py-1 rounded-lg bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-[#27272a] flex items-center gap-1 transition-all"
+                          className="px-2.5 py-1 rounded-lg bg-panel hover:bg-[#27272a] text-zinc-300 text-xs font-semibold border border-line flex items-center gap-1 transition-all"
                           title="Add Interactive Button Row"
                         >
                           <MousePointerClick className="w-3.5 h-3.5 text-amber-400" />
@@ -1356,12 +1356,12 @@ export function CustomMessagesView({
                       {currentMessage.containerConfig.map((block, idx) => (
                         <div
                           key={block.id || idx}
-                          className="p-4 rounded-xl bg-[#0e0f15] border border-[#27272a] space-y-3 group hover:border-[#3f3f46] transition-all"
+                          className="p-4 rounded-xl bg-panel border border-line space-y-3 group hover:border-[#3f3f46] transition-all"
                         >
                           {/* Block Header */}
                           <div className="flex items-center justify-between border-b border-[#1c1d25] pb-2">
                             <div className="flex items-center gap-2">
-                              <span className="w-5 h-5 rounded-md bg-[#18181b] text-zinc-400 text-[11px] font-bold flex items-center justify-center">
+                              <span className="w-5 h-5 rounded-md bg-panel text-zinc-400 text-[11px] font-bold flex items-center justify-center">
                                 {idx + 1}
                               </span>
                               <span className="text-xs font-bold text-zinc-200 capitalize flex items-center gap-1.5">
@@ -1406,7 +1406,7 @@ export function CustomMessagesView({
                           {block.type === "text" && (
                             <div className="space-y-2">
                               {/* Markdown helper toolbar */}
-                              <div className="flex items-center gap-1 text-[11px] text-zinc-400 bg-[#14151b] p-1 rounded-lg border border-[#27272a]">
+                              <div className="flex items-center gap-1 text-[11px] text-zinc-400 bg-panel p-1 rounded-lg border border-line">
                                 <button onClick={() => insertMarkdown(idx, "# ")} className="px-1.5 py-0.5 hover:bg-[#27272a] rounded font-bold">H1</button>
                                 <button onClick={() => insertMarkdown(idx, "### ")} className="px-1.5 py-0.5 hover:bg-[#27272a] rounded font-bold">H3</button>
                                 <button onClick={() => insertMarkdown(idx, "**", "**")} className="px-1.5 py-0.5 hover:bg-[#27272a] rounded font-bold">B</button>
@@ -1420,7 +1420,7 @@ export function CustomMessagesView({
                                 value={block.content || ""}
                                 onChange={(e) => updateBlock(idx, { content: e.target.value })}
                                 placeholder="Type markdown formatted message content..."
-                                className="w-full bg-[#14151b] border border-[#27272a] focus:border-discord-brand p-3 rounded-lg text-xs font-mono text-white outline-none resize-y"
+                                className="w-full bg-panel border border-line focus:border-discord-brand p-3 rounded-lg text-xs font-mono text-white outline-none resize-y"
                               />
                             </div>
                           )}
@@ -1435,11 +1435,11 @@ export function CustomMessagesView({
                                   value={block.content || ""}
                                   onChange={(e) => updateBlock(idx, { content: e.target.value })}
                                   placeholder="Section text description..."
-                                  className="w-full bg-[#14151b] border border-[#27272a] focus:border-discord-brand p-2.5 rounded-lg text-xs text-white outline-none"
+                                  className="w-full bg-panel border border-line focus:border-discord-brand p-2.5 rounded-lg text-xs text-white outline-none"
                                 />
                               </div>
 
-                              <div className="p-3 bg-[#14151b] rounded-lg border border-[#27272a] space-y-3">
+                              <div className="p-3 bg-panel rounded-lg border border-line space-y-3">
                                 <div className="flex items-center justify-between">
                                   <label className="text-[11px] font-bold text-zinc-300">Right Side Accessory</label>
                                   <div className="flex items-center gap-2">
@@ -1497,7 +1497,7 @@ export function CustomMessagesView({
                                         <img
                                           src={block.accessory.url}
                                           alt="Thumbnail"
-                                          className="w-10 h-10 rounded-lg object-cover border border-[#27272a] shrink-0"
+                                          className="w-10 h-10 rounded-lg object-cover border border-line shrink-0"
                                         />
                                       )}
                                       <input
@@ -1509,7 +1509,7 @@ export function CustomMessagesView({
                                           })
                                         }
                                         placeholder="Top-Right Thumbnail URL (https://...)"
-                                        className="flex-1 bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                                        className="flex-1 bg-panel border border-line focus:border-discord-brand px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                                       />
                                       {block.accessory.url && (
                                         <button
@@ -1530,7 +1530,7 @@ export function CustomMessagesView({
                                             accessory: { ...block.accessory, type: "thumbnail", spoiler: e.target.checked },
                                           })
                                         }
-                                        className="rounded bg-[#0e0f15] border-[#27272a] text-discord-brand"
+                                        className="rounded bg-panel border-line text-discord-brand"
                                       />
                                       <span>Mark thumbnail as spoiler (blur)</span>
                                     </label>
@@ -1548,7 +1548,7 @@ export function CustomMessagesView({
                                             })
                                           }
                                           placeholder="Right Button Label"
-                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
+                                          className="w-full bg-panel border border-line px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
                                         />
                                       </div>
                                       <div className="col-span-4">
@@ -1559,7 +1559,7 @@ export function CustomMessagesView({
                                               accessory: { ...block.accessory, type: "button", style: e.target.value as any },
                                             })
                                           }
-                                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                                          className="w-full bg-panel border border-line px-2 py-1.5 rounded-lg text-xs text-white outline-none"
                                         >
                                           <option value="Primary">Primary (Blue)</option>
                                           <option value="Secondary">Secondary (Gray)</option>
@@ -1579,7 +1579,7 @@ export function CustomMessagesView({
                                               })
                                             }
                                             placeholder="Emoji 😀"
-                                            className="min-w-0 flex-1 bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-center text-white outline-none"
+                                            className="min-w-0 flex-1 bg-panel border border-line px-2 py-1.5 rounded-lg text-xs text-center text-white outline-none"
                                           />
                                           <GuildEmojiPicker
                                             emojis={emojis}
@@ -1603,7 +1603,7 @@ export function CustomMessagesView({
                                           })
                                         }
                                         placeholder="https://example.com (Link URL)"
-                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                                        className="w-full bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                                       />
                                     )}
 
@@ -1646,7 +1646,7 @@ export function CustomMessagesView({
                                       updateBlock(idx, { items: nextItems });
                                     }}
                                     placeholder="https://example.com/image.png"
-                                    className="flex-1 bg-[#14151b] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                                    className="flex-1 bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                                   />
                                   <button
                                     onClick={() => {
@@ -1675,13 +1675,13 @@ export function CustomMessagesView({
 
                           {/* 4. Separator Editor */}
                           {block.type === "separator" && (
-                            <div className="flex items-center justify-between p-2 bg-[#14151b] rounded-lg text-xs">
+                            <div className="flex items-center justify-between p-2 bg-panel rounded-lg text-xs">
                               <label className="flex items-center gap-2 cursor-pointer text-zinc-300">
                                 <input
                                   type="checkbox"
                                   checked={block.divider !== false}
                                   onChange={(e) => updateBlock(idx, { divider: e.target.checked })}
-                                  className="rounded bg-[#0e0f15] border-[#27272a] text-discord-brand"
+                                  className="rounded bg-panel border-line text-discord-brand"
                                 />
                                 <span>Draw Visual Divider Line</span>
                               </label>
@@ -1694,7 +1694,7 @@ export function CustomMessagesView({
                             <div className="space-y-3">
                               <div className="space-y-2">
                                 {(block.buttons || []).map((btn, bIdx) => (
-                                  <div key={btn.id || bIdx} className="grid grid-cols-12 gap-2 items-center bg-[#14151b] p-2.5 rounded-lg border border-[#27272a]">
+                                  <div key={btn.id || bIdx} className="grid grid-cols-12 gap-2 items-center bg-panel p-2.5 rounded-lg border border-line">
                                     <div className="col-span-3">
                                       <input
                                         type="text"
@@ -1705,7 +1705,7 @@ export function CustomMessagesView({
                                           updateBlock(idx, { buttons: nextBtns });
                                         }}
                                         placeholder="Button Label"
-                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
+                                        className="w-full bg-panel border border-line px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
                                       />
                                     </div>
                                     <div className="col-span-3">
@@ -1716,7 +1716,7 @@ export function CustomMessagesView({
                                           nextBtns[bIdx] = { ...nextBtns[bIdx], style: e.target.value as any };
                                           updateBlock(idx, { buttons: nextBtns });
                                         }}
-                                        className="w-full bg-[#0e0f15] border border-[#27272a] px-2 py-1.5 rounded-lg text-xs text-white outline-none"
+                                        className="w-full bg-panel border border-line px-2 py-1.5 rounded-lg text-xs text-white outline-none"
                                       >
                                         <option value="Primary">Primary (Blue)</option>
                                         <option value="Secondary">Secondary (Gray)</option>
@@ -1735,7 +1735,7 @@ export function CustomMessagesView({
                                           updateBlock(idx, { buttons: nextBtns });
                                         }}
                                         placeholder="😀"
-                                        className="min-w-0 flex-1 bg-[#0e0f15] border border-[#27272a] px-1 py-1.5 rounded-lg text-xs text-center text-white outline-none"
+                                        className="min-w-0 flex-1 bg-panel border border-line px-1 py-1.5 rounded-lg text-xs text-center text-white outline-none"
                                         title="Emoji"
                                       />
                                       <GuildEmojiPicker
@@ -1819,7 +1819,7 @@ export function CustomMessagesView({
                 </>
               ) : (
                 /* Classic Embed Form */
-                <div className="p-4 rounded-xl bg-[#0e0f15] border border-[#27272a] space-y-4">
+                <div className="p-4 rounded-xl bg-panel border border-line space-y-4">
                   <h3 className="text-xs font-bold text-white uppercase tracking-wider flex items-center gap-2">
                     <FileText className="w-4 h-4 text-discord-brand" /> Classic Embed Settings
                   </h3>
@@ -1837,7 +1837,7 @@ export function CustomMessagesView({
                           })
                         }
                         placeholder="Embed Title"
-                        className="w-full bg-[#14151b] border border-[#27272a] px-3 py-2 rounded-lg text-xs text-white outline-none"
+                        className="w-full bg-panel border border-line px-3 py-2 rounded-lg text-xs text-white outline-none"
                       />
                     </div>
 
@@ -1853,7 +1853,7 @@ export function CustomMessagesView({
                           })
                         }
                         placeholder="Markdown description..."
-                        className="w-full bg-[#14151b] border border-[#27272a] p-3 rounded-lg text-xs text-white outline-none"
+                        className="w-full bg-panel border border-line p-3 rounded-lg text-xs text-white outline-none"
                       />
                     </div>
 
@@ -1865,7 +1865,7 @@ export function CustomMessagesView({
                             <img
                               src={currentMessage.embedConfig.thumbnail}
                               alt=""
-                              className="w-7 h-7 rounded object-cover border border-[#27272a] shrink-0"
+                              className="w-7 h-7 rounded object-cover border border-line shrink-0"
                             />
                           )}
                           <input
@@ -1878,7 +1878,7 @@ export function CustomMessagesView({
                               })
                             }
                             placeholder="https://..."
-                            className="w-full bg-[#14151b] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                            className="w-full bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                           />
                         </div>
                       </div>
@@ -1894,7 +1894,7 @@ export function CustomMessagesView({
                             })
                           }
                           placeholder="https://..."
-                          className="w-full bg-[#14151b] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                          className="w-full bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                         />
                       </div>
                     </div>
@@ -1912,7 +1912,7 @@ export function CustomMessagesView({
                             })
                           }
                           placeholder="Footer note"
-                          className="w-full bg-[#14151b] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                          className="w-full bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                         />
                       </div>
                       <div>
@@ -1927,7 +1927,7 @@ export function CustomMessagesView({
                             })
                           }
                           placeholder="#5865F2"
-                          className="w-full bg-[#14151b] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                          className="w-full bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                         />
                       </div>
                     </div>
@@ -1952,7 +1952,7 @@ export function CustomMessagesView({
                 </span>
               </div>
 
-              <div className="flex items-center gap-1 bg-[#14151b] p-1 rounded-lg border border-[#27272a]">
+              <div className="flex items-center gap-1 bg-panel p-1 rounded-lg border border-line">
                 <button
                   onClick={() => setPreviewTab("visual")}
                   className={`px-3 py-1 text-xs font-bold rounded-md transition-all ${
@@ -2150,8 +2150,8 @@ export function CustomMessagesView({
                 </div>
               ) : (
                 /* LIVE DIRECT JSON CODE EDITOR */
-                <div className="w-full h-full flex flex-col bg-[#0e0f15] border border-[#27272a] rounded-xl overflow-hidden shadow-2xl">
-                  <div className="flex items-center justify-between p-3 bg-[#050507] border-b border-[#27272a]">
+                <div className="w-full h-full flex flex-col bg-panel border border-line rounded-xl overflow-hidden shadow-2xl">
+                  <div className="flex items-center justify-between p-3 bg-[#050507] border-b border-line">
                     <div className="flex items-center gap-2">
                       <Code className="w-4 h-4 text-emerald-400" />
                       <span className="text-xs font-mono text-zinc-300">Message Payload JSON</span>
@@ -2169,7 +2169,7 @@ export function CustomMessagesView({
                     <div className="flex items-center gap-2">
                       <button
                         onClick={handleFormatJson}
-                        className="px-2.5 py-1 rounded bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold flex items-center gap-1 border border-[#27272a]"
+                        className="px-2.5 py-1 rounded bg-panel hover:bg-[#27272a] text-zinc-300 text-xs font-semibold flex items-center gap-1 border border-line"
                         title="Format JSON"
                       >
                         <Wand2 className="w-3 h-3 text-amber-400" />
@@ -2180,7 +2180,7 @@ export function CustomMessagesView({
                           navigator.clipboard.writeText(rawJsonText);
                           showToast("JSON copied to clipboard!", "success");
                         }}
-                        className="px-2.5 py-1 rounded bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-semibold flex items-center gap-1 border border-[#27272a]"
+                        className="px-2.5 py-1 rounded bg-panel hover:bg-[#27272a] text-zinc-300 text-xs font-semibold flex items-center gap-1 border border-line"
                         title="Copy JSON"
                       >
                         <Copy className="w-3 h-3 text-sky-400" />
@@ -2209,7 +2209,7 @@ export function CustomMessagesView({
                         }
                       }}
                       placeholder="Paste or edit Custom Message JSON here..."
-                      className="w-full flex-1 bg-[#090a0f] text-emerald-400 font-mono text-xs p-3 rounded-lg border border-[#27272a] focus:border-emerald-500 outline-none resize-none leading-relaxed"
+                      className="w-full flex-1 bg-canvas text-emerald-400 font-mono text-xs p-3 rounded-lg border border-line focus:border-emerald-500 outline-none resize-none leading-relaxed"
                       spellCheck={false}
                     />
                     {jsonError && (
@@ -2228,7 +2228,7 @@ export function CustomMessagesView({
       {/* Button Multi-Action Configurator Modal */}
       {actionModalOpen && activeButtonTarget && (
         <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-6 animate-in fade-in duration-150">
-          <div className="bg-[#0e0f15] border border-[#27272a] rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
+          <div className="bg-panel border border-line rounded-2xl w-full max-w-xl shadow-2xl overflow-hidden flex flex-col">
             <div className="p-4 border-b border-[#18181b] flex items-center justify-between bg-[#050507]">
               <div className="flex items-center gap-2">
                 <Settings2 className="w-5 h-5 text-discord-brand" />
@@ -2272,7 +2272,7 @@ export function CustomMessagesView({
                 {activeButtonTarget.actions.map((act, actIdx) => (
                   <div
                     key={act.id || actIdx}
-                    className="p-3.5 bg-[#14151b] rounded-xl border border-[#27272a] space-y-3"
+                    className="p-3.5 bg-panel rounded-xl border border-line space-y-3"
                   >
                     <div className="flex items-center justify-between border-b border-[#1c1d25] pb-2">
                       <span className="text-xs font-bold text-zinc-300 flex items-center gap-1.5">
@@ -2314,7 +2314,7 @@ export function CustomMessagesView({
                             actions: next,
                           });
                         }}
-                        className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-1.5 rounded-lg text-xs font-semibold text-white outline-none"
+                        className="w-full bg-panel border border-line focus:border-discord-brand px-3 py-1.5 rounded-lg text-xs font-semibold text-white outline-none"
                       >
                         <option value="EPHEMERAL_REPLY">💬 Send Ephemeral Reply (Private message to user)</option>
                         <option value="ROLE_TOGGLE">🛡️ Toggle Role (Self-Role Add/Remove)</option>
@@ -2374,7 +2374,7 @@ export function CustomMessagesView({
                                 next[actIdx] = { ...next[actIdx], targetCustomMessageId: e.target.value };
                                 setActiveButtonTarget({ ...activeButtonTarget, actions: next });
                               }}
-                              className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-2 rounded-lg text-xs font-semibold text-white outline-none"
+                              className="w-full bg-panel border border-line focus:border-discord-brand px-3 py-2 rounded-lg text-xs font-semibold text-white outline-none"
                             >
                               <option value="">-- Select Saved Custom Message --</option>
                               {savedMessages.map((m) => (
@@ -2399,7 +2399,7 @@ export function CustomMessagesView({
                                 setActiveButtonTarget({ ...activeButtonTarget, actions: next });
                               }}
                               placeholder="🎉 Thanks {user}! Action successful."
-                              className="w-full bg-[#0e0f15] border border-[#27272a] p-2 rounded-lg text-xs text-white outline-none"
+                              className="w-full bg-panel border border-line p-2 rounded-lg text-xs text-white outline-none"
                             />
                           </div>
                         )}
@@ -2419,7 +2419,7 @@ export function CustomMessagesView({
                             next[actIdx] = { ...next[actIdx], roleId: e.target.value };
                             setActiveButtonTarget({ ...activeButtonTarget, actions: next });
                           }}
-                          className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                          className="w-full bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                         >
                           <option value="">-- Select a Role --</option>
                           {roles.map((r) => (
@@ -2474,7 +2474,7 @@ export function CustomMessagesView({
                               next[actIdx] = { ...next[actIdx], targetCustomMessageId: e.target.value };
                               setActiveButtonTarget({ ...activeButtonTarget, actions: next });
                             }}
-                            className="w-full bg-[#0e0f15] border border-[#27272a] focus:border-discord-brand px-3 py-2 rounded-lg text-xs font-semibold text-white outline-none"
+                            className="w-full bg-panel border border-line focus:border-discord-brand px-3 py-2 rounded-lg text-xs font-semibold text-white outline-none"
                           >
                             <option value="">-- Select Saved Custom Message --</option>
                             {savedMessages.map((m) => (
@@ -2493,7 +2493,7 @@ export function CustomMessagesView({
                               setActiveButtonTarget({ ...activeButtonTarget, actions: next });
                             }}
                             placeholder="Hello {user}, here is your private info..."
-                            className="w-full bg-[#0e0f15] border border-[#27272a] p-2 rounded-lg text-xs text-white outline-none"
+                            className="w-full bg-panel border border-line p-2 rounded-lg text-xs text-white outline-none"
                           />
                         )}
                       </div>
@@ -2511,7 +2511,7 @@ export function CustomMessagesView({
                             setActiveButtonTarget({ ...activeButtonTarget, actions: next });
                           }}
                           placeholder="https://example.com"
-                          className="w-full bg-[#0e0f15] border border-[#27272a] px-3 py-1.5 rounded-lg text-xs text-white outline-none"
+                          className="w-full bg-panel border border-line px-3 py-1.5 rounded-lg text-xs text-white outline-none"
                         />
                       </div>
                     )}

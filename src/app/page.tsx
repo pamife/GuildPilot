@@ -28,7 +28,7 @@ import { MemberManagerView } from "@/components/views/MemberManagerView";
 import { BackupsView } from "@/components/views/BackupsView";
 import { api, setAuthToken, getAuthToken } from "@/lib/api";
 import { getSocket } from "@/lib/socket";
-import { Sparkles, ArrowLeft, Crown } from "lucide-react";
+import { Sparkles, ArrowLeft, Crown, ChevronRight, Command } from "lucide-react";
 
 type ScreenMode = "servers" | "guild" | "owner";
 
@@ -426,7 +426,7 @@ function DashboardContent() {
   // 1. Loading State
   if (loadingAuth) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#07090e] text-slate-400">
+      <div className="min-h-screen flex items-center justify-center bg-[#0d1113] text-slate-400" role="status">
         <div className="flex flex-col items-center gap-3">
           <div className="w-8 h-8 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin" />
           <p className="text-xs font-medium">Lade GuildPilot...</p>
@@ -448,6 +448,8 @@ function DashboardContent() {
         isOwner={isOwner}
         guilds={guilds}
         onSelectGuild={(id) => {
+          setGuildDetails(null);
+          setBotStatus(null);
           setSelectedGuildId(id);
           setScreenMode("guild");
           setCurrentView("overview");
@@ -464,13 +466,13 @@ function DashboardContent() {
   // 4. Owner Dashboard Screen (Exklusiv für Owner)
   if (screenMode === "owner" && isOwner) {
     return (
-      <div className="min-h-screen bg-[#07090e] text-slate-100 flex flex-col">
+      <div className="min-h-screen bg-canvas text-slate-100 flex flex-col">
         {/* Owner Header */}
-        <header className="border-b border-[#141b2b] bg-[#090d15]/95 px-6 h-16 flex items-center justify-between sticky top-0 z-20">
+        <header className="gp-owner-header border-b border-line bg-canvas/95 px-6 flex items-center justify-between sticky top-0 z-20">
           <div className="flex items-center gap-3">
             <button
               onClick={() => setScreenMode("servers")}
-              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-[#111724] hover:bg-[#182238] border border-[#1e2a42] text-xs font-semibold text-slate-300 hover:text-white transition-all"
+              className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-panel hover:bg-[#182238] border border-[#1e2a42] text-xs font-semibold text-slate-300 hover:text-white transition-all"
             >
               <ArrowLeft className="w-4 h-4" />
               <span>Server-Übersicht</span>
@@ -498,7 +500,7 @@ function DashboardContent() {
           </div>
         </header>
 
-        <main className="flex-1 overflow-y-auto bg-[#07090e]">
+        <main className="flex-1 overflow-y-auto bg-canvas">
           <HostServerView />
         </main>
       </div>
@@ -507,7 +509,7 @@ function DashboardContent() {
 
   if (currentUser.scope === "applications") {
     return (
-      <div className="flex h-screen flex-col overflow-hidden bg-[#07090e]">
+      <div className="flex h-screen flex-col overflow-hidden bg-canvas">
         <div className="flex items-center justify-between border-b border-slate-800 px-6 py-3 text-sm text-white">
           <button onClick={() => setScreenMode("servers")} className="flex items-center gap-2">
             <ArrowLeft className="h-4 w-4" /> Server-Übersicht
@@ -521,14 +523,20 @@ function DashboardContent() {
 
   // 5. Guild Management Dashboard Screen
   return (
-    <div className="flex h-screen overflow-hidden bg-[#07090e]">
+    <div className="gp-workspace">
       {/* Sidebar */}
       <Sidebar
         currentView={currentView}
         onSelectView={setCurrentView}
         guilds={guilds}
         selectedGuildId={selectedGuildId}
-        onSelectGuild={setSelectedGuildId}
+        onSelectGuild={(id) => {
+          if (id !== selectedGuildId) {
+            setGuildDetails(null);
+            setBotStatus(null);
+            setSelectedGuildId(id);
+          }
+        }}
         botStatus={botStatus}
         ownerUser={currentUser}
         isOwner={isOwner}
@@ -538,9 +546,13 @@ function DashboardContent() {
       />
 
       {/* Main View Shell */}
-      <main className="flex-1 flex flex-col min-w-0 bg-[#07090e] overflow-hidden">
+      <main className="gp-workspace-main" id="main-content">
+        <header className="gp-workspace-topbar">
+          <span><Command size={14} /> Workspace <ChevronRight size={12} /><strong>{guilds.find(guild => guild.id === selectedGuildId)?.name || "Dein Server"}</strong></span>
+          <span>Deine Community. Ein Control Center.</span>
+        </header>
         {updateNotification && updateNotification.unread && isOwner && (
-          <div className="bg-gradient-to-r from-emerald-600 via-indigo-600 to-emerald-700 text-white px-4 py-2.5 flex items-center justify-between text-sm font-medium shadow-lg border-b border-emerald-400/40 shrink-0 animate-in slide-in-from-top duration-300">
+          <div className="gp-update-banner text-white px-4 py-2.5 flex flex-wrap gap-3 items-center justify-between text-sm font-medium shrink-0">
             <div className="flex items-center gap-3 overflow-hidden">
               <div className="p-1.5 rounded-lg bg-white/20 shrink-0">
                 <Sparkles className="w-4 h-4 text-amber-300 animate-pulse" />
@@ -644,6 +656,8 @@ function DashboardContent() {
         {currentView === "overview" && (
           <OverviewView
             guildDetails={guildDetails}
+            botStatus={botStatus}
+            isOwner={isOwner}
             onRefresh={fetchGuildData}
             onNavigate={setCurrentView}
           />

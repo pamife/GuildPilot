@@ -169,7 +169,7 @@ export function ChannelManagerView({
   const renderChannelRow = (ch: Channel) => (
     <div
       key={ch.id}
-      className="group flex items-center justify-between p-3 rounded-xl bg-[#0d121c] hover:bg-[#131b2b] border border-[#1a2333] hover:border-indigo-500/40 transition-all shadow-sm"
+      className="group flex items-center justify-between p-3 rounded-xl bg-canvas hover:bg-[#131b2b] border border-line hover:border-indigo-500/40 transition-all shadow-sm"
     >
       <div className="flex items-center gap-2.5 min-w-0">
         {renderChannelIcon(ch.type)}
@@ -190,14 +190,14 @@ export function ChannelManagerView({
         <button
           onClick={() => handleDuplicate(ch)}
           title="Kanal duplizieren"
-          className="p-1.5 text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-lg transition-colors cursor-pointer"
+          className="p-1.5 text-slate-400 hover:text-white hover:bg-raised rounded-lg transition-colors cursor-pointer"
         >
           <Copy className="w-3.5 h-3.5" />
         </button>
         <button
           onClick={() => openEditModal(ch)}
           title="Kanal-Einstellungen"
-          className="p-1.5 text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-lg transition-colors cursor-pointer"
+          className="p-1.5 text-slate-400 hover:text-white hover:bg-raised rounded-lg transition-colors cursor-pointer"
         >
           <Settings className="w-3.5 h-3.5" />
         </button>
@@ -213,7 +213,7 @@ export function ChannelManagerView({
   );
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#0b0f17] text-slate-200">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-canvas text-slate-200">
       {/* Action Header */}
       <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
@@ -253,8 +253,8 @@ export function ChannelManagerView({
             .filter((c) => c.parentId === cat.id)
             .sort((a, b) => a.position - b.position);
           return (
-            <div key={cat.id} className="bg-[#111724] border border-[#1e293b] hover:border-indigo-500/30 rounded-2xl p-5 space-y-3.5 shadow-sm transition-all">
-              <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
+            <div key={cat.id} className="bg-panel border border-line hover:border-indigo-500/30 rounded-2xl p-5 space-y-3.5 shadow-sm transition-all">
+              <div className="flex items-center justify-between border-b border-line pb-3">
                 <div className="flex items-center gap-2.5">
                   <FolderTree className="w-4 h-4 text-indigo-400" />
                   <span className="text-xs font-bold uppercase tracking-wider text-white">{cat.name}</span>
@@ -293,7 +293,7 @@ export function ChannelManagerView({
       {/* CREATE CHANNEL MODAL */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4">
+          <div className="bg-[#0f1626] border border-line rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4">
             <div className="flex items-center justify-between p-5 border-b border-[#1f2c44]">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-indigo-400" /> Neuen Kanal erstellen
@@ -310,7 +310,7 @@ export function ChannelManagerView({
                 <select
                   value={newChannelType}
                   onChange={(e) => setNewChannelType(Number(e.target.value))}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
                 >
                   <option value={0}>Textkanal (#)</option>
                   <option value={2}>Sprachkanal (🔊)</option>
@@ -329,12 +329,12 @@ export function ChannelManagerView({
                   placeholder="z. B. 💬・allgemein"
                   value={newChannelName}
                   onChange={(e) => setNewChannelName(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all outline-none"
                 />
               </div>
 
               {/* DISCORD SYMBOLS & DECORATION PRESETS */}
-              <div className="p-3.5 bg-[#0d121c] border border-[#1e293b] rounded-xl space-y-2">
+              <div className="p-3.5 bg-canvas border border-line rounded-xl space-y-2">
                 <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> Symbol-Vorlagen
                 </p>
@@ -344,7 +344,7 @@ export function ChannelManagerView({
                       key={sym.label}
                       type="button"
                       onClick={() => applySymbolToName(sym.prefix, setNewChannelName, newChannelName)}
-                      className="px-2 py-1 bg-[#172033] hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors flex items-center gap-1 border border-[#243350] cursor-pointer"
+                      className="px-2 py-1 bg-raised hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors flex items-center gap-1 border border-line cursor-pointer"
                     >
                       <span>{sym.prefix}</span>
                       <span className="text-[10px] text-slate-400">{sym.label}</span>
@@ -354,7 +354,7 @@ export function ChannelManagerView({
               </div>
 
               {/* DISCORD AESTHETIC FONT TRANSFORMERS */}
-              <div className="p-3.5 bg-[#0d121c] border border-[#1e293b] rounded-xl space-y-2">
+              <div className="p-3.5 bg-canvas border border-line rounded-xl space-y-2">
                 <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
                   <Type className="w-3.5 h-3.5" /> Schriftstile
                 </p>
@@ -364,7 +364,7 @@ export function ChannelManagerView({
                       key={font.id}
                       type="button"
                       onClick={() => applyFontToName(font.id, setNewChannelName, newChannelName)}
-                      className="px-2.5 py-1 bg-[#172033] hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors font-medium border border-[#243350] cursor-pointer"
+                      className="px-2.5 py-1 bg-raised hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors font-medium border border-line cursor-pointer"
                     >
                       {font.sample}
                     </button>
@@ -380,7 +380,7 @@ export function ChannelManagerView({
                   <select
                     value={newParentId}
                     onChange={(e) => setNewParentId(e.target.value)}
-                    className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
+                    className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
                   >
                     <option value="">(Keine Kategorie - Unkategorisiert)</option>
                     {categories.map((cat) => (
@@ -392,11 +392,11 @@ export function ChannelManagerView({
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#1e293b]">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}
-                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-xl font-medium"
+                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-raised rounded-xl font-medium"
                 >
                   Abbrechen
                 </button>
@@ -415,7 +415,7 @@ export function ChannelManagerView({
       {/* EDIT CHANNEL MODAL */}
       {isEditOpen && selectedChannel && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4">
+          <div className="bg-[#0f1626] border border-line rounded-2xl w-full max-w-lg shadow-2xl overflow-hidden space-y-4">
             <div className="flex items-center justify-between p-5 border-b border-[#1f2c44]">
               <h3 className="text-sm font-bold text-white flex items-center gap-2">
                 <Settings className="w-4 h-4 text-indigo-400" /> #{selectedChannel.name} bearbeiten
@@ -434,12 +434,12 @@ export function ChannelManagerView({
                   required
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all outline-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs font-semibold transition-all outline-none"
                 />
               </div>
 
               {/* DISCORD SYMBOLS & DECORATION PRESETS */}
-              <div className="p-3.5 bg-[#0d121c] border border-[#1e293b] rounded-xl space-y-2">
+              <div className="p-3.5 bg-canvas border border-line rounded-xl space-y-2">
                 <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
                   <Sparkles className="w-3.5 h-3.5" /> Symbol-Vorlagen
                 </p>
@@ -449,7 +449,7 @@ export function ChannelManagerView({
                       key={sym.label}
                       type="button"
                       onClick={() => applySymbolToName(sym.prefix, setEditName, editName)}
-                      className="px-2 py-1 bg-[#172033] hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors flex items-center gap-1 border border-[#243350] cursor-pointer"
+                      className="px-2 py-1 bg-raised hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors flex items-center gap-1 border border-line cursor-pointer"
                     >
                       <span>{sym.prefix}</span>
                       <span className="text-[10px] text-slate-400">{sym.label}</span>
@@ -459,7 +459,7 @@ export function ChannelManagerView({
               </div>
 
               {/* DISCORD AESTHETIC FONT TRANSFORMERS */}
-              <div className="p-3.5 bg-[#0d121c] border border-[#1e293b] rounded-xl space-y-2">
+              <div className="p-3.5 bg-canvas border border-line rounded-xl space-y-2">
                 <p className="text-xs font-bold text-indigo-400 flex items-center gap-1.5">
                   <Type className="w-3.5 h-3.5" /> Schriftstile
                 </p>
@@ -469,7 +469,7 @@ export function ChannelManagerView({
                       key={font.id}
                       type="button"
                       onClick={() => applyFontToName(font.id, setEditName, editName)}
-                      className="px-2.5 py-1 bg-[#172033] hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors font-medium border border-[#243350] cursor-pointer"
+                      className="px-2.5 py-1 bg-raised hover:bg-indigo-600 text-slate-300 hover:text-white rounded-lg text-xs transition-colors font-medium border border-line cursor-pointer"
                     >
                       {font.sample}
                     </button>
@@ -486,7 +486,7 @@ export function ChannelManagerView({
                   placeholder="Kanalthema festlegen..."
                   value={editTopic}
                   onChange={(e) => setEditTopic(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none resize-none"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl px-3.5 py-2 text-xs transition-all outline-none resize-none"
                 />
               </div>
 
@@ -501,7 +501,7 @@ export function ChannelManagerView({
                     max={21600}
                     value={editSlowmode}
                     onChange={(e) => setEditSlowmode(Number(e.target.value))}
-                    className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none font-mono"
+                    className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none font-mono"
                   />
                 </div>
                 <div className="flex items-center gap-2 pt-6">
@@ -510,7 +510,7 @@ export function ChannelManagerView({
                     id="nsfw-check"
                     checked={editNsfw}
                     onChange={(e) => setEditNsfw(e.target.checked)}
-                    className="rounded border-[#1e293b] text-indigo-600 focus:ring-0 w-4 h-4 bg-[#0d121c]"
+                    className="rounded border-line text-indigo-600 focus:ring-0 w-4 h-4 bg-canvas"
                   />
                   <label htmlFor="nsfw-check" className="text-xs font-semibold text-slate-200 cursor-pointer">
                     NSFW (Altersbeschränkt)
@@ -526,7 +526,7 @@ export function ChannelManagerView({
                   <select
                     value={editParentId || ""}
                     onChange={(e) => setEditParentId(e.target.value || null)}
-                    className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
+                    className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-3.5 py-2 text-xs transition-all outline-none cursor-pointer"
                   >
                     <option value="">(Keine Kategorie - Unkategorisiert)</option>
                     {categories.map((cat) => (
@@ -538,11 +538,11 @@ export function ChannelManagerView({
                 </div>
               )}
 
-              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-[#1e293b]">
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setIsEditOpen(false)}
-                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-[#1a253a] rounded-xl font-medium cursor-pointer"
+                  className="px-3.5 py-2 text-xs text-slate-400 hover:text-white hover:bg-raised rounded-xl font-medium cursor-pointer"
                 >
                   Abbrechen
                 </button>

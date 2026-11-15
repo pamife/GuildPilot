@@ -70,8 +70,8 @@ export function InviteManagerView({ invites, channels, onCreateInvite, onDeleteI
   };
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#0b0f17] text-slate-200">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-[#0d121c] border border-[#1e293b] shadow-sm">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-canvas text-slate-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 p-6 rounded-2xl bg-canvas border border-line shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
             <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
@@ -90,8 +90,8 @@ export function InviteManagerView({ invites, channels, onCreateInvite, onDeleteI
       </div>
 
       {/* Invites Table */}
-      <div className="bg-[#111724] border border-[#1e293b] rounded-2xl overflow-hidden shadow-sm">
-        <div className="grid grid-cols-12 p-3.5 bg-[#0d121c] text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-[#1e293b]">
+      <div className="bg-panel border border-line rounded-2xl overflow-hidden shadow-sm">
+        <div className="grid grid-cols-12 p-3.5 bg-canvas text-[11px] font-bold uppercase tracking-wider text-slate-400 border-b border-line">
           <div className="col-span-3">Code / URL</div>
           <div className="col-span-3">Zielkanal</div>
           <div className="col-span-2">Verwendungen</div>
@@ -104,7 +104,7 @@ export function InviteManagerView({ invites, channels, onCreateInvite, onDeleteI
         ) : (
           <div className="divide-y divide-[#1e293b]">
             {invites.map((inv) => (
-              <div key={inv.code} className="grid grid-cols-12 p-3.5 items-center hover:bg-[#0d121c]/50 transition-colors text-xs">
+              <div key={inv.code} className="grid grid-cols-12 p-3.5 items-center hover:bg-canvas/50 transition-colors text-xs">
                 <div className="col-span-3 flex items-center gap-2">
                   <span className="font-mono font-bold text-indigo-400">{inv.code}</span>
                   <button
@@ -146,8 +146,8 @@ export function InviteManagerView({ invites, channels, onCreateInvite, onDeleteI
       {/* CREATE INVITE MODAL */}
       {isCreateOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-150">
-          <div className="bg-[#0f1626] border border-[#212d45] rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-[#1e293b] pb-3">
+          <div className="bg-[#0f1626] border border-line rounded-2xl w-full max-w-md p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-line pb-3">
               <h3 className="text-base font-bold text-white">Einladungslink erstellen</h3>
               <button onClick={() => setIsCreateOpen(false)} className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-[#1a2333]">
                 <X className="w-5 h-5" />
@@ -161,7 +161,7 @@ export function InviteManagerView({ invites, channels, onCreateInvite, onDeleteI
                 <select
                   value={channelId}
                   onChange={(e) => setChannelId(e.target.value)}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-2.5 text-xs transition-all outline-none cursor-pointer"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-2.5 text-xs transition-all outline-none cursor-pointer"
                 >
                   {channels
                     .filter((c) => c.type === 0 || c.type === 2)
@@ -180,7 +180,7 @@ export function InviteManagerView({ invites, channels, onCreateInvite, onDeleteI
                 <select
                   value={maxAge}
                   onChange={(e) => setMaxAge(Number(e.target.value))}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-2.5 text-xs transition-all outline-none cursor-pointer"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-2.5 text-xs transition-all outline-none cursor-pointer"
                 >
                   <option value={1800}>30 Minuten</option>
                   <option value={3600}>1 Stunde</option>
@@ -199,7 +199,7 @@ export function InviteManagerView({ invites, channels, onCreateInvite, onDeleteI
                 <select
                   value={maxUses}
                   onChange={(e) => setMaxUses(Number(e.target.value))}
-                  className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-2.5 text-xs transition-all outline-none cursor-pointer"
+                  className="w-full bg-canvas border border-line focus:border-indigo-500 text-slate-100 rounded-xl px-4 py-2.5 text-xs transition-all outline-none cursor-pointer"
                 >
                   <option value={0}>Unbegrenzt</option>
                   <option value={1}>1 Nutzung</option>
@@ -211,7 +211,7 @@ export function InviteManagerView({ invites, channels, onCreateInvite, onDeleteI
                 </select>
               </div>
 
-              <div className="flex items-center justify-between p-3.5 bg-[#0d121c] border border-[#1e293b] rounded-xl">
+              <div className="flex items-center justify-between p-3.5 bg-canvas border border-line rounded-xl">
                 <span className="text-xs font-semibold text-slate-200">Temporäre Mitgliedschaft gewähren</span>
                 <input
                   type="checkbox"
@@ -221,7 +221,7 @@ export function InviteManagerView({ invites, channels, onCreateInvite, onDeleteI
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-4 border-t border-[#1e293b]">
+              <div className="flex items-center justify-end gap-3 pt-4 border-t border-line">
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(false)}

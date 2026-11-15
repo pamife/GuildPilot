@@ -137,12 +137,12 @@ export function TicketTypesManager({
           return (
             <div
               key={t.id || tIdx}
-              className="rounded-2xl bg-[#0e0f15] border border-[#27272a] overflow-hidden shadow-lg"
+              className="rounded-2xl bg-panel border border-line overflow-hidden shadow-lg"
             >
               {/* Header */}
               <div
                 onClick={() => setExpandedTypeIdx(isExpanded ? null : tIdx)}
-                className="p-4 bg-[#12131a] flex items-center justify-between cursor-pointer hover:bg-[#161722] transition-colors"
+                className="p-4 bg-panel flex items-center justify-between cursor-pointer hover:bg-[#161722] transition-colors"
               >
                 <div className="flex items-center gap-3">
                   <span className="text-2xl">{t.emoji || "🎫"}</span>
@@ -153,7 +153,7 @@ export function TicketTypesManager({
                 </div>
 
                 <div className="flex items-center gap-2">
-                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#1b1c26] text-zinc-400 border border-[#27272a]">
+                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#1b1c26] text-zinc-400 border border-line">
                     {t.questions?.length || 0} Fragen
                   </span>
                   <button
@@ -181,7 +181,7 @@ export function TicketTypesManager({
                         type="text"
                         value={t.name}
                         onChange={(e) => updateTicketType(tIdx, { name: e.target.value, label: e.target.value })}
-                        className="w-full bg-[#14151b] border border-[#27272a] px-3 py-2 rounded-lg text-xs text-white outline-none"
+                        className="w-full bg-panel border border-line px-3 py-2 rounded-lg text-xs text-white outline-none"
                       />
                     </div>
                     <div>
@@ -191,7 +191,7 @@ export function TicketTypesManager({
                         value={t.emoji || ""}
                         onChange={(e) => updateTicketType(tIdx, { emoji: e.target.value })}
                         placeholder="🎫"
-                        className="w-full bg-[#14151b] border border-[#27272a] px-3 py-2 rounded-lg text-xs text-center text-white outline-none"
+                        className="w-full bg-panel border border-line px-3 py-2 rounded-lg text-xs text-center text-white outline-none"
                       />
                     </div>
                     <div>
@@ -199,7 +199,7 @@ export function TicketTypesManager({
                       <select
                         value={t.categoryId || ""}
                         onChange={(e) => updateTicketType(tIdx, { categoryId: e.target.value })}
-                        className="w-full bg-[#14151b] border border-[#27272a] px-3 py-2 rounded-lg text-xs text-white outline-none"
+                        className="w-full bg-panel border border-line px-3 py-2 rounded-lg text-xs text-white outline-none"
                       >
                         <option value="">Standard-Kategorie</option>
                         {categoryChannels.map((c) => (
@@ -219,7 +219,7 @@ export function TicketTypesManager({
                         value={t.namingFormat || "ticket-{username}"}
                         onChange={(e) => updateTicketType(tIdx, { namingFormat: e.target.value })}
                         placeholder="ticket-{username}"
-                        className="w-full bg-[#14151b] border border-[#27272a] px-3 py-2 rounded-lg text-xs font-mono text-white outline-none"
+                        className="w-full bg-panel border border-line px-3 py-2 rounded-lg text-xs font-mono text-white outline-none"
                       />
                     </div>
                     <div>
@@ -229,12 +229,12 @@ export function TicketTypesManager({
                         value={t.description || ""}
                         onChange={(e) => updateTicketType(tIdx, { description: e.target.value })}
                         placeholder="Beschreibung für Dropdown..."
-                        className="w-full bg-[#14151b] border border-[#27272a] px-3 py-2 rounded-lg text-xs text-white outline-none"
+                        className="w-full bg-panel border border-line px-3 py-2 rounded-lg text-xs text-white outline-none"
                       />
                     </div>
                   </div>
 
-                  <fieldset className="rounded-xl border border-[#27272a] bg-[#14151b] p-4">
+                  <fieldset className="rounded-xl border border-line bg-panel p-4">
                     <legend className="px-1 text-xs font-bold text-zinc-300">Operator-Rollen</legend>
                     <p className="mb-3 text-xs text-zinc-400">
                       Ausgewählte Rollen erhalten Zugriff und werden im Ticket erwähnt. Ohne Auswahl gelten die Rollen des Panels und die Server-Standardrollen.
@@ -243,7 +243,7 @@ export function TicketTypesManager({
                       {roles.filter((role) => role.name !== "@everyone").map((role) => {
                         const selectedRoles = t.supportRoles || [];
                         return (
-                          <label key={role.id} className="flex cursor-pointer items-center gap-2 rounded-lg bg-[#0e0f15] px-2.5 py-1.5 text-xs text-zinc-300">
+                          <label key={role.id} className="flex cursor-pointer items-center gap-2 rounded-lg bg-panel px-2.5 py-1.5 text-xs text-zinc-300">
                             <input
                               type="checkbox"
                               checked={selectedRoles.includes(role.id)}
@@ -262,7 +262,7 @@ export function TicketTypesManager({
                   </fieldset>
 
                   {/* Intake Modal Questions Builder */}
-                  <div className="p-4 bg-[#14151b] rounded-xl border border-[#27272a] space-y-3">
+                  <div className="p-4 bg-panel rounded-xl border border-line space-y-3">
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-emerald-400 flex items-center gap-1.5">
                         <ListOrdered className="w-3.5 h-3.5" /> Intake Fragen (Discord Modal vor Ticket-Öffnung)
@@ -287,7 +287,7 @@ export function TicketTypesManager({
                         t.questions?.map((q, qIdx) => (
                           <div
                             key={q.id || qIdx}
-                            className="p-3 bg-[#0e0f15] rounded-lg border border-[#27272a] grid grid-cols-12 gap-2 items-center"
+                            className="p-3 bg-panel rounded-lg border border-line grid grid-cols-12 gap-2 items-center"
                           >
                             <div className="col-span-5">
                               <label className="text-[10px] text-zinc-400 block mb-1">Fragetext / Label</label>
@@ -296,7 +296,7 @@ export function TicketTypesManager({
                                 value={q.label}
                                 onChange={(e) => updateIntakeQuestion(tIdx, qIdx, { label: e.target.value })}
                                 placeholder="z.B. Welches Betriebssystem nutzt du?"
-                                className="w-full bg-[#14151b] border border-[#27272a] px-2.5 py-1.5 rounded text-xs text-white outline-none"
+                                className="w-full bg-panel border border-line px-2.5 py-1.5 rounded text-xs text-white outline-none"
                               />
                             </div>
                             <div className="col-span-4">
@@ -306,7 +306,7 @@ export function TicketTypesManager({
                                 value={q.placeholder || ""}
                                 onChange={(e) => updateIntakeQuestion(tIdx, qIdx, { placeholder: e.target.value })}
                                 placeholder="Antwort hier eingeben..."
-                                className="w-full bg-[#14151b] border border-[#27272a] px-2.5 py-1.5 rounded text-xs text-white outline-none"
+                                className="w-full bg-panel border border-line px-2.5 py-1.5 rounded text-xs text-white outline-none"
                               />
                             </div>
                             <div className="col-span-2">
@@ -314,7 +314,7 @@ export function TicketTypesManager({
                               <select
                                 value={q.style}
                                 onChange={(e) => updateIntakeQuestion(tIdx, qIdx, { style: e.target.value as any })}
-                                className="w-full bg-[#14151b] border border-[#27272a] px-2 py-1.5 rounded text-xs text-white outline-none"
+                                className="w-full bg-panel border border-line px-2 py-1.5 rounded text-xs text-white outline-none"
                               >
                                 <option value="short">Kurztext</option>
                                 <option value="paragraph">Absatz</option>
@@ -345,7 +345,7 @@ export function TicketTypesManager({
                   </div>
 
                   {/* Welcome Message Customizer per Ticket Type */}
-                  <div className="p-4 bg-[#14151b] rounded-xl border border-[#27272a] space-y-3">
+                  <div className="p-4 bg-panel rounded-xl border border-line space-y-3">
                     <span className="text-xs font-bold text-purple-400 flex items-center gap-1.5">
                       <MessageCircle className="w-3.5 h-3.5" /> Willkommensnachricht in eröffnetem Ticket
                     </span>
@@ -358,7 +358,7 @@ export function TicketTypesManager({
                           value={t.welcomeTitle || ""}
                           onChange={(e) => updateTicketType(tIdx, { welcomeTitle: e.target.value })}
                           placeholder="👋 Welcome to your ticket!"
-                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
+                          className="w-full bg-panel border border-line px-2.5 py-1.5 rounded-lg text-xs text-white outline-none"
                         />
                       </div>
                       <div>
@@ -369,7 +369,7 @@ export function TicketTypesManager({
                           value={t.welcomeColor === "none" ? "" : (t.welcomeColor || "#5865F2")}
                           onChange={(e) => updateTicketType(tIdx, { welcomeColor: e.target.value })}
                           placeholder="#5865F2"
-                          className="w-full bg-[#0e0f15] border border-[#27272a] px-2.5 py-1.5 rounded-lg text-xs font-mono text-white outline-none"
+                          className="w-full bg-panel border border-line px-2.5 py-1.5 rounded-lg text-xs font-mono text-white outline-none"
                         />
                       </div>
                     </div>
@@ -381,7 +381,7 @@ export function TicketTypesManager({
                         value={t.welcomeDescription || ""}
                         onChange={(e) => updateTicketType(tIdx, { welcomeDescription: e.target.value })}
                         placeholder="Welcome {user}! Our support team will be with you shortly."
-                        className="w-full bg-[#0e0f15] border border-[#27272a] p-2.5 rounded-lg text-xs text-white outline-none"
+                        className="w-full bg-panel border border-line p-2.5 rounded-lg text-xs text-white outline-none"
                       />
                     </div>
                   </div>

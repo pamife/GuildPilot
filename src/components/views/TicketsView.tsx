@@ -523,9 +523,9 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
   }
 
   return (
-    <div className="flex flex-col h-full bg-[#0b0f17] text-slate-200 overflow-hidden font-sans select-none">
+    <div className="flex flex-col h-full bg-canvas text-slate-200 overflow-hidden font-sans select-none">
       {/* Top Header & Subpage Navigation */}
-      <div className="p-4 bg-[#0d121c] border-b border-[#1e293b] flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-sm">
+      <div className="p-4 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-4 shrink-0 shadow-sm">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400">
             <Ticket className="w-5 h-5" />
@@ -544,7 +544,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
         </div>
 
         {/* Subpage Tabs */}
-        <div className="flex items-center gap-1 bg-[#111724] p-1 rounded-xl border border-[#1e293b]">
+        <div className="flex items-center gap-1 bg-panel p-1 rounded-xl border border-line">
           {[
             { id: "dashboard", label: "Übersicht", icon: LayoutDashboard },
             { id: "analytics", label: "Statistiken", icon: BarChart3 },
@@ -575,7 +575,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
       </div>
 
       {/* Main Content Area */}
-      <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-[#0b0f17]">
+      <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-canvas">
         {/* ========================================================= */}
         {/* 1. DASHBOARD SUBPAGE */}
         {/* ========================================================= */}
@@ -583,7 +583,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
           <div className="space-y-6">
             {/* Stat Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
-              <div className="p-4 rounded-2xl bg-[#111724] border border-[#1e293b] flex items-center justify-between shadow-sm hover:border-indigo-500/40 transition-all">
+              <div className="p-4 rounded-2xl bg-panel border border-line flex items-center justify-between shadow-sm hover:border-indigo-500/40 transition-all">
                 <div>
                   <span className="text-xs text-slate-400 font-semibold block">Gesamt Tickets</span>
                   <span className="text-2xl font-bold text-white font-mono">{stats.total || 0}</span>
@@ -593,7 +593,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] flex items-center justify-between shadow-xl hover:border-emerald-500/40 transition-all">
+              <div className="p-4 rounded-2xl bg-canvas border border-[#18181b] flex items-center justify-between shadow-xl hover:border-emerald-500/40 transition-all">
                 <div>
                   <span className="text-xs text-zinc-500 font-semibold block">Open Tickets</span>
                   <span className="text-2xl font-bold text-emerald-400 font-mono">{stats.open || 0}</span>
@@ -603,7 +603,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] flex items-center justify-between shadow-xl hover:border-sky-500/40 transition-all">
+              <div className="p-4 rounded-2xl bg-canvas border border-[#18181b] flex items-center justify-between shadow-xl hover:border-sky-500/40 transition-all">
                 <div>
                   <span className="text-xs text-zinc-500 font-semibold block">Claimed Tickets</span>
                   <span className="text-2xl font-bold text-sky-400 font-mono">{stats.claimed || 0}</span>
@@ -613,7 +613,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] flex items-center justify-between shadow-xl hover:border-rose-500/40 transition-all">
+              <div className="p-4 rounded-2xl bg-canvas border border-[#18181b] flex items-center justify-between shadow-xl hover:border-rose-500/40 transition-all">
                 <div>
                   <span className="text-xs text-zinc-500 font-semibold block">Closed Tickets</span>
                   <span className="text-2xl font-bold text-rose-400 font-mono">{stats.closed || 0}</span>
@@ -623,7 +623,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                 </div>
               </div>
 
-              <div className="p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] flex items-center justify-between shadow-xl hover:border-amber-500/40 transition-all">
+              <div className="p-4 rounded-2xl bg-canvas border border-[#18181b] flex items-center justify-between shadow-xl hover:border-amber-500/40 transition-all">
                 <div>
                   <span className="text-xs text-zinc-500 font-semibold block">Active Panels</span>
                   <span className="text-2xl font-bold text-amber-400 font-mono">{stats.panelsCount || 0}</span>
@@ -637,14 +637,14 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
             {/* Quick Actions & Recent Activity Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
               {/* Quick Actions */}
-              <div className="p-5 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+              <div className="p-5 rounded-2xl bg-canvas border border-[#18181b] space-y-4 shadow-2xl">
                 <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                   <Terminal className="w-4 h-4 text-discord-brand" /> Quick Operations
                 </h3>
                 <div className="space-y-2">
                   <button
                     onClick={handleOpenCreatePanel}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#000000] border border-[#18181b] hover:border-discord-brand hover:bg-[#12131a] text-white text-xs font-semibold transition-all"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#000000] border border-[#18181b] hover:border-discord-brand hover:bg-panel text-white text-xs font-semibold transition-all"
                   >
                     <span className="flex items-center gap-2">
                       <Plus className="w-4 h-4 text-discord-brand" /> Create Ticket Panel
@@ -654,7 +654,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
 
                   <button
                     onClick={() => setActiveSubPage("settings")}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#000000] border border-[#18181b] hover:border-sky-500 hover:bg-[#12131a] text-white text-xs font-semibold transition-all"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#000000] border border-[#18181b] hover:border-sky-500 hover:bg-panel text-white text-xs font-semibold transition-all"
                   >
                     <span className="flex items-center gap-2">
                       <Users className="w-4 h-4 text-sky-400" /> Configure Supporter Roles
@@ -664,7 +664,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
 
                   <button
                     onClick={() => setActiveSubPage("logs")}
-                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#000000] border border-[#18181b] hover:border-emerald-500 hover:bg-[#12131a] text-white text-xs font-semibold transition-all"
+                    className="w-full flex items-center justify-between p-3 rounded-xl bg-[#000000] border border-[#18181b] hover:border-emerald-500 hover:bg-panel text-white text-xs font-semibold transition-all"
                   >
                     <span className="flex items-center gap-2">
                       <History className="w-4 h-4 text-emerald-400" /> Audit Log History
@@ -675,7 +675,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               </div>
 
               {/* Recent Ticket Activity */}
-              <div className="lg:col-span-2 p-5 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+              <div className="lg:col-span-2 p-5 rounded-2xl bg-canvas border border-[#18181b] space-y-4 shadow-2xl">
                 <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest flex items-center gap-2">
                   <Activity className="w-4 h-4 text-emerald-400" /> Real-time Ticket Events
                 </h3>
@@ -708,10 +708,10 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
         {activeSubPage === "analytics" && (
           <div className="space-y-6 animate-in fade-in duration-300">
             {/* Header & Controls Bar */}
-            <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-3xl bg-[#090a0f] border border-[#18181b] shadow-2xl">
+            <div className="flex flex-wrap items-center justify-between gap-4 p-5 rounded-3xl bg-canvas border border-[#18181b] shadow-2xl">
               <div className="flex items-center gap-3">
                 <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-discord-brand to-purple-600 p-0.5 shadow-lg shadow-discord-brand/20">
-                  <div className="w-full h-full rounded-[14px] bg-[#090a0f] flex items-center justify-center text-discord-brand">
+                  <div className="w-full h-full rounded-[14px] bg-canvas flex items-center justify-center text-discord-brand">
                     <BarChart3 className="w-6 h-6" />
                   </div>
                 </div>
@@ -729,7 +729,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               <div className="flex items-center gap-2">
                 <button
                   onClick={fetchAllData}
-                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-zinc-300 hover:text-white font-semibold text-xs transition-all border border-[#27272a]"
+                  className="flex items-center gap-2 px-4 py-2 rounded-xl bg-panel hover:bg-[#27272a] text-zinc-300 hover:text-white font-semibold text-xs transition-all border border-line"
                 >
                   <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin text-discord-brand" : ""}`} /> Refresh Analytics
                 </button>
@@ -739,7 +739,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
             {/* Key Performance Indicators (KPIs) Cards Grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {/* Card 1: Resolution Rate */}
-              <div className="p-5 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-emerald-500/40 transition-all group">
+              <div className="p-5 rounded-3xl bg-canvas border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-emerald-500/40 transition-all group">
                 <div className="w-full h-1 absolute top-0 left-0 bg-gradient-to-r from-emerald-500 to-teal-400" />
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Resolution Rate</span>
@@ -753,7 +753,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                     <TrendingUp className="w-3 h-3" /> Solved
                   </span>
                 </div>
-                <div className="w-full bg-[#18181b] h-2 rounded-full overflow-hidden p-0.5">
+                <div className="w-full bg-panel h-2 rounded-full overflow-hidden p-0.5">
                   <div
                     className="bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500"
                     style={{ width: `${stats.resolutionRate || 100}%` }}
@@ -762,7 +762,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               </div>
 
               {/* Card 2: Avg Resolution Time */}
-              <div className="p-5 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-sky-500/40 transition-all group">
+              <div className="p-5 rounded-3xl bg-canvas border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-sky-500/40 transition-all group">
                 <div className="w-full h-1 absolute top-0 left-0 bg-gradient-to-r from-sky-500 to-blue-600" />
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Avg Resolution Time</span>
@@ -780,7 +780,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               </div>
 
               {/* Card 3: Total Staff Messages */}
-              <div className="p-5 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-purple-500/40 transition-all group">
+              <div className="p-5 rounded-3xl bg-canvas border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-purple-500/40 transition-all group">
                 <div className="w-full h-1 absolute top-0 left-0 bg-gradient-to-r from-purple-500 to-pink-500" />
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Staff Messages</span>
@@ -796,7 +796,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               </div>
 
               {/* Card 4: Active Ticket Workload */}
-              <div className="p-5 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-amber-500/40 transition-all group">
+              <div className="p-5 rounded-3xl bg-canvas border border-[#18181b] space-y-3 relative overflow-hidden shadow-2xl hover:border-amber-500/40 transition-all group">
                 <div className="w-full h-1 absolute top-0 left-0 bg-gradient-to-r from-amber-500 to-orange-500" />
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-semibold text-zinc-400 uppercase tracking-wider">Active Workload</span>
@@ -817,7 +817,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
             {/* Middle Grid: 7-Day Volume Trend Chart & Supporter Leaderboard */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
               {/* 7-Day Ticket Activity Trend Bar Chart (7 Cols) */}
-              <div className="lg:col-span-7 p-6 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-5 shadow-2xl flex flex-col justify-between">
+              <div className="lg:col-span-7 p-6 rounded-3xl bg-canvas border border-[#18181b] space-y-5 shadow-2xl flex flex-col justify-between">
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="text-sm font-bold text-white flex items-center gap-2">
@@ -846,7 +846,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                       return (
                         <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
                           {/* Hover Tooltip Value */}
-                          <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-mono text-zinc-300 bg-[#18181b] px-2 py-1 rounded-lg border border-[#27272a] shadow-lg pointer-events-none mb-1">
+                          <div className="opacity-0 group-hover:opacity-100 transition-opacity text-[10px] font-mono text-zinc-300 bg-panel px-2 py-1 rounded-lg border border-line shadow-lg pointer-events-none mb-1">
                             {t.opened} opened • {t.closed} closed
                           </div>
 
@@ -880,7 +880,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               </div>
 
               {/* Supporter Hall of Fame Leaderboard (5 Cols) */}
-              <div className="lg:col-span-5 p-6 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+              <div className="lg:col-span-5 p-6 rounded-3xl bg-canvas border border-[#18181b] space-y-4 shadow-2xl">
                 <div className="flex items-center justify-between">
                   <h3 className="text-sm font-bold text-white flex items-center gap-2">
                     <Award className="w-4 h-4 text-amber-400" /> Supporter Hall of Fame
@@ -897,8 +897,8 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                         "bg-amber-500/20 text-amber-400 border-amber-500/30",
                         "bg-slate-400/20 text-slate-300 border-slate-400/30",
                         "bg-amber-700/20 text-amber-600 border-amber-700/30",
-                        "bg-[#18181b] text-zinc-400 border-[#27272a]",
-                        "bg-[#18181b] text-zinc-400 border-[#27272a]",
+                        "bg-panel text-zinc-400 border-line",
+                        "bg-panel text-zinc-400 border-line",
                       ];
 
                       return (
@@ -945,7 +945,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
             {/* Bottom Grid: Panel Utilization Breakdown & Recent Audit Feed */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {/* Panel Utilization Breakdown */}
-              <div className="p-6 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+              <div className="p-6 rounded-3xl bg-canvas border border-[#18181b] space-y-4 shadow-2xl">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Layers className="w-4 h-4 text-sky-400" /> Ticket Volume by Panel
                 </h3>
@@ -979,7 +979,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               </div>
 
               {/* System Health & Realtime Operational Log Feed */}
-              <div className="p-6 rounded-3xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+              <div className="p-6 rounded-3xl bg-canvas border border-[#18181b] space-y-4 shadow-2xl">
                 <h3 className="text-sm font-bold text-white flex items-center gap-2">
                   <Activity className="w-4 h-4 text-emerald-400" /> Recent Ticket Operations Feed
                 </h3>
@@ -998,7 +998,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                                 ? "bg-rose-500/20 text-rose-400 border border-rose-500/30"
                                 : log.action === "CLAIMED"
                                 ? "bg-sky-500/20 text-sky-400 border border-sky-500/30"
-                                : "bg-[#18181b] text-zinc-400 border border-[#27272a]"
+                                : "bg-panel text-zinc-400 border border-line"
                             }`}
                           >
                             {log.action}
@@ -1031,7 +1031,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               <div className="flex items-center gap-2.5">
                 <button
                   onClick={() => setIsImportModalOpen(true)}
-                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#121217] hover:bg-[#1f1f28] text-zinc-300 hover:text-white font-semibold text-xs border border-[#27272a] shadow-md transition-all cursor-pointer"
+                  className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#121217] hover:bg-[#1f1f28] text-zinc-300 hover:text-white font-semibold text-xs border border-line shadow-md transition-all cursor-pointer"
                   title="Import ticket panels & settings from another server"
                 >
                   <Download className="w-3.5 h-3.5 text-indigo-400" /> Import from Server
@@ -1054,7 +1054,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                 const reasonsList: TicketReason[] = JSON.parse(panel.reasons || "[]");
                 const supportRoleIds: string[] = JSON.parse(panel.supportRoles || "[]");
                 return (
-                  <div key={panel.id} className="p-5 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-4 relative overflow-hidden shadow-2xl hover:border-discord-brand/40 transition-all">
+                  <div key={panel.id} className="p-5 rounded-2xl bg-canvas border border-[#18181b] space-y-4 relative overflow-hidden shadow-2xl hover:border-discord-brand/40 transition-all">
                     {accentColor !== null && accentColor !== "none" && (
                       <div className="w-full h-1.5 absolute top-0 left-0" style={{ backgroundColor: accentColor || "#5865F2" }} />
                     )}
@@ -1085,7 +1085,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             📋 {reasonsList.length} Ticket Types
                           </span>
                         ) : (
-                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-[#18181b] text-discord-brand border border-[#27272a]">
+                          <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-panel text-discord-brand border border-line">
                             {panel.buttonColor || "Primary"} Button
                           </span>
                         )}
@@ -1127,21 +1127,21 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
 
                       <button
                         onClick={() => handleDuplicatePanel(panel.id)}
-                        className="p-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                        className="p-2 rounded-xl bg-panel hover:bg-[#27272a] text-zinc-400 hover:text-white transition-colors cursor-pointer"
                         title="Duplicate Panel"
                       >
                         <Copy className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleOpenEditPanel(panel)}
-                        className="p-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-zinc-400 hover:text-white transition-colors cursor-pointer"
+                        className="p-2 rounded-xl bg-panel hover:bg-[#27272a] text-zinc-400 hover:text-white transition-colors cursor-pointer"
                         title="Open Designer & Builder"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => handleDeletePanel(panel.id)}
-                        className="p-2 rounded-xl bg-[#18181b] hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
+                        className="p-2 rounded-xl bg-panel hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors cursor-pointer"
                         title="Delete Panel"
                       >
                         <Trash2 className="w-4 h-4" />
@@ -1161,7 +1161,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
           <div className="space-y-6">
             <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-[#090a0f] border border-[#18181b] text-xs">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl bg-canvas border border-[#18181b] text-xs">
                   <Search className="w-3.5 h-3.5 text-zinc-500" />
                   <input
                     type="text"
@@ -1175,7 +1175,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                   />
                 </div>
 
-                <div className="flex items-center gap-1 bg-[#090a0f] p-1 rounded-xl border border-[#18181b] text-xs">
+                <div className="flex items-center gap-1 bg-canvas p-1 rounded-xl border border-[#18181b] text-xs">
                   {["ALL", "OPEN", "CLAIMED", "CLOSED"].map((st) => (
                     <button
                       key={st}
@@ -1201,7 +1201,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
             </div>
 
             {/* Persistent Tickets Table */}
-            <div className="bg-[#090a0f] rounded-2xl border border-[#18181b] overflow-hidden shadow-2xl">
+            <div className="bg-canvas rounded-2xl border border-[#18181b] overflow-hidden shadow-2xl">
               <table className="w-full text-left text-xs">
                 <thead className="bg-[#000000] text-zinc-500 font-bold uppercase tracking-wider border-b border-[#18181b]">
                   <tr>
@@ -1222,7 +1222,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                     </tr>
                   ) : (
                     paginatedTickets.map((ticket) => (
-                      <tr key={ticket.id} className="hover:bg-[#12131a] transition-colors">
+                      <tr key={ticket.id} className="hover:bg-panel transition-colors">
                         <td className="p-3.5 font-bold text-discord-brand">#{ticket.ticketNumber}</td>
                         <td className="p-3.5 font-sans text-white font-medium flex items-center gap-2">
                           {ticket.userAvatar && <img src={ticket.userAvatar} className="w-5 h-5 rounded-full" alt="" />}
@@ -1271,7 +1271,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           )}
                           <button
                             onClick={() => setSelectedTicket(ticket)}
-                            className="px-3 py-1 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-white text-xs font-semibold transition-colors flex items-center gap-1"
+                            className="px-3 py-1 rounded-xl bg-panel hover:bg-[#27272a] text-white text-xs font-semibold transition-colors flex items-center gap-1"
                           >
                             <Eye className="w-3.5 h-3.5" /> Inspect
                           </button>
@@ -1292,7 +1292,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
           <div className="space-y-6">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Create Category Form */}
-              <div className="p-5 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-4 shadow-2xl">
+              <div className="p-5 rounded-2xl bg-canvas border border-[#18181b] space-y-4 shadow-2xl">
                 <h3 className="text-xs font-bold text-zinc-400 uppercase tracking-widest">
                   Add Ticket Category
                 </h3>
@@ -1342,12 +1342,12 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                 </h3>
                 <div className="space-y-2">
                   {categories.length === 0 ? (
-                    <p className="text-xs text-zinc-500 p-6 bg-[#090a0f] rounded-2xl border border-[#18181b] text-center">
+                    <p className="text-xs text-zinc-500 p-6 bg-canvas rounded-2xl border border-[#18181b] text-center">
                       No custom ticket categories created yet.
                     </p>
                   ) : (
                     categories.map((cat) => (
-                      <div key={cat.id} className="flex items-center justify-between p-4 rounded-2xl bg-[#090a0f] border border-[#18181b] shadow-xl">
+                      <div key={cat.id} className="flex items-center justify-between p-4 rounded-2xl bg-canvas border border-[#18181b] shadow-xl">
                         <div className="flex items-center gap-3">
                           <span className="text-2xl">{cat.emoji || "🎫"}</span>
                           <div>
@@ -1357,7 +1357,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                         </div>
                         <button
                           onClick={() => handleDeleteCategory(cat.id)}
-                          className="p-2 rounded-xl bg-[#18181b] hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors"
+                          className="p-2 rounded-xl bg-panel hover:bg-rose-500/20 text-zinc-400 hover:text-rose-400 transition-colors"
                         >
                           <Trash2 className="w-4 h-4" />
                         </button>
@@ -1375,7 +1375,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
         {/* ========================================================= */}
         {activeSubPage === "settings" && (
           <div className="max-w-3xl space-y-6">
-            <div className="p-6 rounded-2xl bg-[#090a0f] border border-[#18181b] space-y-6 shadow-2xl">
+            <div className="p-6 rounded-2xl bg-canvas border border-[#18181b] space-y-6 shadow-2xl">
               <h2 className="text-base font-bold text-white flex items-center gap-2">
                 <Shield className="w-5 h-5 text-discord-brand" /> Global Supporter Roles & Ticket Settings
               </h2>
@@ -1510,7 +1510,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
         {activeSubPage === "logs" && (
           <div className="space-y-4">
             <h2 className="text-base font-bold text-white">Ticket Audit Logs</h2>
-            <div className="bg-[#090a0f] rounded-2xl border border-[#18181b] overflow-hidden shadow-2xl">
+            <div className="bg-canvas rounded-2xl border border-[#18181b] overflow-hidden shadow-2xl">
               <table className="w-full text-left text-xs">
                 <thead className="bg-[#000000] text-zinc-500 font-bold uppercase tracking-wider border-b border-[#18181b]">
                   <tr>
@@ -1528,7 +1528,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                     </tr>
                   ) : (
                     logs.map((log) => (
-                      <tr key={log.id} className="hover:bg-[#12131a]">
+                      <tr key={log.id} className="hover:bg-panel">
                         <td className="p-3.5 font-sans font-bold text-white">
                           <span className="px-2 py-0.5 rounded-full bg-[#000000] border border-[#18181b] text-discord-brand text-[10px]">
                             {log.action}
@@ -1553,7 +1553,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
       {/* ========================================================= */}
       {isPanelModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/85 backdrop-blur-md">
-          <div className="bg-[#090a0f] border border-[#18181b] rounded-3xl max-w-6xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-canvas border border-[#18181b] rounded-3xl max-w-6xl w-full max-h-[92vh] flex flex-col shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
             {/* Modal Top Bar */}
             <div className="p-4 bg-[#000000] border-b border-[#18181b] flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -1566,13 +1566,13 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               </div>
 
               {/* Editor Tabs Navigation */}
-              <div className="flex items-center gap-1 bg-[#090a0f] p-1 rounded-xl border border-[#18181b]">
+              <div className="flex items-center gap-1 bg-canvas p-1 rounded-xl border border-[#18181b]">
                 <button
                   onClick={() => setActiveModalTab("embed")}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeModalTab === "embed"
                       ? "bg-discord-brand text-white shadow-md"
-                      : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+                      : "text-zinc-400 hover:text-white hover:bg-panel"
                   }`}
                 >
                   <Palette className="w-3.5 h-3.5" /> 1. Panel Embed & Assets
@@ -1582,7 +1582,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeModalTab === "types"
                       ? "bg-emerald-600 text-white shadow-md"
-                      : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+                      : "text-zinc-400 hover:text-white hover:bg-panel"
                   }`}
                 >
                   <Sparkles className="w-3.5 h-3.5" /> 2. Ticket Types & Questions ({panelForm.reasons?.length || 0})
@@ -1592,7 +1592,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeModalTab === "roles"
                       ? "bg-sky-600 text-white shadow-md"
-                      : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+                      : "text-zinc-400 hover:text-white hover:bg-panel"
                   }`}
                 >
                   <Shield className="w-3.5 h-3.5" /> 3. Supporter Roles
@@ -1602,7 +1602,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 ${
                     activeModalTab === "welcome"
                       ? "bg-purple-600 text-white shadow-md"
-                      : "text-zinc-400 hover:text-white hover:bg-[#18181b]"
+                      : "text-zinc-400 hover:text-white hover:bg-panel"
                   }`}
                 >
                   <MessageSquare className="w-3.5 h-3.5" /> 4. Welcome Message
@@ -1637,7 +1637,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             type="text"
                             value={panelForm.name}
                             onChange={(e) => setPanelForm({ ...panelForm, name: e.target.value })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand"
                           />
                         </div>
                         <div>
@@ -1645,7 +1645,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           <select
                             value={panelForm.channelId}
                             onChange={(e) => setPanelForm({ ...panelForm, channelId: e.target.value })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand"
                           >
                             <option value="">-- Select Channel --</option>
                             {textChannels.map((c) => (
@@ -1669,7 +1669,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           type="text"
                           value={panelForm.embedTitle}
                           onChange={(e) => setPanelForm({ ...panelForm, embedTitle: e.target.value })}
-                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                          className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand"
                         />
                       </div>
 
@@ -1678,7 +1678,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                         <textarea
                           value={panelForm.embedDescription}
                           onChange={(e) => setPanelForm({ ...panelForm, embedDescription: e.target.value })}
-                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand h-20"
+                          className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand h-20"
                         />
                       </div>
 
@@ -1696,7 +1696,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             type="text"
                             value={panelForm.embedColor === "none" ? "#5865F2" : (panelForm.embedColor || "#5865F2")}
                             onChange={(e) => setPanelForm({ ...panelForm, embedColor: e.target.value })}
-                            className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white font-mono outline-none w-32"
+                            className="p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white font-mono outline-none w-32"
                           />
                           <div className="flex items-center gap-1.5 pl-2">
                             {colorPresets.map((hex) => (
@@ -1721,7 +1721,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             placeholder="https://..."
                             value={panelForm.thumbnail || ""}
                             onChange={(e) => setPanelForm({ ...panelForm, thumbnail: e.target.value })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white font-mono outline-none"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white font-mono outline-none"
                           />
                         </div>
 
@@ -1732,7 +1732,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             placeholder="https://..."
                             value={panelForm.image || ""}
                             onChange={(e) => setPanelForm({ ...panelForm, image: e.target.value })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white font-mono outline-none"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white font-mono outline-none"
                           />
                         </div>
                       </div>
@@ -1745,7 +1745,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             type="text"
                             value={panelForm.buttonText}
                             onChange={(e) => setPanelForm({ ...panelForm, buttonText: e.target.value })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none"
                           />
                         </div>
                         <div>
@@ -1754,7 +1754,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             type="text"
                             value={panelForm.buttonEmoji}
                             onChange={(e) => setPanelForm({ ...panelForm, buttonEmoji: e.target.value })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none"
                           />
                         </div>
                         <div>
@@ -1762,7 +1762,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           <select
                             value={panelForm.buttonColor}
                             onChange={(e) => setPanelForm({ ...panelForm, buttonColor: e.target.value })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none"
                           >
                             <option value="Primary">Blurple (Primary)</option>
                             <option value="Success">Green (Success)</option>
@@ -1801,7 +1801,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
 
                             if (isEditingThisReason) {
                               return (
-                                <div key={idx} className="rounded-2xl bg-[#090a0f] border border-discord-brand/40 p-4 space-y-3 shadow-lg">
+                                <div key={idx} className="rounded-2xl bg-canvas border border-discord-brand/40 p-4 space-y-3 shadow-lg">
                                   <div className="flex items-center justify-between">
                                     <span className="font-bold text-white text-xs uppercase text-discord-brand">Edit Ticket Type Option</span>
                                     <span className="text-[10px] text-zinc-500 font-mono">Option #{idx + 1}</span>
@@ -1854,7 +1854,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                                     <button
                                       type="button"
                                       onClick={handleCancelEditReason}
-                                      className="px-3 py-1.5 rounded-xl bg-[#18181b] text-zinc-400 hover:text-white text-xs font-semibold"
+                                      className="px-3 py-1.5 rounded-xl bg-panel text-zinc-400 hover:text-white text-xs font-semibold"
                                     >
                                       Cancel
                                     </button>
@@ -1871,7 +1871,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             }
 
                             return (
-                              <div key={idx} className="rounded-2xl bg-[#090a0f] border border-[#18181b] overflow-hidden shadow-lg">
+                              <div key={idx} className="rounded-2xl bg-canvas border border-[#18181b] overflow-hidden shadow-lg">
                                 <div className="p-3.5 flex items-center justify-between bg-[#050507]">
                                   <div className="flex items-center gap-3">
                                     <span className="text-xl">{r.emoji}</span>
@@ -1900,7 +1900,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                                       className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
                                         reasonQuestions.length > 0
                                           ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                                          : "bg-[#18181b] text-zinc-400 hover:text-white border border-[#27272a]"
+                                          : "bg-panel text-zinc-400 hover:text-white border border-line"
                                       }`}
                                     >
                                       <span>📋 {reasonQuestions.length} Questions</span>
@@ -1927,7 +1927,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                                     <div className="space-y-2">
                                       {reasonQuestions.length > 0 ? (
                                         reasonQuestions.map((rq: IntakeQuestion, qIdx: number) => (
-                                          <div key={rq.id} className="flex items-center justify-between p-3 rounded-xl bg-[#090a0f] border border-[#18181b]">
+                                          <div key={rq.id} className="flex items-center justify-between p-3 rounded-xl bg-canvas border border-[#18181b]">
                                             <div className="flex items-center gap-2.5">
                                               <span className="w-5 h-5 rounded-full bg-emerald-500/20 text-emerald-400 font-bold text-[10px] flex items-center justify-center">
                                                 Q{qIdx + 1}
@@ -1963,14 +1963,14 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                                             placeholder="Question Title (e.g. Transaction ID)"
                                             value={reasonQTitle}
                                             onChange={(e) => setReasonQTitle(e.target.value)}
-                                            className="p-2 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                                            className="p-2 rounded-xl bg-canvas border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
                                           />
                                           <input
                                             type="text"
                                             placeholder="Placeholder (e.g. TX-987654)"
                                             value={reasonQPlaceholder}
                                             onChange={(e) => setReasonQPlaceholder(e.target.value)}
-                                            className="p-2 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                                            className="p-2 rounded-xl bg-canvas border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
                                           />
                                         </div>
                                         <div className="flex items-center gap-4 text-[11px]">
@@ -2032,19 +2032,19 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             placeholder="Type Name (e.g. Bug Report)"
                             value={newReasonLabel}
                             onChange={(e) => setNewReasonLabel(e.target.value)}
-                            className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                            className="p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
                           />
                           <input
                             type="text"
                             placeholder="Emoji (e.g. 🐛)"
                             value={newReasonEmoji}
                             onChange={(e) => setNewReasonEmoji(e.target.value)}
-                            className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                            className="p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
                           />
                           <select
                             value={newReasonCat}
                             onChange={(e) => setNewReasonCat(e.target.value)}
-                            className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                            className="p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
                           >
                             <option value="">Default Category</option>
                             {categories.map((c) => (
@@ -2059,7 +2059,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           placeholder="Short description..."
                           value={newReasonDesc}
                           onChange={(e) => setNewReasonDesc(e.target.value)}
-                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
+                          className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white text-xs outline-none focus:border-discord-brand"
                         />
                         <button
                           type="button"
@@ -2098,7 +2098,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                                 isSelected
                                   ? "bg-sky-500/20 text-sky-400 border border-sky-500/40"
-                                  : "bg-[#090a0f] text-zinc-500 border border-[#18181b] hover:text-white"
+                                  : "bg-canvas text-zinc-500 border border-[#18181b] hover:text-white"
                               }`}
                             >
                               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color || "#38bdf8" }} />
@@ -2130,7 +2130,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                               className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 ${
                                 isSelected
                                   ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/40"
-                                  : "bg-[#090a0f] text-zinc-500 border border-[#18181b] hover:text-white"
+                                  : "bg-canvas text-zinc-500 border border-[#18181b] hover:text-white"
                               }`}
                             >
                               <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: r.color || "#10b981" }} />
@@ -2154,7 +2154,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           <select
                             value={panelForm.categoryId || ""}
                             onChange={(e) => setPanelForm({ ...panelForm, categoryId: e.target.value })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand"
                           >
                             <option value="">-- No Category (Server Root) --</option>
                             {categories.map((c) => (
@@ -2173,7 +2173,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             max={10}
                             value={panelForm.maxOpenTickets || 1}
                             onChange={(e) => setPanelForm({ ...panelForm, maxOpenTickets: Number(e.target.value) })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand"
                           />
                         </div>
                       </div>
@@ -2188,7 +2188,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             placeholder="0 = Disabled"
                             value={panelForm.autoCloseHours || 0}
                             onChange={(e) => setPanelForm({ ...panelForm, autoCloseHours: Number(e.target.value) })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand"
                           />
                         </div>
 
@@ -2224,7 +2224,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           type="text"
                           value={panelForm.welcomeTitle || ""}
                           onChange={(e) => setPanelForm({ ...panelForm, welcomeTitle: e.target.value })}
-                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                          className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand"
                         />
                       </div>
 
@@ -2233,7 +2233,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                         <textarea
                           value={panelForm.welcomeDescription || ""}
                           onChange={(e) => setPanelForm({ ...panelForm, welcomeDescription: e.target.value })}
-                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand h-24"
+                          className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand h-24"
                         />
                       </div>
 
@@ -2251,7 +2251,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             type="text"
                             value={panelForm.welcomeColor === "none" ? "#5865F2" : (panelForm.welcomeColor || "#5865F2")}
                             onChange={(e) => setPanelForm({ ...panelForm, welcomeColor: e.target.value })}
-                            className="p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white font-mono outline-none w-32"
+                            className="p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white font-mono outline-none w-32"
                           />
                           <div className="flex items-center gap-1.5 pl-2">
                             {colorPresets.map((hex) => (
@@ -2276,7 +2276,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             placeholder="https://..."
                             value={panelForm.welcomeThumbnail || ""}
                             onChange={(e) => setPanelForm({ ...panelForm, welcomeThumbnail: e.target.value })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand"
                           />
                         </div>
                         <div>
@@ -2286,7 +2286,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             placeholder="https://..."
                             value={panelForm.welcomeImage || ""}
                             onChange={(e) => setPanelForm({ ...panelForm, welcomeImage: e.target.value })}
-                            className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                            className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand"
                           />
                         </div>
                       </div>
@@ -2297,7 +2297,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           type="text"
                           value={panelForm.welcomeFooter || ""}
                           onChange={(e) => setPanelForm({ ...panelForm, welcomeFooter: e.target.value })}
-                          className="w-full p-2.5 rounded-xl bg-[#090a0f] border border-[#18181b] text-white outline-none focus:border-discord-brand"
+                          className="w-full p-2.5 rounded-xl bg-canvas border border-[#18181b] text-white outline-none focus:border-discord-brand"
                         />
                       </div>
                     </div>
@@ -2312,7 +2312,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                     Live Discord Mockup
                   </span>
 
-                  <div className="flex items-center gap-1 bg-[#090a0f] p-1 rounded-xl border border-[#18181b]">
+                  <div className="flex items-center gap-1 bg-canvas p-1 rounded-xl border border-[#18181b]">
                     <button
                       type="button"
                       onClick={() => setPreviewTab("panel")}
@@ -2344,7 +2344,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                 </div>
 
                 {/* Discord Preview Mockup */}
-                <div className="flex-1 bg-[#090a0f] p-4 rounded-2xl border border-[#18181b] space-y-3 font-sans overflow-y-auto max-h-[550px]">
+                <div className="flex-1 bg-canvas p-4 rounded-2xl border border-[#18181b] space-y-3 font-sans overflow-y-auto max-h-[550px]">
                   <div className="flex items-center gap-2.5">
                     <div className="w-8 h-8 rounded-full bg-discord-brand flex items-center justify-center font-bold text-white text-xs">
                       TGG
@@ -2409,7 +2409,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                           <select
                             value={selectedPreviewReasonIdx}
                             onChange={(e) => setSelectedPreviewReasonIdx(Number(e.target.value))}
-                            className="w-full p-1.5 rounded-lg bg-[#090a0f] border border-[#18181b] text-white text-xs font-bold"
+                            className="w-full p-1.5 rounded-lg bg-canvas border border-[#18181b] text-white text-xs font-bold"
                           >
                             {panelForm.reasons.map((r: TicketReason, idx: number) => (
                               <option key={idx} value={idx}>
@@ -2433,7 +2433,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                             <label className="text-[11px] font-semibold text-zinc-400 block">
                               {q.label} {q.required && <span className="text-rose-400">*</span>}
                             </label>
-                            <div className="p-2 rounded-xl bg-[#090a0f] border border-[#18181b] text-zinc-500 text-[10px]">
+                            <div className="p-2 rounded-xl bg-canvas border border-[#18181b] text-zinc-500 text-[10px]">
                               {q.placeholder}
                             </div>
                           </div>
@@ -2466,7 +2466,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               <button
                 type="button"
                 onClick={() => setIsPanelModalOpen(false)}
-                className="px-4 py-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-white text-xs font-semibold"
+                className="px-4 py-2 rounded-xl bg-panel hover:bg-[#27272a] text-white text-xs font-semibold"
               >
                 Cancel
               </button>
@@ -2485,7 +2485,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
       {/* TICKET DETAIL INSPECTOR MODAL */}
       {selectedTicket && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
-          <div className="bg-[#090a0f] border border-[#18181b] rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
+          <div className="bg-canvas border border-[#18181b] rounded-3xl max-w-2xl w-full p-6 space-y-6 shadow-2xl animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-[#18181b] pb-3">
               <h3 className="text-base font-bold text-white flex items-center gap-2">
                 <Ticket className="w-5 h-5 text-discord-brand" />
@@ -2538,7 +2538,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
               <button
                 onClick={() => handleTicketAction(selectedTicket.id, "transcript")}
                 disabled={pendingTicketAction !== null}
-                className="px-3.5 py-2 rounded-xl bg-[#18181b] hover:bg-[#27272a] text-zinc-300 text-xs font-bold transition-all flex items-center gap-1.5"
+                className="px-3.5 py-2 rounded-xl bg-panel hover:bg-[#27272a] text-zinc-300 text-xs font-bold transition-all flex items-center gap-1.5"
               >
                 <RefreshCw className="w-3.5 h-3.5" /> Re-generate
               </button>

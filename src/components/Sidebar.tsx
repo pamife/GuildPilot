@@ -1,23 +1,22 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
+  Menu,
+  X,
+  ArrowLeft,
   LayoutDashboard,
   Hash,
   FolderTree,
   Shield,
   Settings,
   Smile,
-  Sticker,
   Link2,
   Copy,
   Wrench,
   ChevronDown,
-  ChevronRight,
   Server,
   LogOut,
-  Radio,
-  Activity,
   Ticket,
   Check,
   RefreshCw,
@@ -29,11 +28,10 @@ import {
   Users,
   Archive,
   Search,
-  ExternalLink,
-  PlusCircle,
-  ShieldCheck,
   SmilePlus,
 } from "lucide-react";
+
+import { Brand } from "@/components/Brand";
 
 export type ViewType =
   | "overview"
@@ -106,12 +104,17 @@ export function Sidebar({
   onRefreshGuilds,
   onBackToServers,
 }: SidebarProps) {
-
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const menuRef = useRef<HTMLButtonElement>(null);
   const [isServerDropdownOpen, setIsServerDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({});
+  const [collapsedCategories, setCollapsedCategories] = useState<
+    Record<string, boolean>
+  >({});
 
-  const selectedGuild = guilds.find((g) => g.id === selectedGuildId) || guilds[0];
+  const selectedGuild =
+    guilds.find((g) => g.id === selectedGuildId) || guilds[0];
 
   const toggleCategory = (categoryId: string) => {
     setCollapsedCategories((prev) => ({
@@ -142,7 +145,7 @@ export function Sidebar({
           label: "Willkommen & Abschied",
           description: "Begrüßungs-Embeds & Auto-Rollen",
           icon: Sparkles,
-          badge: "Aktiv",
+
           badgeColor: "bg-indigo-500/15 text-indigo-400 border-indigo-500/30",
         },
         {
@@ -276,315 +279,280 @@ export function Sidebar({
       const filteredItems = cat.items.filter(
         (item) =>
           item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.description.toLowerCase().includes(searchQuery.toLowerCase())
+          item.description.toLowerCase().includes(searchQuery.toLowerCase()),
       );
       return { ...cat, items: filteredItems };
     })
     .filter((cat) => cat.items.length > 0);
 
+  useEffect(() => {
+    if (!mobileOpen) return;
+    const sidebar = sidebarRef.current;
+    sidebar?.focus();
+    const desktop = window.matchMedia("(min-width: 1024px)");
+    const handleResize = () => {
+      if (desktop.matches) setMobileOpen(false);
+    };
+    desktop.addEventListener("change", handleResize);
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMobileOpen(false);
+      if (event.key !== "Tab" || !sidebar) return;
+      const elements = Array.from(
+        sidebar.querySelectorAll<HTMLElement>("button, input, a[href], select"),
+      ).filter((element) => element.offsetParent !== null);
+      const first = elements[0];
+      const last = elements[elements.length - 1];
+      if (
+        event.shiftKey &&
+        (document.activeElement === first || document.activeElement === sidebar)
+      ) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("keydown", handleKey);
+      desktop.removeEventListener("change", handleResize);
+      if (menuRef.current?.offsetParent) menuRef.current.focus();
+    };
+  }, [mobileOpen]);
+
+  const navigate = (view: ViewType) => {
+    onSelectView(view);
+    setMobileOpen(false);
+  };
+
   return (
-    <aside className="w-72 bg-[#0d111a] flex flex-col h-screen border-r border-[#1a2333] shrink-0 select-none text-slate-200">
-      {/* Brand & Server Selector Header */}
-      <div className="p-4 border-b border-[#1a2333] bg-[#090d15]/90 space-y-3">
-        {/* App Branding */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-indigo-500 flex items-center justify-center shadow-lg shadow-indigo-600/30 text-white">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <span className="text-sm font-bold tracking-tight text-white flex items-center gap-1.5">
-                GuildPilot
-                <span className="text-[10px] px-1.5 py-0.5 rounded-full font-medium bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
-                  Pro
-                </span>
-              </span>
-              <p className="text-[11px] text-slate-400">Discord Management</p>
-            </div>
-          </div>
-
-          <div
-            className={`flex items-center gap-1.5 px-2 py-1 rounded-full text-[11px] font-medium border ${
-              botStatus?.ready
-                ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
-                : "bg-rose-500/10 border-rose-500/20 text-rose-400"
-            }`}
-            title={botStatus?.ready ? `Verbunden (${botStatus.ping}ms)` : "Offline"}
+    <>
+      <div className="gp-mobile-bar">
+        <Brand />
+        <button
+          ref={menuRef}
+          className="gp-icon-button"
+          aria-label="Navigation öffnen"
+          aria-expanded={mobileOpen}
+          aria-controls="workspace-navigation"
+          onClick={() => setMobileOpen(true)}
+        >
+          <Menu size={22} />
+        </button>
+      </div>
+      {mobileOpen && (
+        <button
+          className="gp-sidebar-overlay"
+          onClick={() => setMobileOpen(false)}
+          aria-label="Navigation schließen"
+          tabIndex={-1}
+        />
+      )}
+      <aside
+        ref={sidebarRef}
+        tabIndex={-1}
+        id="workspace-navigation"
+        role={mobileOpen ? "dialog" : undefined}
+        aria-modal={mobileOpen || undefined}
+        className={`gp-sidebar ${mobileOpen ? "is-open" : ""}`}
+        aria-label="Workspace-Navigation"
+      >
+        <div className="gp-sidebar-brand">
+          <Brand />
+          <button
+            className="gp-icon-button gp-mobile-close"
+            onClick={() => setMobileOpen(false)}
+            aria-label="Navigation schließen"
           >
-            <span
-              className={`w-1.5 h-1.5 rounded-full ${
-                botStatus?.ready ? "bg-emerald-400 animate-pulse" : "bg-rose-400"
-              }`}
-            />
-            <span>{botStatus?.ready ? `${botStatus.ping}ms` : "Offline"}</span>
-          </div>
+            <X size={19} />
+          </button>
         </div>
-
-        {/* Server Selector Trigger */}
-        <div className="relative">
-          <div
-            onClick={() => setIsServerDropdownOpen((prev) => !prev)}
-            className="flex items-center justify-between p-2.5 rounded-xl bg-[#131b2c] border border-[#212d45] hover:border-indigo-500/50 hover:bg-[#18233a] transition-all cursor-pointer shadow-sm group"
+        <div className="gp-sidebar-server">
+          <button
+            className="gp-server-select"
+            aria-expanded={isServerDropdownOpen}
+            aria-controls="guild-options"
+            onClick={() => setIsServerDropdownOpen(!isServerDropdownOpen)}
           >
-            <div className="flex items-center gap-2.5 overflow-hidden">
-              {selectedGuild?.icon ? (
-                <img
-                  src={selectedGuild.icon}
-                  alt={selectedGuild.name}
-                  className="w-8 h-8 rounded-lg object-cover shrink-0 border border-[#263553]"
-                />
-              ) : (
-                <div className="w-8 h-8 rounded-lg bg-indigo-600/20 border border-indigo-500/40 flex items-center justify-center font-bold text-indigo-300 text-xs shrink-0">
-                  {selectedGuild?.name ? selectedGuild.name.substring(0, 2).toUpperCase() : "GP"}
-                </div>
-              )}
-              <div className="truncate">
-                <p className="text-xs font-semibold text-white truncate group-hover:text-indigo-200 transition-colors">
-                  {selectedGuild?.name || "Server auswählen"}
-                </p>
-                <p className="text-[11px] text-slate-400 truncate">
-                  {selectedGuild ? `${selectedGuild.memberCount.toLocaleString("de-DE")} Mitglieder` : "Kein Server verfügbar"}
-                </p>
-              </div>
-            </div>
-            <ChevronDown
-              className={`w-4 h-4 text-slate-400 shrink-0 transition-transform duration-200 ${
-                isServerDropdownOpen ? "rotate-180 text-indigo-400" : ""
-              }`}
-            />
-          </div>
-
-          {/* Server Selector Dropdown */}
+            {selectedGuild?.icon ? (
+              <img src={selectedGuild.icon} alt="" className="gp-avatar" />
+            ) : (
+              <span className="gp-avatar gp-avatar-fallback">
+                {selectedGuild?.name.slice(0, 2).toUpperCase() || "GP"}
+              </span>
+            )}
+            <span>
+              <strong>{selectedGuild?.name || "Server auswählen"}</strong>
+              <span>Dein Workspace</span>
+            </span>
+            <ChevronDown size={16} />
+          </button>
           {isServerDropdownOpen && (
-            <div className="absolute top-full left-0 right-0 mt-2 bg-[#101726] border border-[#243350] rounded-xl shadow-2xl p-2 space-y-1 max-h-72 overflow-y-auto z-50 animate-in fade-in-50 zoom-in-95 duration-150 backdrop-blur-xl">
-              <div className="flex items-center justify-between px-2 py-1.5 text-[11px] font-semibold text-slate-400 uppercase tracking-wider border-b border-[#1f2c44] mb-1">
-                <span>Verfügbare Server ({guilds.length})</span>
+            <div className="gp-server-dropdown" id="guild-options">
+              <div className="gp-dropdown-heading">
+                <span>Server wechseln</span>
                 {onRefreshGuilds && (
                   <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onRefreshGuilds();
-                    }}
+                    className="gp-icon-button"
                     title="Serverliste aktualisieren"
-                    className="p-1 hover:text-white text-slate-400 hover:bg-[#1a253b] rounded transition-colors"
+                    aria-label="Serverliste aktualisieren"
+                    onClick={onRefreshGuilds}
                   >
-                    <RefreshCw className="w-3 h-3" />
+                    <RefreshCw size={14} />
                   </button>
                 )}
               </div>
-
-              {/* Back to Server Selector Option */}
-              {onBackToServers && (
+              {guilds.map((guild) => (
                 <button
+                  key={guild.id}
+                  className={guild.id === selectedGuildId ? "is-selected" : ""}
                   onClick={() => {
+                    onSelectGuild(guild.id);
                     setIsServerDropdownOpen(false);
-                    onBackToServers();
+                    setMobileOpen(false);
                   }}
-                  className="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs font-semibold text-indigo-300 hover:text-white bg-[#151f33] hover:bg-indigo-600/30 border border-indigo-500/30 transition-all mb-1.5"
                 >
-                  <Server className="w-3.5 h-3.5" />
-                  <span>← Zur Server-Übersicht</span>
+                  <span>{guild.name}</span>
+                  {guild.id === selectedGuildId && <Check size={15} />}
                 </button>
+              ))}
+              {guilds.length === 0 && (
+                <p className="gp-muted p-3">Keine Server verfügbar.</p>
               )}
-
-              {guilds.length === 0 ? (
-                <div className="p-4 text-center text-xs text-slate-400">
-                  Keine Server gefunden. Ist der Bot autorisiert?
-                </div>
-              ) : (
-                guilds.map((g) => {
-                  const isSelected = g.id === selectedGuildId;
-                  return (
-                    <button
-                      key={g.id}
-                      onClick={() => {
-                        onSelectGuild(g.id);
-                        setIsServerDropdownOpen(false);
-                      }}
-                      className={`w-full flex items-center justify-between p-2 rounded-lg text-xs transition-all ${
-                        isSelected
-                          ? "bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/30"
-                          : "text-slate-300 hover:bg-[#18233a] hover:text-white"
-                      }`}
-                    >
-                      <div className="flex items-center gap-2.5 overflow-hidden">
-                        {g.icon ? (
-                          <img src={g.icon} alt="" className="w-6 h-6 rounded-md object-cover shrink-0" />
-                        ) : (
-                          <div className="w-6 h-6 rounded-md bg-indigo-500/20 flex items-center justify-center font-bold text-indigo-300 text-[10px] shrink-0">
-                            {g.name.substring(0, 2).toUpperCase()}
-                          </div>
-                        )}
-                        <div className="truncate text-left">
-                          <span className="truncate block">{g.name}</span>
-                          <span className={`text-[10px] block ${isSelected ? "text-indigo-200" : "text-slate-400"}`}>
-                            {g.memberCount} Mitglieder
-                          </span>
-                        </div>
-                      </div>
-                      {isSelected && <Check className="w-4 h-4 shrink-0 text-white" />}
-                    </button>
-                  );
-                })
+              {onBackToServers && (
+                <button onClick={onBackToServers}>
+                  <ArrowLeft size={14} />
+                  Alle Server anzeigen
+                </button>
               )}
             </div>
           )}
         </div>
-
-        {/* Quick Search in Menu */}
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
+        <label className="gp-search gp-nav-search">
+          <Search size={15} />
           <input
-            type="text"
-            placeholder="Funktion suchen..."
+            aria-label="Funktion suchen"
+            placeholder="Funktion suchen …"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#111724] border border-[#1d293f] rounded-lg pl-8 pr-3 py-1.5 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500/60 transition-colors"
           />
-        </div>
-      </div>
-
-      {/* Main Navigation with Categories */}
-      <nav className="flex-1 px-3 py-3 space-y-4 overflow-y-auto">
-        {filteredCategories.map((category) => {
-          const isCollapsed = collapsedCategories[category.id] && !searchQuery.trim();
-          return (
-            <div key={category.id} className="space-y-1">
-              {/* Category Header with Collapse Toggle */}
+          {searchQuery && (
+            <button
+              className="gp-search-clear"
+              onClick={() => setSearchQuery("")}
+              aria-label="Suche leeren"
+            >
+              <X size={13} />
+            </button>
+          )}
+        </label>
+        <nav className="gp-navigation" aria-label="Hauptnavigation">
+          {filteredCategories.length === 0 && (
+            <p className="gp-nav-empty">Keine Funktion gefunden.</p>
+          )}
+          {filteredCategories.map((category) => {
+            const isCollapsed =
+              !!collapsedCategories[category.id] && !searchQuery.trim();
+            return (
+              <div className="gp-nav-group" key={category.id}>
+                <button
+                  className="gp-nav-group-heading"
+                  aria-expanded={!isCollapsed}
+                  aria-controls={category.id}
+                  onClick={() => toggleCategory(category.id)}
+                >
+                  <span>{category.label}</span>
+                  <ChevronDown
+                    size={12}
+                    className={isCollapsed ? "-rotate-90" : ""}
+                  />
+                </button>
+                {!isCollapsed && (
+                  <div id={category.id}>
+                    {category.items.map((item) => {
+                      const Icon = item.icon;
+                      return (
+                        <button
+                          key={item.id}
+                          className={`gp-nav-item ${currentView === item.id ? "is-active" : ""}`}
+                          aria-current={
+                            currentView === item.id ? "page" : undefined
+                          }
+                          title={item.description}
+                          onClick={() => navigate(item.id)}
+                        >
+                          <Icon size={17} />
+                          <span>{item.label}</span>
+                          {currentView === item.id && (
+                            <span className="gp-nav-active-dot" />
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+          {isOwner && (
+            <div className="gp-nav-group gp-owner-nav">
+              <span className="gp-nav-group-heading">SYSTEM</span>
               <button
-                type="button"
-                onClick={() => toggleCategory(category.id)}
-                className="w-full flex items-center justify-between px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-slate-400 hover:text-slate-200 transition-colors"
+                onClick={() => navigate("host-server")}
+                className={`gp-nav-item ${currentView === "host-server" ? "is-active" : ""}`}
+                aria-current={
+                  currentView === "host-server" ? "page" : undefined
+                }
               >
-                <span>{category.label}</span>
-                <span className="text-slate-400 hover:text-slate-200">
-                  {isCollapsed ? (
-                    <ChevronRight className="w-3.5 h-3.5" />
-                  ) : (
-                    <ChevronDown className="w-3.5 h-3.5" />
-                  )}
-                </span>
+                <Server size={17} />
+                <span>Host-System & Logs</span>
+                <span className="gp-owner-tag">Owner</span>
               </button>
-
-              {/* Category Items */}
-              {!isCollapsed && (
-                <div className="space-y-0.5">
-                  {category.items.map((item) => {
-                    const Icon = item.icon;
-                    const isActive = currentView === item.id;
-                    return (
-                      <button
-                        key={item.id}
-                        onClick={() => onSelectView(item.id)}
-                        className={`w-full group flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-                          isActive
-                            ? "bg-indigo-600 text-white font-semibold shadow-md shadow-indigo-600/25"
-                            : "text-slate-300 hover:text-white hover:bg-[#141c2c]"
-                        }`}
-                        title={item.description}
-                      >
-                        <div className="flex items-center gap-3 overflow-hidden">
-                          <Icon
-                            className={`w-4 h-4 shrink-0 transition-colors ${
-                              isActive
-                                ? "text-white"
-                                : "text-slate-400 group-hover:text-indigo-400"
-                            }`}
-                          />
-                          <span className="truncate">{item.label}</span>
-                        </div>
-
-                        {item.badge && (
-                          <span
-                            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border ${
-                              isActive
-                                ? "bg-white/20 text-white border-white/30"
-                                : item.badgeColor || "bg-slate-800 text-slate-300 border-slate-700"
-                            }`}
-                          >
-                            {item.badge}
-                          </span>
-                        )}
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </div>
-          );
-        })}
-
-        {/* System & Infrastructure Section (AUSSCHLIESSLICH für OWNER sichtbar) */}
-        {isOwner && (
-          <div className="pt-2 border-t border-[#1a2333] space-y-1">
-            <div className="px-2.5 py-1 text-[11px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1.5">
-              <span>Owner System</span>
+          )}
+        </nav>
+        <div className="gp-sidebar-bottom">
+          <div className="gp-sidebar-status">
+            <span
+              className={`gp-status-dot ${botStatus?.ready ? "" : "gp-dot-offline"}`}
+            />
+            <span>
+              {botStatus
+                ? botStatus.ready
+                  ? "Bot verbunden"
+                  : "Bot offline"
+                : "Status wird geladen"}
+            </span>
+            <span>
+              {botStatus?.ready && botStatus.ping >= 0
+                ? `${botStatus.ping} ms`
+                : "—"}
+            </span>
+          </div>
+          <div className="gp-account">
+            {ownerUser?.avatar ? (
+              <img src={ownerUser.avatar} alt="" className="gp-avatar" />
+            ) : (
+              <span className="gp-avatar gp-avatar-fallback">
+                {ownerUser?.username.slice(0, 1).toUpperCase() || "U"}
+              </span>
+            )}
+            <div className="gp-account-name">
+              <strong>{ownerUser?.username || "Benutzer"}</strong>
+              <span>{isOwner ? "Global Owner" : "Community Manager"}</span>
             </div>
             <button
-              onClick={() => onSelectView("host-server")}
-              className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-xs font-medium transition-all ${
-                currentView === "host-server"
-                  ? "bg-emerald-600 text-white font-semibold shadow-md shadow-emerald-600/25"
-                  : "text-slate-300 hover:text-white hover:bg-[#141c2c]"
-              }`}
-              title="Lokale Bot-Instanz, Systemlast und Protokolle"
+              onClick={onLogout}
+              className="gp-icon-button"
+              aria-label="Abmelden"
+              title="Abmelden"
             >
-              <div className="flex items-center gap-3">
-                <Server
-                  className={`w-4 h-4 ${
-                    currentView === "host-server" ? "text-white" : "text-emerald-400"
-                  }`}
-                />
-                <span>Host-System & Logs</span>
-              </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                Live
-              </span>
+              <LogOut size={17} />
             </button>
           </div>
-        )}
-      </nav>
-
-      {/* User & Session Footer */}
-      <div className="p-3 border-t border-[#1a2333] bg-[#090d15]/95">
-        <div className="flex items-center justify-between p-2 rounded-xl bg-[#111724] border border-[#1b2538]">
-          <div className="flex items-center gap-2.5 overflow-hidden">
-            {ownerUser?.avatar ? (
-              <img
-                src={ownerUser.avatar}
-                alt=""
-                className="w-8 h-8 rounded-lg object-cover shrink-0 border border-[#243350]"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-lg bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center text-indigo-300 font-bold text-xs shrink-0">
-                {ownerUser?.username ? ownerUser.username.substring(0, 1).toUpperCase() : "U"}
-              </div>
-            )}
-            <div className="truncate">
-              <p className="text-xs font-semibold text-white truncate">
-                {ownerUser?.username || "Benutzer"}
-              </p>
-              <p className="text-[10px] text-slate-400 flex items-center gap-1">
-                <span
-                  className={`w-1.5 h-1.5 rounded-full ${
-                    isOwner ? "bg-amber-400" : "bg-emerald-400"
-                  }`}
-                />
-                <span>{isOwner ? "Global Owner" : "Benutzer"}</span>
-              </p>
-            </div>
-          </div>
-
-          <button
-            onClick={onLogout}
-            title="Sitzung abmelden"
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
-          >
-            <LogOut className="w-4 h-4" />
-          </button>
         </div>
-      </div>
-    </aside>
+      </aside>
+    </>
   );
 }
-

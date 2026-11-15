@@ -281,9 +281,9 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
   };
 
   return (
-    <div className="flex-1 flex flex-col h-full overflow-hidden bg-[#0b0f17] text-slate-200 select-none">
+    <div className="flex-1 flex flex-col h-full overflow-hidden bg-canvas text-slate-200 select-none">
       {/* Header */}
-      <div className="p-6 border-b border-[#1e293b] bg-[#0d121c] shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="p-6 border-b border-line bg-canvas shrink-0 flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <div className="p-2.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-indigo-400">
             <Archive className="w-5 h-5" />
@@ -291,7 +291,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
           <div>
             <h1 className="text-xl font-bold text-white tracking-tight flex items-center gap-2">
               Server-Backups & Wiederherstellung
-              <span className="text-xs font-mono font-normal bg-[#111724] border border-[#1e293b] text-slate-400 px-2.5 py-0.5 rounded-full">
+              <span className="text-xs font-mono font-normal bg-panel border border-line text-slate-400 px-2.5 py-0.5 rounded-full">
                 {backups.length} gesichert
               </span>
             </h1>
@@ -304,7 +304,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
         <div className="flex items-center gap-2.5">
           <button
             onClick={() => setIsImportModalOpen(true)}
-            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#111724] hover:bg-[#1a253a] border border-[#1e293b] hover:border-indigo-500/40 text-xs font-semibold text-slate-300 hover:text-white transition-all shadow-sm cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 rounded-xl bg-panel hover:bg-raised border border-line hover:border-indigo-500/40 text-xs font-semibold text-slate-300 hover:text-white transition-all shadow-sm cursor-pointer"
           >
             <Upload className="w-4 h-4 text-emerald-400" />
             <span>JSON importieren</span>
@@ -322,7 +322,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
             onClick={fetchBackups}
             disabled={loading}
             title="Aktualisieren"
-            className="p-2 rounded-xl bg-[#111724] hover:bg-[#1a253a] border border-[#1e293b] text-slate-400 hover:text-white transition-all cursor-pointer disabled:opacity-50"
+            className="p-2 rounded-xl bg-panel hover:bg-raised border border-line text-slate-400 hover:text-white transition-all cursor-pointer disabled:opacity-50"
           >
             <RefreshCw className={`w-4 h-4 ${loading ? "animate-spin text-indigo-400" : ""}`} />
           </button>
@@ -330,32 +330,32 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
       </div>
 
       {/* Stats Ribbon */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-4 bg-[#0d121c] border-b border-[#1e293b] text-xs shrink-0">
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2 p-4 bg-canvas border-b border-line text-xs shrink-0">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <Archive className="w-3.5 h-3.5 text-indigo-400" /> Gesamt-Backups
           </span>
           <span className="font-bold text-white font-mono">{stats.total}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <Save className="w-3.5 h-3.5 text-sky-400" /> Manuelle Snapshots
           </span>
           <span className="font-bold text-sky-300 font-mono">{stats.manual}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <AlertTriangle className="w-3.5 h-3.5 text-amber-400" /> Notfall (Bot Left)
           </span>
           <span className="font-bold text-amber-300 font-mono">{stats.autoLeave}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <Server className="w-3.5 h-3.5 text-rose-400" /> Archivierte Server
           </span>
           <span className="font-bold text-rose-300 font-mono">{stats.archived}</span>
         </div>
-        <div className="p-2.5 rounded-xl bg-[#111724] border border-[#1e293b] flex items-center justify-between">
+        <div className="p-2.5 rounded-xl bg-panel border border-line flex items-center justify-between">
           <span className="text-slate-400 flex items-center gap-1.5">
             <HardDrive className="w-3.5 h-3.5 text-emerald-400" /> Gesicherte Server
           </span>
@@ -364,7 +364,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
       </div>
 
       {/* Filter & Search Bar */}
-      <div className="p-4 bg-[#0b0f17] border-b border-[#1e293b] flex flex-wrap items-center justify-between gap-3 shrink-0">
+      <div className="p-4 bg-canvas border-b border-line flex flex-wrap items-center justify-between gap-3 shrink-0">
         <div className="relative flex-1 min-w-[240px]">
           <Search className="w-4 h-4 text-slate-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
@@ -372,7 +372,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
             placeholder="Backups durchsuchen (Name, Server, ID, Notiz)..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-[#111724] border border-[#1e293b] focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl pl-9 pr-8 py-2 text-xs transition-all outline-none"
+            className="w-full bg-panel border border-line focus:border-indigo-500 text-slate-100 placeholder-slate-500 rounded-xl pl-9 pr-8 py-2 text-xs transition-all outline-none"
           />
           {searchQuery && (
             <button
@@ -385,7 +385,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
         </div>
 
         {/* Filter Segmented Buttons */}
-        <div className="flex items-center bg-[#111724] border border-[#1e293b] rounded-xl p-1 text-xs">
+        <div className="flex items-center bg-panel border border-line rounded-xl p-1 text-xs">
           {(
             [
               { id: "all", label: "Alle Backups" },
@@ -418,7 +418,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
             <p className="text-xs">Lade Server-Backups...</p>
           </div>
         ) : filteredBackups.length === 0 ? (
-          <div className="flex flex-col items-center justify-center h-64 text-slate-500 gap-3 bg-[#111724] border border-[#1e293b] rounded-2xl p-8 text-center">
+          <div className="flex flex-col items-center justify-center h-64 text-slate-500 gap-3 bg-panel border border-line rounded-2xl p-8 text-center">
             <Archive className="w-10 h-10 text-slate-600 mb-1" />
             <h3 className="text-sm font-bold text-slate-300">Keine Backups gefunden</h3>
             <p className="text-xs text-slate-500 max-w-sm">
@@ -436,7 +436,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
             {filteredBackups.map((backup) => (
               <div
                 key={backup.id}
-                className="bg-[#111724] border border-[#1e293b] hover:border-indigo-500/40 rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-4 transition-all"
+                className="bg-panel border border-line hover:border-indigo-500/40 rounded-2xl p-5 shadow-sm flex flex-col justify-between space-y-4 transition-all"
               >
                 <div className="space-y-3">
                   {/* Card Top: Server & Type */}
@@ -446,7 +446,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                         <img
                           src={backup.guildIcon}
                           alt=""
-                          className="w-10 h-10 rounded-full object-cover shrink-0 border border-[#1e293b]"
+                          className="w-10 h-10 rounded-full object-cover shrink-0 border border-line"
                         />
                       ) : (
                         <div className="w-10 h-10 rounded-full bg-indigo-500/20 border border-indigo-500/40 flex items-center justify-center font-bold text-indigo-400 text-xs shrink-0">
@@ -465,7 +465,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
 
                     <button
                       onClick={() => handleDeleteBackup(backup)}
-                      className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-[#18181b] rounded-lg transition-colors cursor-pointer shrink-0"
+                      className="p-1.5 text-zinc-500 hover:text-rose-400 hover:bg-panel rounded-lg transition-colors cursor-pointer shrink-0"
                       title="Backup löschen"
                     >
                       <Trash2 className="w-4 h-4" />
@@ -508,15 +508,15 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
 
                   {/* Structure Stats */}
                   <div className="grid grid-cols-3 gap-2 text-[11px] font-semibold text-zinc-300">
-                    <div className="bg-[#12131a] border border-[#1e1f2b] p-2 rounded-xl flex items-center gap-1.5">
+                    <div className="bg-panel border border-[#1e1f2b] p-2 rounded-xl flex items-center gap-1.5">
                       <Hash className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                       <span>{backup.channelsCount} Kanäle</span>
                     </div>
-                    <div className="bg-[#12131a] border border-[#1e1f2b] p-2 rounded-xl flex items-center gap-1.5">
+                    <div className="bg-panel border border-[#1e1f2b] p-2 rounded-xl flex items-center gap-1.5">
                       <Shield className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                       <span>{backup.rolesCount} Rollen</span>
                     </div>
-                    <div className="bg-[#12131a] border border-[#1e1f2b] p-2 rounded-xl flex items-center gap-1.5">
+                    <div className="bg-panel border border-[#1e1f2b] p-2 rounded-xl flex items-center gap-1.5">
                       <Users className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                       <span>{backup.memberCount} User</span>
                     </div>
@@ -582,14 +582,14 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
 
                   <button
                     onClick={() => handleInspectBackup(backup)}
-                    className="col-span-1 py-2 bg-[#12131a] hover:bg-[#1e1f2b] text-zinc-300 hover:text-white border border-[#27272a] rounded-xl font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-1"
+                    className="col-span-1 py-2 bg-panel hover:bg-raised text-zinc-300 hover:text-white border border-line rounded-xl font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-1"
                   >
                     <Eye className="w-3.5 h-3.5 text-indigo-400" /> Details
                   </button>
 
                   <button
                     onClick={() => handleDownloadJson(backup.id)}
-                    className="col-span-1 py-2 bg-[#12131a] hover:bg-[#1e1f2b] text-zinc-300 hover:text-white border border-[#27272a] rounded-xl font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-1"
+                    className="col-span-1 py-2 bg-panel hover:bg-raised text-zinc-300 hover:text-white border border-line rounded-xl font-semibold text-xs transition-all cursor-pointer flex items-center justify-center gap-1"
                     title="Als JSON herunterladen"
                   >
                     <Download className="w-3.5 h-3.5 text-emerald-400" /> JSON
@@ -622,7 +622,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                 <select
                   value={createGuildId}
                   onChange={(e) => setCreateGuildId(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] text-zinc-200 rounded-xl p-2.5 outline-none focus:border-indigo-500 cursor-pointer"
+                  className="w-full bg-panel border border-line text-zinc-200 rounded-xl p-2.5 outline-none focus:border-indigo-500 cursor-pointer"
                 >
                   {guilds.map((g) => (
                     <option key={g.id} value={g.id}>
@@ -641,7 +641,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                   placeholder="z. B. Vollständiges Server-Backup vor Update"
                   value={createName}
                   onChange={(e) => setCreateName(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl px-3.5 py-2.5 outline-none"
+                  className="w-full bg-panel border border-line focus:border-indigo-500 text-zinc-100 rounded-xl px-3.5 py-2.5 outline-none"
                 />
               </div>
 
@@ -654,7 +654,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                   placeholder="Zusätzliche Infos zum Snapshot..."
                   value={createReason}
                   onChange={(e) => setCreateReason(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] focus:border-indigo-500 text-zinc-100 rounded-xl p-3 outline-none resize-none"
+                  className="w-full bg-panel border border-line focus:border-indigo-500 text-zinc-100 rounded-xl p-3 outline-none resize-none"
                 />
               </div>
 
@@ -701,7 +701,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
             </div>
 
             <div className="space-y-3 text-xs">
-              <div className="p-3 bg-[#12131a] border border-[#1e1f2b] rounded-xl flex items-center justify-between">
+              <div className="p-3 bg-panel border border-[#1e1f2b] rounded-xl flex items-center justify-between">
                 <div>
                   <p className="text-[10px] uppercase font-bold text-zinc-500">Ausgewähltes Backup</p>
                   <p className="font-bold text-white text-sm mt-0.5">{restoreModalBackup.backupName}</p>
@@ -716,7 +716,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                 <select
                   value={restoreTargetGuildId}
                   onChange={(e) => setRestoreTargetGuildId(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] text-zinc-200 rounded-xl p-2.5 outline-none focus:border-emerald-500 cursor-pointer"
+                  className="w-full bg-panel border border-line text-zinc-200 rounded-xl p-2.5 outline-none focus:border-emerald-500 cursor-pointer"
                 >
                   {guilds.map((g) => (
                     <option key={g.id} value={g.id}>
@@ -731,7 +731,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                   Module auswählen
                 </label>
 
-                <label className="flex items-center justify-between p-2.5 bg-[#12131a] border border-[#1e1f2b] rounded-xl cursor-pointer">
+                <label className="flex items-center justify-between p-2.5 bg-panel border border-[#1e1f2b] rounded-xl cursor-pointer">
                   <span className="font-semibold text-zinc-200">🛡️ Rollen wiederherstellen</span>
                   <input
                     type="checkbox"
@@ -741,7 +741,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                   />
                 </label>
 
-                <label className="flex items-center justify-between p-2.5 bg-[#12131a] border border-[#1e1f2b] rounded-xl cursor-pointer">
+                <label className="flex items-center justify-between p-2.5 bg-panel border border-[#1e1f2b] rounded-xl cursor-pointer">
                   <span className="font-semibold text-zinc-200">📁 Kategorien & Kanäle erstellen</span>
                   <input
                     type="checkbox"
@@ -754,7 +754,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                   />
                 </label>
 
-                <label className="flex items-center justify-between p-2.5 bg-[#12131a] border border-[#1e1f2b] rounded-xl cursor-pointer">
+                <label className="flex items-center justify-between p-2.5 bg-panel border border-[#1e1f2b] rounded-xl cursor-pointer">
                   <span className="font-semibold text-zinc-200">⚙️ Bot-Module (Tickets, Apps, Welcome etc.)</span>
                   <input
                     type="checkbox"
@@ -824,7 +824,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mt-2 max-h-44 overflow-y-auto p-1">
                   {inspectModalBackup.data?.categories?.map((cat: any) => (
-                    <div key={cat.id} className="p-2 rounded-lg bg-[#12131a] border border-[#1e1f2b]">
+                    <div key={cat.id} className="p-2 rounded-lg bg-panel border border-[#1e1f2b]">
                       <span className="font-bold text-white flex items-center gap-1.5">📁 {cat.name}</span>
                       <div className="pl-3 pt-1 space-y-0.5 text-zinc-400 text-[11px]">
                         {inspectModalBackup.data?.channels
@@ -874,25 +874,25 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                   Enthaltene Bot-Module
                 </h4>
                 <div className="grid grid-cols-2 gap-2 mt-2">
-                  <div className="p-2.5 bg-[#12131a] border border-[#1e1f2b] rounded-xl flex items-center justify-between">
+                  <div className="p-2.5 bg-panel border border-[#1e1f2b] rounded-xl flex items-center justify-between">
                     <span className="text-zinc-300">Ticket-System:</span>
                     <span className="font-mono font-bold text-white">
                       {inspectModalBackup.data?.databaseModules?.ticketPanels?.length || 0} Panels
                     </span>
                   </div>
-                  <div className="p-2.5 bg-[#12131a] border border-[#1e1f2b] rounded-xl flex items-center justify-between">
+                  <div className="p-2.5 bg-panel border border-[#1e1f2b] rounded-xl flex items-center justify-between">
                     <span className="text-zinc-300">Bewerbungs-System:</span>
                     <span className="font-mono font-bold text-white">
                       {inspectModalBackup.data?.databaseModules?.appForms?.length || 0} Formulare
                     </span>
                   </div>
-                  <div className="p-2.5 bg-[#12131a] border border-[#1e1f2b] rounded-xl flex items-center justify-between">
+                  <div className="p-2.5 bg-panel border border-[#1e1f2b] rounded-xl flex items-center justify-between">
                     <span className="text-zinc-300">Willkommens-Nachrichten:</span>
                     <span className="font-mono font-bold text-white">
                       {inspectModalBackup.data?.databaseModules?.welcomeSetting ? "Konfiguriert" : "Nein"}
                     </span>
                   </div>
-                  <div className="p-2.5 bg-[#12131a] border border-[#1e1f2b] rounded-xl flex items-center justify-between">
+                  <div className="p-2.5 bg-panel border border-[#1e1f2b] rounded-xl flex items-center justify-between">
                     <span className="text-zinc-300">Auto-Reaktionen:</span>
                     <span className="font-mono font-bold text-white">
                       {inspectModalBackup.data?.databaseModules?.autoReacts?.length || 0} Regeln
@@ -905,7 +905,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
             <div className="p-4 border-t border-[#1e1f2b] bg-[#08090e] flex items-center justify-end">
               <button
                 onClick={() => setInspectModalBackup(null)}
-                className="px-4 py-2 bg-[#12131a] hover:bg-[#1e1f2b] text-white rounded-xl text-xs font-semibold"
+                className="px-4 py-2 bg-panel hover:bg-raised text-white rounded-xl text-xs font-semibold"
               >
                 Schließen
               </button>
@@ -936,7 +936,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                   type="file"
                   accept=".json"
                   onChange={handleFileUpload}
-                  className="w-full bg-[#12131a] border border-[#27272a] text-zinc-200 text-xs rounded-xl p-2.5 outline-none file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white cursor-pointer"
+                  className="w-full bg-panel border border-line text-zinc-200 text-xs rounded-xl p-2.5 outline-none file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-emerald-600 file:text-white cursor-pointer"
                 />
               </div>
 
@@ -949,7 +949,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                   placeholder='{"guild": { ... }, "channels": [ ... ]}'
                   value={importJsonText}
                   onChange={(e) => setImportJsonText(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] focus:border-emerald-500 text-zinc-100 rounded-xl p-3 font-mono text-[10px] outline-none resize-none"
+                  className="w-full bg-panel border border-line focus:border-emerald-500 text-zinc-100 rounded-xl p-3 font-mono text-[10px] outline-none resize-none"
                 />
               </div>
 
@@ -962,7 +962,7 @@ export function BackupsView({ guilds, selectedGuildId, onRefreshGuilds }: Backup
                   placeholder="z. B. Importiertes Server-Backup"
                   value={importName}
                   onChange={(e) => setImportName(e.target.value)}
-                  className="w-full bg-[#12131a] border border-[#27272a] focus:border-emerald-500 text-zinc-100 rounded-xl px-3.5 py-2.5 outline-none"
+                  className="w-full bg-panel border border-line focus:border-emerald-500 text-zinc-100 rounded-xl px-3.5 py-2.5 outline-none"
                 />
               </div>
 

@@ -249,9 +249,9 @@ export function ServerCloneView({
   const selectedSourceGuild = guilds.find((g) => g.id === selectedSourceId);
 
   return (
-    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-[#0b0f17] text-slate-200">
+    <div className="flex-1 overflow-y-auto p-6 md:p-8 space-y-6 bg-canvas text-slate-200">
       {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-[#0d121c] border border-[#1e293b] shadow-sm">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 p-6 rounded-2xl bg-canvas border border-line shadow-sm">
         <div>
           <h2 className="text-xl font-bold text-white tracking-tight flex items-center gap-2.5">
             <div className="p-2.5 rounded-xl bg-indigo-500/10 text-indigo-400 border border-indigo-500/20">
@@ -268,7 +268,7 @@ export function ServerCloneView({
           <button
             onClick={fetchSourceSummary}
             disabled={loadingSummary}
-            className="flex items-center gap-2 px-3.5 py-2 bg-[#111724] hover:bg-[#1a253a] text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all border border-[#1e293b] cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-panel hover:bg-raised text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all border border-line cursor-pointer"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${loadingSummary ? "animate-spin text-indigo-400" : ""}`} />
             <span>Inventar aktualisieren</span>
@@ -277,7 +277,7 @@ export function ServerCloneView({
       </div>
 
       {/* Server Transfer Direction Header */}
-      <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center bg-[#111724] border border-[#1e293b] rounded-2xl p-5 shadow-sm">
+      <div className="grid grid-cols-1 md:grid-cols-11 gap-4 items-center bg-panel border border-line rounded-2xl p-5 shadow-sm">
         {/* Source Server Selector */}
         <div className="md:col-span-5 space-y-2">
           <label className="text-[10px] font-bold uppercase tracking-wider text-indigo-400 block">
@@ -293,7 +293,7 @@ export function ServerCloneView({
             <select
               value={selectedSourceId}
               onChange={(e) => setSelectedSourceId(e.target.value)}
-              className="w-full bg-[#0d121c] border border-[#1e293b] focus:border-indigo-500 text-white rounded-xl px-3.5 py-2.5 text-xs font-semibold outline-none cursor-pointer"
+              className="w-full bg-canvas border border-line focus:border-indigo-500 text-white rounded-xl px-3.5 py-2.5 text-xs font-semibold outline-none cursor-pointer"
             >
               {availableSourceGuilds.map((g) => (
                 <option key={g.id} value={g.id}>
@@ -319,7 +319,7 @@ export function ServerCloneView({
 
         {/* Direction Arrow */}
         <div className="md:col-span-1 flex justify-center py-2 md:py-0">
-          <div className="p-3 rounded-full bg-[#0d121c] border border-[#1e293b] text-indigo-400 shadow-sm">
+          <div className="p-3 rounded-full bg-canvas border border-line text-indigo-400 shadow-sm">
             <ArrowRight className="w-5 h-5" />
           </div>
         </div>
@@ -329,7 +329,7 @@ export function ServerCloneView({
           <label className="text-[10px] font-bold uppercase tracking-wider text-emerald-400 block">
             ZIEL-SERVER (Anwenden auf)
           </label>
-          <div className="flex items-center justify-between p-2.5 rounded-xl bg-[#0d121c] border border-emerald-500/30 text-white">
+          <div className="flex items-center justify-between p-2.5 rounded-xl bg-canvas border border-emerald-500/30 text-white">
             <div className="flex items-center gap-3">
               {currentTargetGuild?.icon ? (
                 <img src={currentTargetGuild.icon} alt="" className="w-7 h-7 rounded-full" />
@@ -366,28 +366,28 @@ export function ServerCloneView({
           <button
             type="button"
             onClick={() => applyPreset("tickets")}
-            className="flex items-center gap-2 px-3.5 py-2 bg-[#111724] hover:bg-[#1a253a] text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all border border-[#1e293b] cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-panel hover:bg-raised text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all border border-line cursor-pointer"
           >
             <Ticket className="w-3.5 h-3.5 text-indigo-400" /> Nur Tickets
           </button>
           <button
             type="button"
             onClick={() => applyPreset("apps")}
-            className="flex items-center gap-2 px-3.5 py-2 bg-[#111724] hover:bg-[#1a253a] text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all border border-[#1e293b] cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-panel hover:bg-raised text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all border border-line cursor-pointer"
           >
             <ClipboardList className="w-3.5 h-3.5 text-indigo-400" /> Nur Bewerbungen
           </button>
           <button
             type="button"
             onClick={() => applyPreset("messages")}
-            className="flex items-center gap-2 px-3.5 py-2 bg-[#111724] hover:bg-[#1a253a] text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all border border-[#1e293b] cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-panel hover:bg-raised text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all border border-line cursor-pointer"
           >
             <MessageSquareText className="w-3.5 h-3.5 text-indigo-400" /> Nur Nachrichten
           </button>
           <button
             type="button"
             onClick={() => applyPreset("welcome")}
-            className="flex items-center gap-2 px-3.5 py-2 bg-[#111724] hover:bg-[#1a253a] text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all border border-[#1e293b] cursor-pointer"
+            className="flex items-center gap-2 px-3.5 py-2 bg-panel hover:bg-raised text-slate-300 hover:text-white rounded-xl text-xs font-semibold transition-all border border-line cursor-pointer"
           >
             <Sparkles className="w-3.5 h-3.5 text-indigo-400" /> Nur Willkommen
           </button>
@@ -396,7 +396,7 @@ export function ServerCloneView({
 
       {/* Loading state */}
       {loadingSummary ? (
-        <div className="p-12 text-center bg-[#09090b] border border-[#1f1f23] rounded-2xl text-zinc-400 shadow-lg flex flex-col items-center justify-center gap-3">
+        <div className="p-12 text-center bg-canvas border border-[#1f1f23] rounded-2xl text-zinc-400 shadow-lg flex flex-col items-center justify-center gap-3">
           <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
           <p className="font-semibold text-sm text-zinc-200">Analyzing source server configurations...</p>
           <p className="text-xs text-zinc-500">Scanning ticket panels, application forms, messages, and settings</p>
@@ -406,8 +406,8 @@ export function ServerCloneView({
           {/* ========================================================= */}
           {/* 1. TICKETS MODULE CARD */}
           {/* ========================================================= */}
-          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg transition-all">
-            <div className="p-4 bg-[#0d0d11] border-b border-[#1f1f23] flex items-center justify-between">
+          <div className="bg-canvas border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg transition-all">
+            <div className="p-4 bg-canvas border-b border-[#1f1f23] flex items-center justify-between">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -443,7 +443,7 @@ export function ServerCloneView({
               <div className="p-5 space-y-4 text-xs">
                 {/* Setting toggle */}
                 {sourceSummary.tickets?.hasSettings && (
-                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-[#27272a] cursor-pointer">
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-line cursor-pointer">
                     <input
                       type="checkbox"
                       checked={ticketsIncludeSettings}
@@ -503,7 +503,7 @@ export function ServerCloneView({
                             className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                               isChecked
                                 ? "bg-indigo-600/10 border-indigo-500/40 text-white"
-                                : "bg-[#121217] border-[#27272a] hover:border-zinc-600 text-zinc-300"
+                                : "bg-[#121217] border-line hover:border-zinc-600 text-zinc-300"
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -537,8 +537,8 @@ export function ServerCloneView({
           {/* ========================================================= */}
           {/* 2. APPLICATIONS MODULE CARD */}
           {/* ========================================================= */}
-          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg transition-all">
-            <div className="p-4 bg-[#0d0d11] border-b border-[#1f1f23] flex items-center justify-between">
+          <div className="bg-canvas border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg transition-all">
+            <div className="p-4 bg-canvas border-b border-[#1f1f23] flex items-center justify-between">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -574,7 +574,7 @@ export function ServerCloneView({
               <div className="p-5 space-y-4 text-xs">
                 {/* Setting toggle */}
                 {sourceSummary.applications?.hasSettings && (
-                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-[#27272a] cursor-pointer">
+                  <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-line cursor-pointer">
                     <input
                       type="checkbox"
                       checked={appsIncludeSettings}
@@ -634,7 +634,7 @@ export function ServerCloneView({
                             className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                               isChecked
                                 ? "bg-indigo-600/10 border-indigo-500/40 text-white"
-                                : "bg-[#121217] border-[#27272a] hover:border-zinc-600 text-zinc-300"
+                                : "bg-[#121217] border-line hover:border-zinc-600 text-zinc-300"
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -666,8 +666,8 @@ export function ServerCloneView({
           {/* ========================================================= */}
           {/* 3. CUSTOM MESSAGES MODULE CARD */}
           {/* ========================================================= */}
-          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg transition-all">
-            <div className="p-4 bg-[#0d0d11] border-b border-[#1f1f23] flex items-center justify-between">
+          <div className="bg-canvas border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg transition-all">
+            <div className="p-4 bg-canvas border-b border-[#1f1f23] flex items-center justify-between">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -742,7 +742,7 @@ export function ServerCloneView({
                             className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                               isChecked
                                 ? "bg-indigo-600/10 border-indigo-500/40 text-white"
-                                : "bg-[#121217] border-[#27272a] hover:border-zinc-600 text-zinc-300"
+                                : "bg-[#121217] border-line hover:border-zinc-600 text-zinc-300"
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -776,8 +776,8 @@ export function ServerCloneView({
           {/* ========================================================= */}
           {/* 4. WELCOME & GOODBYES CARD */}
           {/* ========================================================= */}
-          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg transition-all">
-            <div className="p-4 bg-[#0d0d11] border-b border-[#1f1f23] flex items-center justify-between">
+          <div className="bg-canvas border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg transition-all">
+            <div className="p-4 bg-canvas border-b border-[#1f1f23] flex items-center justify-between">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -811,7 +811,7 @@ export function ServerCloneView({
 
             {expandedSections.welcome && moduleWelcome && (
               <div className="p-5 space-y-3 text-xs">
-                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-[#27272a] cursor-pointer">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-line cursor-pointer">
                   <input
                     type="checkbox"
                     checked={welcomeIncludeWelcome}
@@ -828,7 +828,7 @@ export function ServerCloneView({
                   </div>
                 </label>
 
-                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-[#27272a] cursor-pointer">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-line cursor-pointer">
                   <input
                     type="checkbox"
                     checked={welcomeIncludeLeave}
@@ -851,8 +851,8 @@ export function ServerCloneView({
           {/* ========================================================= */}
           {/* 5. AUTO REACTIONS CARD */}
           {/* ========================================================= */}
-          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg transition-all">
-            <div className="p-4 bg-[#0d0d11] border-b border-[#1f1f23] flex items-center justify-between">
+          <div className="bg-canvas border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg transition-all">
+            <div className="p-4 bg-canvas border-b border-[#1f1f23] flex items-center justify-between">
               <label className="flex items-center gap-3 cursor-pointer">
                 <input
                   type="checkbox"
@@ -927,7 +927,7 @@ export function ServerCloneView({
                             className={`flex items-center justify-between p-3 rounded-xl border cursor-pointer transition-all ${
                               isChecked
                                 ? "bg-indigo-600/10 border-indigo-500/40 text-white"
-                                : "bg-[#121217] border-[#27272a] hover:border-zinc-600 text-zinc-300"
+                                : "bg-[#121217] border-line hover:border-zinc-600 text-zinc-300"
                             }`}
                           >
                             <div className="flex items-center gap-3">
@@ -957,10 +957,10 @@ export function ServerCloneView({
           {/* ========================================================= */}
           {/* ADVANCED SMART MAPPING OPTIONS */}
           {/* ========================================================= */}
-          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg">
+          <div className="bg-canvas border border-[#1f1f23] rounded-2xl overflow-hidden shadow-lg">
             <div
               onClick={() => toggleSection("advanced")}
-              className="p-4 bg-[#0d0d11] border-b border-[#1f1f23] flex items-center justify-between cursor-pointer hover:bg-[#14141a] transition-colors"
+              className="p-4 bg-canvas border-b border-[#1f1f23] flex items-center justify-between cursor-pointer hover:bg-[#14141a] transition-colors"
             >
               <div className="flex items-center gap-2.5">
                 <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-400">
@@ -987,7 +987,7 @@ export function ServerCloneView({
                   </p>
                 </div>
 
-                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-[#27272a] cursor-pointer">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-line cursor-pointer">
                   <input
                     type="checkbox"
                     checked={createMissingRoles}
@@ -1002,7 +1002,7 @@ export function ServerCloneView({
                   </div>
                 </label>
 
-                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-[#27272a] cursor-pointer">
+                <label className="flex items-center gap-2.5 p-3 rounded-xl bg-[#121217] border border-line cursor-pointer">
                   <input
                     type="checkbox"
                     checked={createMissingChannels}
@@ -1023,7 +1023,7 @@ export function ServerCloneView({
           {/* ========================================================= */}
           {/* CLONE EXECUTION BANNER */}
           {/* ========================================================= */}
-          <div className="bg-[#09090b] border border-[#1f1f23] rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="bg-canvas border border-[#1f1f23] rounded-2xl p-5 shadow-xl flex flex-col sm:flex-row items-center justify-between gap-4">
             <div className="space-y-1">
               <p className="font-bold text-sm text-white flex items-center gap-2">
                 <Download className="w-4 h-4 text-indigo-400" />
@@ -1076,25 +1076,25 @@ export function ServerCloneView({
 
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                 {cloneResults.tickets && (
-                  <div className="p-2.5 bg-[#09090b] rounded-xl border border-emerald-500/20">
+                  <div className="p-2.5 bg-canvas rounded-xl border border-emerald-500/20">
                     <p className="font-bold text-white">{cloneResults.tickets.panelsCloned} Panels</p>
                     <p className="text-[10px] text-zinc-400">Tickets imported</p>
                   </div>
                 )}
                 {cloneResults.applications && (
-                  <div className="p-2.5 bg-[#09090b] rounded-xl border border-emerald-500/20">
+                  <div className="p-2.5 bg-canvas rounded-xl border border-emerald-500/20">
                     <p className="font-bold text-white">{cloneResults.applications.formsCloned} Forms</p>
                     <p className="text-[10px] text-zinc-400">Applications imported</p>
                   </div>
                 )}
                 {cloneResults.customMessages && (
-                  <div className="p-2.5 bg-[#09090b] rounded-xl border border-emerald-500/20">
+                  <div className="p-2.5 bg-canvas rounded-xl border border-emerald-500/20">
                     <p className="font-bold text-white">{cloneResults.customMessages.messagesCloned} Messages</p>
                     <p className="text-[10px] text-zinc-400">Custom messages imported</p>
                   </div>
                 )}
                 {cloneResults.autoReact && (
-                  <div className="p-2.5 bg-[#09090b] rounded-xl border border-emerald-500/20">
+                  <div className="p-2.5 bg-canvas rounded-xl border border-emerald-500/20">
                     <p className="font-bold text-white">{cloneResults.autoReact.rulesCloned} Rules</p>
                     <p className="text-[10px] text-zinc-400">Auto-reactions imported</p>
                   </div>
