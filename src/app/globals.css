@@ -887,7 +887,8 @@ body {
   min-height: 0;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   background: var(--gp-bg);
 }
 .gp-workspace-topbar {
