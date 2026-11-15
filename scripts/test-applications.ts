@@ -185,7 +185,8 @@ async function exercise(phase: string) {
     assert.equal(payload.components[0].toJSON().components[1].components[0].label, "Apply");
     return { id: nextId() };
   } });
-  global.fetch = async () => new Response("file");
+  let downloadAttempts = 0;
+  global.fetch = async () => { downloadAttempts++; throw new Error("Attachment downloads are unavailable"); };
   const intake = new (await import("discord.js")).Client({ intents: [] });
   setupApplicationDmMessages(intake);
   const onMessage = intake.listeners("messageCreate")[0];
@@ -239,7 +240,16 @@ async function exercise(phase: string) {
     assert.match(messageText(applicantDms.at(-1)), /Question 1 of 2/);
     await sendMessage("A".repeat(2000), [nextId(), nextId()]);
     await sendMessage("B".repeat(2000), [nextId()]);
-    assert.equal(await db.appFile.count(), 3);
+    assert.equal(await db.appFile.count(), 0, "New attachments are kept as links without local files");
+    assert.equal(downloadAttempts, 0);
+    const savedDraft = await db.appDmDraft.findFirstOrThrow({ where: { formId: form.id } });
+    assert.equal(JSON.parse(savedDraft.answers)[0].flatMap((entry: any) => entry.attachmentUrls).length, 3);
+    // Preserve coverage for attachments saved by earlier versions, including authenticated downloads.
+    const legacyFileId = nextId();
+    const fs = await import("node:fs/promises");
+    await fs.mkdir(join(directory!, "transcripts", "application-files"), { recursive: true });
+    await fs.writeFile(applicationFilePath(legacyFileId), "file");
+    await db.appFile.create({ data: { id: legacyFileId, draftId: savedDraft.id, position: 0, name: "legacy.png", size: 4 } });
     await db.appQuestion.update({ where: { id: "original-question" }, data: { label: "Edited after start", order: 2 } });
     await db.$disconnect();
     return;
@@ -267,8 +277,14 @@ async function exercise(phase: string) {
   await press("Skip question");
   assert.match(messageText(applicantDms.at(-1)), /Review · Question 2 of 2/);
   await press("Edit this answer");
+  const imageOnlyId = nextId();
+  await sendMessage("", [imageOnlyId]);
+  await press("Next question");
+  assert.match(messageText(applicantDms.at(-1)), new RegExp(imageOnlyId));
+  await press("Edit this answer");
   await sendMessage("An optional answer");
   await press("Next question");
+  assert.ok(!messageText(applicantDms.at(-1)).includes(imageOnlyId), "Replacing an answer clears its old links");
   reviewFails = true;
   const submit = applicantDms.at(-1);
   const submitId = button(submit, "Submit application");
@@ -312,12 +328,15 @@ async function exercise(phase: string) {
   assert.equal(initial.answers[0].questionLabel, "First question");
   assert.match(initial.answers[0].value, /After restart/);
   assert.equal(initial.answers[1].value, "An optional answer");
-  assert.equal(initial.files.length, 3);
-  assert.equal(reviewMessages.size, 2, "Long answers and three attachments are packed into two messages");
+  assert.equal(initial.files.length, 1, "Previously stored attachments remain available");
+  const linkedUrls = JSON.parse(draft.answers)[0].flatMap((entry: any) => entry.attachmentUrls);
+  for (const url of linkedUrls) assert.ok(initial.answers[0].value.includes(`<${url}>`));
+  assert.equal(reviewMessages.size, 2, "Long answers and attachment links are packed into two messages");
   assert.equal(initial.reviewMessageId, firstReviewId);
   assert.ok([...reviewMessages.values()].every(message => messageText(message).length <= 4000 &&
     componentList(message).length <= 40 && !message.allowedMentions.parse.length));
   const allReviewText = [...reviewMessages.values()].map(messageText).join("\n");
+  for (const url of linkedUrls) assert.ok(allReviewText.includes(`<${url}>`));
   for (const file of initial.files) assert.ok(allReviewText.includes(`[${file.name}](<`) && allReviewText.includes(`/files/${file.id}>)`));
   assert.equal((allReviewText.match(/A{10,}/g) || []).join("").length, 2000);
   assert.equal((allReviewText.match(/B{10,}/g) || []).join("").length, 2000);
@@ -455,9 +474,11 @@ async function exercise(phase: string) {
     assert.match(messageText(applicantDms.at(-1)), /active draft/);
     await press("Pause draft");
     await press("Reply", teamDm);
-    await sendMessage("This belongs to the submitted application");
+    const replyFileId = nextId();
+    await sendMessage("This belongs to the submitted application", [replyFileId]);
     assert.equal((await db.appFollowup.findFirstOrThrow({ where: { applicationId: app.id } })).answer,
-      "This belongs to the submitted application");
+      `This belongs to the submitted application\n<https://cdn.discordapp.com/attachments/test/${replyFileId}>`);
+    assert.equal(downloadAttempts, 0, "Drafts and follow-ups never download attachments");
     assert.equal((await db.application.findUniqueOrThrow({ where: { id: app.id } })).reviewMessageId, controlId);
   } finally {
     socket.disconnect();

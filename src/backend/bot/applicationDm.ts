@@ -6,14 +6,14 @@ import {
 import { discordClient } from "./client";
 import { applicationMessage, applicationMessageEdit } from "./applicationComponents";
 import { applicationDb as db, applicationMember, readStrings, reviewerRoles, serializeApplication } from "../services/applicationAccess";
-import { removeApplicationFiles, storeApplicationFiles } from "../services/applicationFiles";
+import { removeApplicationFiles } from "../services/applicationFiles";
 import {
   ApplicationError, appButton, appRow, applicationReplyReceived, deliverApplicationSubmission, privateReviewChannel,
   splitApplicationText, unknownDiscordMessage,
 } from "../services/applicationReview";
 import { checkUserCanApply, createApplicationSubmission, getAppFormById } from "../services/applicationService";
 
-type Answers = Record<number, { messageId: string; text: string }[]>;
+type Answers = Record<number, { messageId: string; text: string; attachmentUrls?: string[] }[]>;
 type Form = NonNullable<Awaited<ReturnType<typeof getAppFormById>>>;
 type PanelClick = ButtonInteraction | StringSelectMenuInteraction;
 const submittingPrompts = new Set<string>();
@@ -30,8 +30,10 @@ async function checkApplicant(form: Form, userId: string) {
 
 function draftQuestions(draft: AppDmDraft): AppQuestion[] { return JSON.parse(draft.questions); }
 function draftAnswers(draft: AppDmDraft): Answers { return JSON.parse(draft.answers); }
-function answerText(answers: Answers, step: number) {
-  return (answers[step] || []).map(entry => entry.text).filter(Boolean).join("\n");
+function answerText(answers: Answers, step: number, includeAttachments = true) {
+  return (answers[step] || []).flatMap(entry => [entry.text,
+    ...(includeAttachments ? (entry.attachmentUrls || []).map(url => `<${url}>`) : []),
+  ]).filter(Boolean).join("\n");
 }
 
 function draftAction(draft: AppDmDraft, action: string, label: string, style?: ButtonStyle, page?: number) {
@@ -295,7 +297,8 @@ async function changeDraft(interaction: ButtonInteraction, action: string, id: s
   const skip = action === "skip" && q && !q.required;
   if (action === "next" && q) {
     const count = await db.appFile.count({ where: { draftId: draft.id, position: draft.step } });
-    checkAnswer(q, answerText(answers, draft.step), count);
+    const linkedCount = (answers[draft.step] || []).reduce((total, entry) => total + (entry.attachmentUrls?.length || 0), 0);
+    checkAnswer(q, answerText(answers, draft.step, false), count + linkedCount);
   } else if (!replace && !skip && !(action === "clear" && q)) {
     throw new ApplicationError("This action is unavailable for the current question.");
   }
@@ -356,29 +359,21 @@ async function processDmMessage(message: Message) {
   const answers = draft ? draftAnswers(draft) : {};
   const entries = draft ? answers[draft.step] ?? [] : [];
   if (entries.some(entry => entry.messageId === message.id)) return;
-  const files = await storeApplicationFiles(message.attachments.values()).catch(() => {
-    throw new ApplicationError("An attachment could not be saved. Please resend the message.");
+  // Keep Discord's original links; receiving an answer must not depend on downloading its files.
+  const entry = { messageId: message.id, text: message.content, attachmentUrls: message.attachments.map(file => file.url) };
+  await db.$transaction(async tx => {
+    if (draft) {
+      answers[draft.step] = [...entries, entry];
+      await tx.appDmDraft.update({ where: { id: draft.id, revision: draft.revision }, data: { answers: JSON.stringify(answers) } });
+    } else if (followup) {
+      await tx.appFollowup.update({ where: { id: followup.id, answeredAt: null }, data: {
+        answer: answerText({ 0: [entry] }, 0), answeredAt: new Date(),
+      } });
+      await tx.appDmCursor.delete({ where: { userId: user.id, followupId: followup.id } });
+      await tx.appStatusHistory.create({ data: { applicationId: followup.applicationId, actorId: user.id,
+        actorTag: user.tag, status: "REPLY_RECEIVED", details: "Applicant replied to a team message." } });
+    }
   });
-  try {
-    await db.$transaction(async tx => {
-      if (draft) {
-        answers[draft.step] = [...entries, { messageId: message.id, text: message.content }];
-        await tx.appDmDraft.update({ where: { id: draft.id, revision: draft.revision }, data: { answers: JSON.stringify(answers) } });
-        if (files.length) await tx.appFile.createMany({ data: files.map(file => ({ ...file, draftId: draft.id, position: draft.step })) });
-      } else if (followup) {
-        await tx.appFollowup.update({ where: { id: followup.id, answeredAt: null }, data: { answer: message.content, answeredAt: new Date() } });
-        await tx.appDmCursor.delete({ where: { userId: user.id, followupId: followup.id } });
-        await tx.appStatusHistory.create({ data: { applicationId: followup.applicationId, actorId: user.id,
-          actorTag: user.tag, status: "REPLY_RECEIVED", details: "Applicant replied to a team message." } });
-        if (files.length) await tx.appFile.createMany({ data: files.map(file => ({
-          ...file, applicationId: followup.applicationId, followupId: followup.id, position: -1,
-        })) });
-      }
-    });
-  } catch (error) {
-    await removeApplicationFiles(files);
-    throw error;
-  }
   if (followup) {
     void applicationReplyReceived(followup.applicationId, member.guild).catch(console.error);
     await send(user, `Reply saved to application #${followup.application.appNumber}.`);
