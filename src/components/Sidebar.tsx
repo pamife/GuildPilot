@@ -42,6 +42,8 @@ export type ViewType =
   | "auto-react"
   | "counting"
   | "leveling"
+  | "moderation"
+  | "automod"
   | "custom-messages"
   | "applications"
   | "tickets"
@@ -196,6 +198,18 @@ export function Sidebar({
       id: "management-cat",
       label: "Server-Verwaltung",
       items: [
+        {
+          id: "moderation",
+          label: "Moderation",
+          description: "Mod-Log und Moderatorrollen",
+          icon: Shield,
+        },
+        {
+          id: "automod",
+          label: "AutoMod",
+          description: "Spam- und Einladungsfilter",
+          icon: Shield,
+        },
         {
           id: "members",
           label: "Mitglieder-Manager",

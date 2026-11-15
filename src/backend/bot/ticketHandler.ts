@@ -47,6 +47,7 @@ import { buildTicketPanelPayload } from "./ticketComponentBuilder";
 import { TicketTypeConfig, TicketPanelComponentItem } from "../types/ticketComponentTypes";
 import { countingCommand } from "./countingHandler";
 import { levelingCommands } from "./levelingHandler";
+import { moderationCommands } from "./moderationHandler";
 
 // Register Slash Commands globally for bot
 export async function registerSlashCommands(client: Client) {
@@ -86,7 +87,7 @@ export async function registerSlashCommands(client: Client) {
     );
 
   try {
-    const results = await Promise.allSettled([ticketCommand, closeRequestCommand, countingCommand, ...levelingCommands].map((command) =>
+    const results = await Promise.allSettled([ticketCommand, closeRequestCommand, countingCommand, ...levelingCommands, ...moderationCommands].map((command) =>
       client.application.commands.create(command.toJSON())
     ));
     for (const result of results) {

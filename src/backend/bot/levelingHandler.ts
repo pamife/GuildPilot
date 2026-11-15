@@ -1,6 +1,6 @@
 import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, Client, ComponentType, ContainerBuilder,
-  escapeMarkdown, Events, Guild, InteractionContextType, MessageFlags, MessageType,
+  escapeMarkdown, Events, Guild, InteractionContextType, Message, MessageFlags, MessageType,
   PermissionFlagsBits, SectionBuilder, SlashCommandBuilder, TextDisplayBuilder, ThumbnailBuilder,
 } from "discord.js";
 import { levelProgress, Ranking } from "../../types/leveling";
@@ -48,45 +48,45 @@ async function leaderboardCard(guild: Guild, ranking: Ranking, requestedPage: nu
   return container;
 }
 
-export function setupLevelingInteractions(client: Client) {
-  client.on(Events.MessageCreate, async (message) => {
-    if (!message.inGuild() || message.author.bot || message.webhookId
-      || (message.type !== MessageType.Default && message.type !== MessageType.Reply)) return;
-    try {
-      const award = await awardChatXp({
-        guildId: message.guildId, channelId: message.channelId, userId: message.author.id,
-        parentId: message.channel.isThread() ? message.channel.parentId : null,
-        messageId: message.id, timestamp: message.createdAt,
-      });
-      if (!award) return;
+export async function handleLevelingMessage(message: Message) {
+  if (!message.inGuild() || message.author.bot || message.webhookId
+    || (message.type !== MessageType.Default && message.type !== MessageType.Reply)) return;
+  try {
+    const award = await awardChatXp({
+      guildId: message.guildId, channelId: message.channelId, userId: message.author.id,
+      parentId: message.channel.isThread() ? message.channel.parentId : null,
+      messageId: message.id, timestamp: message.createdAt,
+    });
+    if (!award) return;
 
-      if (award.settings.rewards.length && (!message.member
-        || needsRewardSync(message.member, award.settings.rewards, award.level, award.settings.highestOnly))) {
-        try {
-          await syncLevelRewards(message.member ?? await message.guild.members.fetch(message.author.id));
-        } catch (error) {
-          console.warn("[Leveling] Could not sync reward roles:", error);
-        }
+    if (award.settings.rewards.length && (!message.member
+      || needsRewardSync(message.member, award.settings.rewards, award.level, award.settings.highestOnly))) {
+      try {
+        await syncLevelRewards(message.member ?? await message.guild.members.fetch(message.author.id));
+      } catch (error) {
+        console.warn("[Leveling] Could not sync reward roles:", error);
       }
-      if (award.settings.announce && award.level > award.previousLevel) {
-        const channel = award.settings.announcementId
-          ? await message.guild.channels.fetch(award.settings.announcementId) : message.channel;
-        if (!channel?.isSendable()) throw new Error("The level-up channel is unavailable.");
-        const permissions = channel.permissionsFor(await message.guild.members.fetchMe());
-        const send = channel.isThread() ? PermissionFlagsBits.SendMessagesInThreads : PermissionFlagsBits.SendMessages;
-        if (!permissions?.has([PermissionFlagsBits.ViewChannel, send])) {
-          throw new Error(`The bot cannot view or send messages in level-up channel ${channel.id}.`);
-        }
-        await channel.send({
-          flags: componentsV2, allowedMentions: mentions,
-          components: [levelingCard(`<@${message.author.id}> reached **Level ${award.level}**!`)],
-        });
-      }
-    } catch (error) {
-      console.error("[Leveling] Could not process chat message:", error);
     }
-  });
+    if (award.settings.announce && award.level > award.previousLevel) {
+      const channel = award.settings.announcementId
+        ? await message.guild.channels.fetch(award.settings.announcementId) : message.channel;
+      if (!channel?.isSendable()) throw new Error("The level-up channel is unavailable.");
+      const permissions = channel.permissionsFor(await message.guild.members.fetchMe());
+      const send = channel.isThread() ? PermissionFlagsBits.SendMessagesInThreads : PermissionFlagsBits.SendMessages;
+      if (!permissions?.has([PermissionFlagsBits.ViewChannel, send])) {
+        throw new Error(`The bot cannot view or send messages in level-up channel ${channel.id}.`);
+      }
+      await channel.send({
+        flags: componentsV2, allowedMentions: mentions,
+        components: [levelingCard(`<@${message.author.id}> reached **Level ${award.level}**!`)],
+      });
+    }
+  } catch (error) {
+    console.error("[Leveling] Could not process chat message:", error);
+  }
+}
 
+export function setupLevelingInteractions(client: Client) {
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.guild || !interaction.inCachedGuild()) return;
     const guild = interaction.guild;

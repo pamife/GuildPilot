@@ -55,6 +55,43 @@ model LevelingMessage {
   messageId String @id
 }
 
+model ModerationSettings {
+  guildId        String  @id
+  logChannelId   String?
+  reviewRoleIds  String  @default("[]")
+  timeoutRoleIds String  @default("[]")
+}
+
+model AutoModSettings {
+  guildId String @id
+  rules   String
+}
+
+model ModerationCaseSequence {
+  guildId    String @id
+  lastNumber Int
+}
+
+model ModerationCase {
+  guildId            String
+  number             Int
+  sourceId           String   @unique
+  targetId           String
+  action             String
+  reason             String
+  moderatorId        String?
+  ruleIds            String?
+  durationSeconds    Int?
+  timeoutUntil       DateTime?
+  reversesCaseNumber Int?
+  status             String   @default("pending")
+  error              String?
+  createdAt          DateTime @default(now())
+
+  @@id([guildId, number])
+  @@index([guildId, targetId, number])
+}
+
 model Template {
   id          String   @id @default(uuid())
   name        String

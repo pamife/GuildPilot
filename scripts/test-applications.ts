@@ -189,11 +189,14 @@ async function exercise(phase: string) {
   global.fetch = async () => { downloadAttempts++; throw new Error("Attachment downloads are unavailable"); };
   const intake = new (await import("discord.js")).Client({ intents: [] });
   setupApplicationDmMessages(intake);
-  const onMessage = intake.listeners("messageCreate")[0];
+  const { setupGuildMessageHandler } = await import("../src/backend/bot/guildMessageHandler");
+  setupGuildMessageHandler(intake);
+  const listeners = intake.listeners("messageCreate");
 
   const sendMessage = async (content: string, ids: string[] = []) => {
     const attachments = new Collection(ids.map(id => [id, { id, name: `${id}.png`, size: 4, url: `https://cdn.discordapp.com/attachments/test/${id}` }]));
-    await onMessage({ content, id: nextId(), author: applicant, channel: { type: ChannelType.DM }, attachments });
+    const message = { content, id: nextId(), guildId: null, author: applicant, channel: { type: ChannelType.DM }, attachments };
+    await Promise.all(listeners.map(listener => listener(message)));
   };
   const press = async (label: string, message = applicantDms.at(-1)) => {
     const interaction = apply("", "start", false, message.id);

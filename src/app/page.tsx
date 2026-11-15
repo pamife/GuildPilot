@@ -23,6 +23,7 @@ import { WelcomeView } from "@/components/views/WelcomeView";
 import { AutoReactView } from "@/components/views/AutoReactView";
 import { CountingView } from "@/components/views/CountingView";
 import { LevelingView } from "@/components/views/LevelingView";
+import { AutoModView, ModerationView } from "@/components/views/ModerationView";
 import { ServerCloneView } from "@/components/views/ServerCloneView";
 import { MemberManagerView } from "@/components/views/MemberManagerView";
 import { BackupsView } from "@/components/views/BackupsView";
@@ -632,6 +633,12 @@ function DashboardContent() {
             botStatus={botStatus}
             guilds={guilds}
           />
+        )}
+        {currentView === "moderation" && selectedGuildId && (
+          <ModerationView key={selectedGuildId} guildId={selectedGuildId} channels={channels} roles={roles} />
+        )}
+        {currentView === "automod" && selectedGuildId && (
+          <AutoModView key={selectedGuildId} guildId={selectedGuildId} channels={channels} roles={roles} />
         )}
         {currentView === "applications" && (
           <ApplicationsView

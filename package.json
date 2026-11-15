@@ -18,7 +18,8 @@
     "test:security": "tsx scripts/test-security.ts",
     "test:counting": "tsx scripts/test-counting.ts",
     "test:leveling": "tsx scripts/test-leveling.ts",
-    "test:applications": "tsx scripts/test-applications.ts"
+    "test:applications": "tsx scripts/test-applications.ts",
+    "test:moderation": "tsx scripts/test-moderation.ts"
   },
   "keywords": [
     "discord",

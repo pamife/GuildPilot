@@ -12,6 +12,7 @@ import {
   GatewayIntentBits,
   Guild,
   InteractionContextType,
+  Message,
   MessageFlags,
   PermissionFlagsBits,
   RESTJSONErrorCodes,
@@ -153,42 +154,42 @@ export function setupCountingInteractions(client: Client) {
       await reply.catch((err) => console.warn("[Relay Count] Failed to report command error:", err));
     }
   });
+}
 
-  client.on("messageCreate", async (message) => {
-    if (!message.guildId || message.channel.type !== ChannelType.GuildText ||
-      message.author.bot || message.webhookId || message.system) return;
+export async function handleCountingMessage(message: Message) {
+  if (!message.guildId || message.channel.type !== ChannelType.GuildText ||
+    message.author.bot || message.webhookId || message.system) return;
 
-    try {
-      const result = await processCountingMessage({
-        guildId: message.guildId,
-        channelId: message.channelId,
-        messageId: message.id,
-        playerId: message.author.id,
-        content: message.content,
-      });
-      if (!result) return;
-      notifyCountingChanged(message.guildId);
+  try {
+    const result = await processCountingMessage({
+      guildId: message.guildId,
+      channelId: message.channelId,
+      messageId: message.id,
+      playerId: message.author.id,
+      content: message.content,
+    });
+    if (!result) return;
+    notifyCountingChanged(message.guildId);
 
-      const valid = result.outcome === "valid" || result.outcome === "earned";
-      const effects: Promise<unknown>[] = [message.react(valid ? "✅" : "❌")];
-      const notice = {
-        valid: null,
-        earned: "🤝 Five counters, one clean relay. Your next mistake is covered.",
-        saved: `🛟 Relay Save used! The next number is still **${result.nextNumber}**.`,
-        reset: "❌ The run ended. Start again at **1**.",
-      }[result.outcome];
+    const valid = result.outcome === "valid" || result.outcome === "earned";
+    const effects: Promise<unknown>[] = [message.react(valid ? "✅" : "❌")];
+    const notice = {
+      valid: null,
+      earned: "🤝 Five counters, one clean relay. Your next mistake is covered.",
+      saved: `🛟 Relay Save used! The next number is still **${result.nextNumber}**.`,
+      reset: "❌ The run ended. Start again at **1**.",
+    }[result.outcome];
 
-      if (notice) {
-        effects.push(message.channel.send({
-          flags: MessageFlags.IsComponentsV2,
-          components: [card(notice)],
-        }));
-      }
-      for (const effect of await Promise.allSettled(effects)) {
-        if (effect.status === "rejected") console.warn("[Relay Count] Discord feedback failed:", effect.reason);
-      }
-    } catch (error) {
-      console.error("[Relay Count] Failed to process message:", error);
+    if (notice) {
+      effects.push(message.channel.send({
+        flags: MessageFlags.IsComponentsV2,
+        components: [card(notice)],
+      }));
     }
-  });
+    for (const effect of await Promise.allSettled(effects)) {
+      if (effect.status === "rejected") console.warn("[Relay Count] Discord feedback failed:", effect.reason);
+    }
+  } catch (error) {
+    console.error("[Relay Count] Failed to process message:", error);
+  }
 }
