@@ -132,7 +132,7 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
     embedAuthorUrl: "",
     thumbnail: "",
     image: "",
-    footer: "GuildPilot Self Roles",
+    footer: "pa_mife Self Roles",
     footerIcon: "",
     showTimestamp: false,
     embedFields: "[]",
@@ -206,7 +206,7 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
       embedAuthorUrl: "",
       thumbnail: "",
       image: "",
-      footer: "GuildPilot Self Roles",
+      footer: "pa_mife Self Roles",
       footerIcon: "",
       showTimestamp: false,
       embedFields: "[]",
@@ -831,7 +831,7 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
                       value={formData.footer || ""}
                       onChange={(e) => setFormData({ ...formData, footer: e.target.value })}
                       className="w-full bg-panel border border-line focus:border-indigo-500 rounded-xl p-3 text-xs text-white outline-none"
-                      placeholder="GuildPilot Self Roles"
+                      placeholder="pa_mife Self Roles"
                     />
                   </div>
 

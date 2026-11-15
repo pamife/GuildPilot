@@ -139,7 +139,7 @@ export async function getGuildDetails(guildId: string) {
     },
     botStatus: {
       ready: isBotReady(),
-      tag: discordClient.user?.tag || "TheGodGen Bot",
+      tag: discordClient.user?.tag || "pa_mife",
       ping: discordClient.ws.ping,
       uptime: discordClient.uptime,
     },

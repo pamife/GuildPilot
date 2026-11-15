@@ -169,7 +169,7 @@ export async function updateMemberNickname(guildId: string, memberId: string, ni
   if (!member) throw new Error("Member not found.");
 
   const cleanNick = nickname && nickname.trim().length > 0 ? nickname.trim() : null;
-  await member.setNickname(cleanNick, "Updated via GuildPilot Dashboard");
+  await member.setNickname(cleanNick, "Updated via pa_mife Dashboard");
 
   return formatMember(member, guild.ownerId);
 }
@@ -191,7 +191,7 @@ export async function updateMemberRoles(guildId: string, memberId: string, roleI
   // Unique merged role IDs
   const finalRoleIds = Array.from(new Set([...roleIds, ...unmanageableRoles]));
 
-  await member.roles.set(finalRoleIds, "Updated via GuildPilot Dashboard");
+  await member.roles.set(finalRoleIds, "Updated via pa_mife Dashboard");
 
   return formatMember(member, guild.ownerId);
 }
@@ -204,7 +204,7 @@ export async function addRoleToMember(guildId: string, memberId: string, roleId:
   const member = await guild.members.fetch(memberId);
   if (!member) throw new Error("Member not found.");
 
-  await member.roles.add(roleId, "Added via GuildPilot Dashboard");
+  await member.roles.add(roleId, "Added via pa_mife Dashboard");
   return formatMember(member, guild.ownerId);
 }
 
@@ -216,7 +216,7 @@ export async function removeRoleFromMember(guildId: string, memberId: string, ro
   const member = await guild.members.fetch(memberId);
   if (!member) throw new Error("Member not found.");
 
-  await member.roles.remove(roleId, "Removed via GuildPilot Dashboard");
+  await member.roles.remove(roleId, "Removed via pa_mife Dashboard");
   return formatMember(member, guild.ownerId);
 }
 
@@ -234,10 +234,10 @@ export async function timeoutMember(
   if (!member) throw new Error("Member not found.");
 
   if (durationMinutes <= 0) {
-    await member.timeout(null, reason || "Timeout removed via GuildPilot Dashboard");
+    await member.timeout(null, reason || "Timeout removed via pa_mife Dashboard");
   } else {
     const ms = durationMinutes * 60 * 1000;
-    await member.timeout(ms, reason || "Timed out via GuildPilot Dashboard");
+    await member.timeout(ms, reason || "Timed out via pa_mife Dashboard");
   }
 
   return formatMember(member, guild.ownerId);
@@ -251,7 +251,7 @@ export async function kickMember(guildId: string, memberId: string, reason?: str
   const member = await guild.members.fetch(memberId);
   if (!member) throw new Error("Member not found.");
 
-  await member.kick(reason || "Kicked via GuildPilot Dashboard");
+  await member.kick(reason || "Kicked via pa_mife Dashboard");
   return { success: true, memberId };
 }
 
@@ -267,7 +267,7 @@ export async function banMember(
 
   await guild.members.ban(memberId, {
     deleteMessageSeconds: deleteMessageSeconds,
-    reason: reason || "Banned via GuildPilot Dashboard",
+    reason: reason || "Banned via pa_mife Dashboard",
   });
 
   return { success: true, memberId };
@@ -278,7 +278,7 @@ export async function unbanMember(guildId: string, userId: string, reason?: stri
   const guild = discordClient.guilds.cache.get(guildId);
   if (!guild) throw new Error("Guild not found.");
 
-  await guild.members.unban(userId, reason || "Unbanned via GuildPilot Dashboard");
+  await guild.members.unban(userId, reason || "Unbanned via pa_mife Dashboard");
   return { success: true, userId };
 }
 
@@ -328,17 +328,17 @@ export async function manageMemberVoice(
   if (!member.voice.channel) throw new Error("Nutzer ist in keinem Sprachkanal.");
 
   if (action === "disconnect") {
-    await member.voice.disconnect("Disconnected via GuildPilot Dashboard");
+    await member.voice.disconnect("Disconnected via pa_mife Dashboard");
   } else if (action === "mute") {
-    await member.voice.setMute(true, "Muted via GuildPilot Dashboard");
+    await member.voice.setMute(true, "Muted via pa_mife Dashboard");
   } else if (action === "unmute") {
-    await member.voice.setMute(false, "Unmuted via GuildPilot Dashboard");
+    await member.voice.setMute(false, "Unmuted via pa_mife Dashboard");
   } else if (action === "deaf") {
-    await member.voice.setDeaf(true, "Deafened via GuildPilot Dashboard");
+    await member.voice.setDeaf(true, "Deafened via pa_mife Dashboard");
   } else if (action === "undeaf") {
-    await member.voice.setDeaf(false, "Undeafened via GuildPilot Dashboard");
+    await member.voice.setDeaf(false, "Undeafened via pa_mife Dashboard");
   } else if (action === "move" && targetChannelId) {
-    await member.voice.setChannel(targetChannelId, "Moved via GuildPilot Dashboard");
+    await member.voice.setChannel(targetChannelId, "Moved via pa_mife Dashboard");
   }
 
   return formatMember(member, guild.ownerId);

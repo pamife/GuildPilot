@@ -82,7 +82,7 @@ export function LoginView({ authWarning, authError }: LoginViewProps) {
         </div>
         <div
           className="gp-login-visual"
-          aria-label="Vorschau der GuildPilot-Funktionen"
+          aria-label="Vorschau der pa_mife-Funktionen"
         >
           <div className="gp-orbit gp-orbit-one" />
           <div className="gp-orbit gp-orbit-two" />
@@ -158,7 +158,7 @@ export function LoginView({ authWarning, authError }: LoginViewProps) {
             </span>
             <div>
               <strong>Weniger Klicks. Mehr Community.</strong>
-              <span>Das ist GuildPilot.</span>
+              <span>Das ist pa_mife.</span>
             </div>
           </div>
         </div>
@@ -193,7 +193,7 @@ export function LoginView({ authWarning, authError }: LoginViewProps) {
         </section>
       </main>
       <footer className="gp-public-footer">
-        <span>GuildPilot · Für deine Community gebaut.</span>
+        <span>pa_mife · Für deine Community gebaut.</span>
         <span>Dein Server. Deine Regeln.</span>
       </footer>
     </div>

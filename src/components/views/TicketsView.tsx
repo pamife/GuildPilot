@@ -139,13 +139,13 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
     embedColor: "#5865F2",
     thumbnail: "",
     image: "",
-    footer: "TheGodGen Ticket Engine",
+    footer: "pa_mife Ticket Engine",
     welcomeTitle: "👋 Welcome to your support ticket!",
     welcomeDescription: "A member of our support staff will be with you shortly. Please describe your request in detail.",
     welcomeColor: "#5865F2",
     welcomeThumbnail: "",
     welcomeImage: "",
-    welcomeFooter: "TheGodGen Ticket Engine",
+    welcomeFooter: "pa_mife Ticket Engine",
     reasons: [] as TicketReason[],
     questions: [] as IntakeQuestion[],
     channelId: "",
@@ -508,7 +508,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
         channels={channels}
         roles={roles}
         categories={categories}
-        botStatus={{ ready: true, tag: "GuildPilot Bot", ping: 0 }}
+        botStatus={{ ready: true, tag: "pa_mife", ping: 0 }}
         onSaveComplete={() => {
           setIsBuilderOpen(false);
           setBuilderPanel(null);
@@ -2351,7 +2351,7 @@ export function TicketsView({ selectedGuildId, channels, roles, guilds = [] }: T
                     </div>
                     <div>
                       <span className="text-xs font-bold text-white flex items-center gap-1">
-                        TheGodGen Bot <span className="bg-discord-brand text-white text-[9px] px-1 rounded font-semibold">BOT</span>
+                        pa_mife <span className="bg-discord-brand text-white text-[9px] px-1 rounded font-semibold">BOT</span>
                       </span>
                       <span className="text-[10px] text-zinc-500">Today at 12:00 PM</span>
                     </div>

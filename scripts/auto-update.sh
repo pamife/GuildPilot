@@ -93,7 +93,7 @@ send_discord_notification() {
       "description": "${description}",
       "color": ${color},
       "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-      "footer": { "text": "TheGodGen Auto-Sync Engine" }
+      "footer": { "text": "pa_mife Auto-Sync Engine" }
     }
   ]
 }
@@ -226,7 +226,7 @@ cat <<EOF > "${UPDATE_JSON}"
   "commit": "${FINAL_COMMIT}",
   "commitShort": "${FINAL_COMMIT:0:7}",
   "timestamp": "$(date -u +"%Y-%m-%dT%H:%M:%SZ")",
-  "title": "GuildPilot Server Aktualisiert & Neu Kompiliert",
+  "title": "pa_mife Server Aktualisiert & Neu Kompiliert",
   "message": "Server erfolgreich auf den neuesten Stand gebracht und neu gebaut (Commit: ${FINAL_COMMIT:0:7})",
   "status": "success",
   "unread": true
@@ -237,7 +237,7 @@ curl -H "Content-Type: application/json" -X POST -d @"${UPDATE_JSON}" http://loc
 report_progress 6 6 100 "Update & Build erfolgreich abgeschlossen!" "✅ UPDATE & BUILD ERFOLGREICH ABGESCHLOSSEN!" "success"
 
 send_discord_notification \
-  "✅ GuildPilot Updated & Built Successfully" \
+  "✅ pa_mife Updated & Built Successfully" \
   "**Commit:** \`${FINAL_COMMIT:0:7}\`\n**Backend Health:** HTTP ${HEALTH_BACKEND}\n**Frontend Health:** HTTP ${HEALTH_FRONTEND}" \
   65280
 

@@ -126,7 +126,7 @@ export function notifyUpdate(payload: Partial<UpdateNotification>): UpdateNotifi
     commit: payload.commit || "unknown",
     commitShort: payload.commitShort || payload.commit?.substring(0, 7) || "latest",
     timestamp: payload.timestamp || new Date().toISOString(),
-    title: payload.title || "GuildPilot Updated",
+    title: payload.title || "pa_mife Updated",
     message: payload.message || "Server pulled and installed latest update from GitHub.",
     status: payload.status || "success",
     unread: payload.unread !== undefined ? payload.unread : true,

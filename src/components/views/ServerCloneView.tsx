@@ -287,7 +287,7 @@ export function ServerCloneView({
           {availableSourceGuilds.length === 0 ? (
             <div className="p-3 bg-amber-500/10 border border-amber-500/20 rounded-xl text-amber-300 text-xs flex items-center gap-2">
               <AlertCircle className="w-4 h-4 shrink-0" />
-              Kein anderer Discord-Server gefunden. Füge GuildPilot zuerst zu einem anderen Server hinzu!
+              Kein anderer Discord-Server gefunden. Füge pa_mife zuerst zu einem anderen Server hinzu!
             </div>
           ) : (
             <select

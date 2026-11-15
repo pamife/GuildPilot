@@ -1,6 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { discordClient } from "../bot/client";
 import { applicationDb as prisma, readStrings, reviewerRoles } from "./applicationAccess";
+import { withBrandedPanelFooters } from "./panelBranding";
 
 
 // ==========================================
@@ -8,7 +9,7 @@ import { applicationDb as prisma, readStrings, reviewerRoles } from "./applicati
 // ==========================================
 
 export async function getAppPanels(guildId: string) {
-  return await prisma.appPanel.findMany({
+  const panels = await prisma.appPanel.findMany({
     where: { guildId },
     include: {
       forms: {
@@ -19,10 +20,11 @@ export async function getAppPanels(guildId: string) {
     },
     orderBy: { createdAt: "desc" },
   });
+  return panels.map(withBrandedPanelFooters);
 }
 
 export async function getAppPanelById(panelId: string) {
-  return await prisma.appPanel.findUnique({
+  const panel = await prisma.appPanel.findUnique({
     where: { id: panelId },
     include: {
       forms: {
@@ -32,6 +34,7 @@ export async function getAppPanelById(panelId: string) {
       },
     },
   });
+  return panel && withBrandedPanelFooters(panel);
 }
 
 export async function createAppPanel(guildId: string, data: any) {
@@ -46,7 +49,8 @@ export async function createAppPanel(guildId: string, data: any) {
       embedColor: data.embedColor || "#5865F2",
       thumbnail: data.thumbnail || null,
       image: data.image || null,
-      footer: data.footer || "GuildPilot Applications System",
+      footer: data.footer || "pa_mife Applications System",
+      dmFooter: "pa_mife Application System",
       welcomeTitle: data.welcomeTitle || "👋 Application Submitted!",
       welcomeDescription: data.welcomeDescription || "Your application has been received.",
       welcomeColor: data.welcomeColor || "#5865F2",
@@ -54,7 +58,7 @@ export async function createAppPanel(guildId: string, data: any) {
       denyEmbedColor: data.denyEmbedColor || "#F23F43",
       welcomeThumbnail: data.welcomeThumbnail || null,
       welcomeImage: data.welcomeImage || null,
-      welcomeFooter: data.welcomeFooter || "GuildPilot Applications System",
+      welcomeFooter: data.welcomeFooter || "pa_mife Applications System",
       channelId: data.channelId || null,
     },
     include: { forms: true },
@@ -67,11 +71,12 @@ export async function updateAppPanel(panelId: string, data: any) {
   delete payload.guildId;
   delete payload.forms;
 
-  return await prisma.appPanel.update({
+  const panel = await prisma.appPanel.update({
     where: { id: panelId },
     data: payload,
     include: { forms: true },
   });
+  return withBrandedPanelFooters(panel);
 }
 
 export async function deleteAppPanel(panelId: string) {
@@ -81,7 +86,7 @@ export async function deleteAppPanel(panelId: string) {
 }
 
 export async function getAppForms(guildId: string) {
-  return await prisma.appForm.findMany({
+  const forms = await prisma.appForm.findMany({
     where: { guildId },
     include: {
       panel: true,
@@ -94,10 +99,11 @@ export async function getAppForms(guildId: string) {
     },
     orderBy: { createdAt: "desc" },
   });
+  return forms.map(withBrandedPanelFooters);
 }
 
 export async function getAppFormById(formId: string) {
-  return await prisma.appForm.findUnique({
+  const form = await prisma.appForm.findUnique({
     where: { id: formId },
     include: {
       panel: true,
@@ -106,6 +112,7 @@ export async function getAppFormById(formId: string) {
       },
     },
   });
+  return form && withBrandedPanelFooters(form);
 }
 
 export async function createAppForm(guildId: string, data: any) {
@@ -123,7 +130,9 @@ export async function createAppForm(guildId: string, data: any) {
       embedColor: data.embedColor || "#5865F2",
       thumbnail: data.thumbnail || null,
       image: data.image || null,
-      footer: data.footer || "GuildPilot Applications System",
+      footer: data.footer || "pa_mife Applications System",
+      dmFooter: "pa_mife Application System",
+      welcomeFooter: "pa_mife Applications System",
       buttonText: data.buttonText || "Apply Now",
       buttonEmoji: data.buttonEmoji || "📝",
       buttonColor: data.buttonColor || "Primary",
@@ -166,7 +175,7 @@ export async function updateAppForm(formId: string, data: any) {
   delete payload.questions;
   delete payload._count;
 
-  return await prisma.appForm.update({
+  const form = await prisma.appForm.update({
     where: { id: formId },
     data: payload,
     include: {
@@ -175,6 +184,7 @@ export async function updateAppForm(formId: string, data: any) {
       },
     },
   });
+  return withBrandedPanelFooters(form);
 }
 
 export async function deleteAppForm(formId: string) {

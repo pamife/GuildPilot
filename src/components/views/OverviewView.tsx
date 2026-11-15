@@ -449,7 +449,7 @@ export function OverviewView({
           </button>
         </div>
         <footer className="gp-workspace-footer">
-          <span>GuildPilot · Dein Server. Deine Regeln.</span>
+          <span>pa_mife · Dein Server. Deine Regeln.</span>
           <span>Mit deiner Community verbunden.</span>
         </footer>
       </div>

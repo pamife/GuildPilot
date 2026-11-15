@@ -1984,7 +1984,7 @@ export function CustomMessagesView({
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="text-sm font-bold text-white hover:underline cursor-pointer">
-                          {botStatus?.tag?.split("#")[0] || "GuildPilot"}
+                          {botStatus?.tag?.split("#")[0] || "pa_mife"}
                         </span>
                         <span className="bg-[#5865F2] text-[10px] text-white px-1 py-0.2 rounded font-bold uppercase tracking-wide">
                           APP

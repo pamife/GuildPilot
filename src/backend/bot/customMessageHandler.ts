@@ -386,7 +386,7 @@ export function buildComponentsV2Payload(data: any) {
 
   // If container is empty, add a default placeholder text display
   if (containerComponents.length === 0) {
-    const fallbackText = data.content || (data.name ? `# ${data.name}` : "Hello from GuildPilot!");
+    const fallbackText = data.content || (data.name ? `# ${data.name}` : "Hello from pa_mife!");
     containerComponents.push({
       type: 10,
       content: String(fallbackText).substring(0, 4000),
@@ -566,7 +566,7 @@ export function buildClassicEmbedPayload(data: any) {
   }
 
   if (!payload.content && (!payload.embeds || payload.embeds.length === 0)) {
-    payload.content = data.name || "Custom message from GuildPilot";
+    payload.content = data.name || "Custom message from pa_mife";
   }
 
   return payload;

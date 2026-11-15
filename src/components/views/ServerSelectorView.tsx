@@ -131,7 +131,7 @@ export function ServerSelectorView({
               <Server size={32} />
               <h3>Dein nächstes Projekt wartet.</h3>
               <p>
-                Noch kein berechtigter Server gefunden. Lade GuildPilot ein und
+                Noch kein berechtigter Server gefunden. Lade pa_mife ein und
                 stelle sicher, dass du dort „Server verwalten“- oder
                 Administrator-Rechte besitzt.
               </p>
@@ -141,7 +141,7 @@ export function ServerSelectorView({
                 target="_blank"
                 rel="noopener noreferrer"
               >
-                GuildPilot einladen <Plus size={17} />
+                pa_mife einladen <Plus size={17} />
               </a>
             </div>
           ) : (
@@ -211,7 +211,7 @@ export function ServerSelectorView({
                   <span>
                     Verbinde deinen nächsten Server
                     <br />
-                    mit GuildPilot.
+                    mit pa_mife.
                   </span>
                   <span className="gp-text-link">
                     Bot einladen <ArrowUpRight size={16} />
@@ -223,7 +223,7 @@ export function ServerSelectorView({
         </section>
       </main>
       <footer className="gp-public-footer">
-        <span>GuildPilot · Für deine Community gebaut.</span>
+        <span>pa_mife · Für deine Community gebaut.</span>
         <span>Dein Server. Deine Regeln.</span>
       </footer>
     </div>

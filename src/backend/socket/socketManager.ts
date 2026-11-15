@@ -96,7 +96,7 @@ export function initSocketIO(server: HTTPServer) {
     // 1. Öffentliche Bot-Statusinformationen an Client senden
     socket.emit("botStatusChange", {
       ready: isBotReady(),
-      tag: discordClient.user?.tag || "TheGodGen Bot",
+      tag: discordClient.user?.tag || "pa_mife",
       id: discordClient.user?.id,
       ping: discordClient.ws?.ping || 0,
     });

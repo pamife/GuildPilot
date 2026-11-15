@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
 import { broadcastEvent } from "../socket/socketManager";
+import { withBrandedPanelFooters } from "./panelBranding";
 
 const prisma = new PrismaClient();
 
@@ -67,16 +68,18 @@ export async function updateTicketSettings(guildId: string, data: any) {
 // TICKET PANELS
 // ==========================================
 export async function getTicketPanels(guildId: string) {
-  return prisma.ticketPanel.findMany({
+  const panels = await prisma.ticketPanel.findMany({
     where: { guildId },
     orderBy: { createdAt: "desc" },
   });
+  return panels.map(withBrandedPanelFooters);
 }
 
 export async function getTicketPanelById(panelId: string) {
-  return prisma.ticketPanel.findUnique({
+  const panel = await prisma.ticketPanel.findUnique({
     where: { id: panelId },
   });
+  return panel && withBrandedPanelFooters(panel);
 }
 
 export async function createTicketPanel(guildId: string, data: any) {
@@ -95,13 +98,13 @@ export async function createTicketPanel(guildId: string, data: any) {
       embedColor: data.embedColor || "#5865F2",
       thumbnail: data.thumbnail || null,
       image: data.image || null,
-      footer: data.footer || "GuildPilot Ticket Engine",
+      footer: data.footer || "pa_mife Ticket Engine",
       welcomeTitle: data.welcomeTitle || "👋 Welcome to your ticket!",
       welcomeDescription: data.welcomeDescription || "Support staff will be with you shortly. Use the controls below to manage this ticket.",
       welcomeColor: data.welcomeColor || "#5865F2",
       welcomeThumbnail: data.welcomeThumbnail || null,
       welcomeImage: data.welcomeImage || null,
-      welcomeFooter: data.welcomeFooter || "GuildPilot Ticket Engine",
+      welcomeFooter: data.welcomeFooter || "pa_mife Ticket Engine",
       reasons: typeof data.reasons === "object" ? JSON.stringify(data.reasons) : (data.reasons || "[]"),
       questions: typeof data.questions === "object" ? JSON.stringify(data.questions) : (data.questions || "[]"),
       channelId: data.channelId || null,
@@ -166,7 +169,7 @@ export async function updateTicketPanel(panelId: string, data: any) {
   });
 
   broadcastEvent("ticketPanelUpdate", { guildId: panel.guildId, panelId: panel.id });
-  return panel;
+  return withBrandedPanelFooters(panel);
 }
 
 export async function deleteTicketPanel(panelId: string) {

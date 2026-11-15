@@ -76,7 +76,7 @@ function notifyUpdate(payload) {
     commit: payload.commit || "unknown",
     commitShort: payload.commitShort || payload.commit?.substring(0, 7) || "latest",
     timestamp: new Date().toISOString(),
-    title: payload.title || "GuildPilot Server Updated",
+    title: payload.title || "pa_mife Server Updated",
     message: payload.message || "",
     status: payload.status || "success",
     unread: true,
@@ -192,7 +192,7 @@ try {
   notifyUpdate({
     commit: finalCommit,
     commitShort: finalCommit.substring(0, 7),
-    title: "GuildPilot Server Aktualisiert & Neu Kompiliert",
+    title: "pa_mife Server Aktualisiert & Neu Kompiliert",
     message: `Server erfolgreich aktualisiert und neu gebaut (Commit ${finalCommit.substring(0, 7)}).`,
     status: "success",
   });
@@ -218,7 +218,7 @@ try {
 } catch (err) {
   console.error("❌ UPDATE/BUILD FAILED:", err.message);
   notifyUpdate({
-    title: "GuildPilot Update/Build Failed",
+    title: "pa_mife Update/Build Failed",
     message: `Update/Build failed: ${err.message}`,
     status: "error",
   });

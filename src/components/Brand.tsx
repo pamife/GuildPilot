@@ -6,11 +6,7 @@ export function Brand({ compact = false }: { compact?: boolean }) {
       <span className="gp-brand-mark">
         <Command size={22} strokeWidth={2.5} />
       </span>
-      {!compact && (
-        <span>
-          GuildPilot<span className="gp-brand-dot">.</span>
-        </span>
-      )}
+      {!compact && <span>pa_mife</span>}
     </div>
   );
 }

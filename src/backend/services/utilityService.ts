@@ -206,7 +206,7 @@ export async function purgeServerData(guildId: string, options: PurgeOptions) {
       if (fallbackChannelId && ch.id === fallbackChannelId) continue;
       if (ch.type !== ChannelType.GuildCategory) {
         try {
-          await ch.delete("Server Purge via GuildPilot");
+          await ch.delete("Server Purge via pa_mife");
           results.channelsDeleted++;
         } catch (e: any) {
           console.warn(`[Purge Service] Failed to delete channel ${ch.name}:`, e.message);
@@ -221,7 +221,7 @@ export async function purgeServerData(guildId: string, options: PurgeOptions) {
     for (const [, ch] of channels) {
       if (ch.type === ChannelType.GuildCategory) {
         try {
-          await ch.delete("Server Purge via GuildPilot");
+          await ch.delete("Server Purge via pa_mife");
           results.categoriesDeleted++;
         } catch (e: any) {
           console.warn(`[Purge Service] Failed to delete category ${ch.name}:`, e.message);
@@ -241,7 +241,7 @@ export async function purgeServerData(guildId: string, options: PurgeOptions) {
     for (const [, r] of roles) {
       if (r.name === "@everyone" || r.managed || r.position >= botHighestPosition) continue;
       try {
-        await r.delete("Server Purge via GuildPilot");
+        await r.delete("Server Purge via pa_mife");
         results.rolesDeleted++;
       } catch (e: any) {
         console.warn(`[Purge Service] Failed to delete role ${r.name}:`, e.message);
@@ -254,7 +254,7 @@ export async function purgeServerData(guildId: string, options: PurgeOptions) {
     const emojis = guild.emojis.cache;
     for (const [, emoji] of emojis) {
       try {
-        await emoji.delete("Server Purge via GuildPilot");
+        await emoji.delete("Server Purge via pa_mife");
         results.emojisDeleted++;
       } catch (e: any) {
         console.warn(`[Purge Service] Failed to delete emoji ${emoji.name}:`, e.message);
@@ -267,7 +267,7 @@ export async function purgeServerData(guildId: string, options: PurgeOptions) {
     const stickers = guild.stickers.cache;
     for (const [, sticker] of stickers) {
       try {
-        await sticker.delete("Server Purge via GuildPilot");
+        await sticker.delete("Server Purge via pa_mife");
         results.stickersDeleted++;
       } catch (e: any) {
         console.warn(`[Purge Service] Failed to delete sticker ${sticker.name}:`, e.message);
@@ -281,7 +281,7 @@ export async function purgeServerData(guildId: string, options: PurgeOptions) {
       const invites = await guild.invites.fetch().catch(() => new Map());
       for (const [, inv] of invites) {
         try {
-          await inv.delete("Server Purge via GuildPilot");
+          await inv.delete("Server Purge via pa_mife");
           results.invitesDeleted++;
         } catch (e) {}
       }

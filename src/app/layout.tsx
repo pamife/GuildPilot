@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "GuildPilot — Dein Community Control Center",
+  title: "pa_mife — Dein Community Control Center",
   description:
-    "Dein Discord. Dein Control Center. Verwalte Community, Kanäle, Rollen und Support mit GuildPilot.",
+    "Dein Discord. Dein Control Center. Verwalte Community, Kanäle, Rollen und Support mit pa_mife.",
 };
 
 export default function RootLayout({

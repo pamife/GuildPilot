@@ -123,7 +123,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
     embedAuthorUrl: "",
     thumbnail: "",
     image: "",
-    footer: "GuildPilot Applications System",
+    footer: "pa_mife Applications System",
     footerIcon: "",
     showTimestamp: true,
 
@@ -134,7 +134,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
     dmAuthorIcon: "",
     dmThumbnail: "",
     dmImage: "",
-    dmFooter: "GuildPilot Application System",
+    dmFooter: "pa_mife Application System",
     dmFooterIcon: "",
 
     welcomeTitle: "👋 Application Submitted!",
@@ -144,7 +144,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
     welcomeAuthorIcon: "",
     welcomeThumbnail: "",
     welcomeImage: "",
-    welcomeFooter: "GuildPilot Applications System",
+    welcomeFooter: "pa_mife Applications System",
     welcomeFooterIcon: "",
 
     acceptMessage: "🎉 Congratulations {user}! Your application for {form_name} (App #{app_number}) was ACCEPTED!",
@@ -311,7 +311,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
         dmAuthorIcon: panel.dmAuthorIcon || "",
         dmThumbnail: panel.dmThumbnail || "",
         dmImage: panel.dmImage || "",
-        dmFooter: panel.dmFooter || "GuildPilot Application System",
+        dmFooter: panel.dmFooter || "pa_mife Application System",
         dmFooterIcon: panel.dmFooterIcon || "",
 
         welcomeTitle: panel.welcomeTitle || "👋 Application Submitted!",
@@ -355,7 +355,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
         embedAuthorUrl: "",
         thumbnail: "",
         image: "",
-        footer: "GuildPilot Applications System",
+        footer: "pa_mife Applications System",
         footerIcon: "",
         showTimestamp: true,
 
@@ -366,7 +366,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
         dmAuthorIcon: "",
         dmThumbnail: "",
         dmImage: "",
-        dmFooter: "GuildPilot Application System",
+        dmFooter: "pa_mife Application System",
         dmFooterIcon: "",
 
         welcomeTitle: "👋 Application Submitted!",
@@ -376,7 +376,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
         welcomeAuthorIcon: "",
         welcomeThumbnail: "",
         welcomeImage: "",
-        welcomeFooter: "GuildPilot Applications System",
+        welcomeFooter: "pa_mife Applications System",
         welcomeFooterIcon: "",
 
         acceptMessage: "🎉 Congratulations {user}! Your application for {form_name} (App #{app_number}) was ACCEPTED!",

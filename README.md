@@ -1,8 +1,8 @@
-# 🛸 GuildPilot
+# 🛸 pa_mife
 
 <div align="center">
 
-![GuildPilot Banner](https://img.shields.io/badge/GuildPilot-Obsidian%20Edition%20v2.0-indigo?style=for-the-badge&logo=discord&logoColor=white)
+![pa_mife Banner](https://img.shields.io/badge/pa__mife-Obsidian%20Edition%20v2.0-indigo?style=flat-square&logo=discord&logoColor=white)
 
 **Das ultimative, lokale Discord-Server-Management-Panel & Automations-System.**  
 Gebaut mit **Next.js 14, React 18, Tailwind CSS, TypeScript, Discord.js v14, Express, Socket.IO & Prisma (SQLite)**.
@@ -20,7 +20,7 @@ Gebaut mit **Next.js 14, React 18, Tailwind CSS, TypeScript, Discord.js v14, Exp
 
 ## 🌟 Übersicht & Highlights
 
-**GuildPilot** verwandelt die Verwaltung deines Discord-Servers in ein intuitives, hochmodernes Dashboard auf **10.000 €-Agentur-Niveau** im **Obsidian-Slate Deep-Dark Design**. Keine lästigen Chat-Befehle mehr – steuere deine Serverstruktur, Support-Tickets, Bewerbungen, Rollen, Backups und Automatisierungen in Echtzeit über eine elegante Weboberfläche.
+**pa_mife** verwandelt die Verwaltung deines Discord-Servers in ein intuitives, hochmodernes Dashboard auf **10.000 €-Agentur-Niveau** im **Obsidian-Slate Deep-Dark Design**. Keine lästigen Chat-Befehle mehr – steuere deine Serverstruktur, Support-Tickets, Bewerbungen, Rollen, Backups und Automatisierungen in Echtzeit über eine elegante Weboberfläche.
 
 ---
 
@@ -265,7 +265,7 @@ Im Review-Kanal stehen Kopf, Fragen, Antworten, geschützte Dateilinks und Aktio
 
 ### Relay Count aktivieren
 
-1. Aktiviere im Discord Developer Portal unter **Bot → Privileged Gateway Intents** den **Message Content Intent**. GuildPilot fordert beim Start `Guilds`, `GuildMessages` und `MessageContent` an. Starte den Bot nach der Änderung neu.
+1. Aktiviere im Discord Developer Portal unter **Bot → Privileged Gateway Intents** den **Message Content Intent**. pa_mife fordert beim Start `Guilds`, `GuildMessages` und `MessageContent` an. Starte den Bot nach der Änderung neu.
 2. Gib dem Bot im gewünschten Server-Textkanal **View Channel**, **Send Messages**, **Read Message History** und **Add Reactions**.
 3. Wähle den Kanal mit `/counting setup channel:#counting` oder im Webpanel unter **Community & Interaktion → Relay Count**. Setup und Reset erfordern **Manage Server**. Ein Kanalwechsel übernimmt den bisherigen Spielstand.
 4. Beginnt bei `1` und wechselt euch beim Zählen ab. `/counting stats` und das Webpanel zeigen die nächste Zahl, den Rekord und den Relay Save. Mit `/counting reset` oder der Reset-Schaltfläche im Webpanel könnt ihr nach Bestätigung bei `1` neu starten.

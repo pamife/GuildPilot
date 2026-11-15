@@ -1,9 +1,10 @@
 import { PrismaClient } from "@prisma/client";
+import { withBrandedPanelFooters } from "./panelBranding";
 
 const prisma = new PrismaClient();
 
 export async function getSelfRolePanels(guildId: string) {
-  return await prisma.selfRolePanel.findMany({
+  const panels = await prisma.selfRolePanel.findMany({
     where: { guildId },
     include: {
       options: {
@@ -12,10 +13,11 @@ export async function getSelfRolePanels(guildId: string) {
     },
     orderBy: { createdAt: "desc" },
   });
+  return panels.map(withBrandedPanelFooters);
 }
 
 export async function getSelfRolePanelById(panelId: string) {
-  return await prisma.selfRolePanel.findUnique({
+  const panel = await prisma.selfRolePanel.findUnique({
     where: { id: panelId },
     include: {
       options: {
@@ -23,6 +25,7 @@ export async function getSelfRolePanelById(panelId: string) {
       },
     },
   });
+  return panel && withBrandedPanelFooters(panel);
 }
 
 export async function createSelfRolePanel(guildId: string, data: any) {
@@ -31,6 +34,7 @@ export async function createSelfRolePanel(guildId: string, data: any) {
   return await prisma.selfRolePanel.create({
     data: {
       ...panelData,
+      footer: panelData.footer === undefined ? "pa_mife Self Roles" : panelData.footer,
       guildId,
       options: {
         create: (options || []).map((opt: any, idx: number) => ({
@@ -83,7 +87,7 @@ export async function updateSelfRolePanel(panelId: string, data: any) {
       });
     }
 
-    return await tx.selfRolePanel.update({
+    const panel = await tx.selfRolePanel.update({
       where: { id: panelId },
       data: panelData,
       include: {
@@ -92,6 +96,7 @@ export async function updateSelfRolePanel(panelId: string, data: any) {
         },
       },
     });
+    return withBrandedPanelFooters(panel);
   });
 }
 

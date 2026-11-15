@@ -124,7 +124,6 @@ body {
 .gp-brand-mark svg {
   transform: rotate(5deg);
 }
-.gp-brand-dot,
 .gp-accent {
   color: var(--gp-mint);
 }
