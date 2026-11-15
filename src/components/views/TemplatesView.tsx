@@ -192,7 +192,7 @@ export function TemplatesView({
           <div className="p-12 text-center bg-panel border border-line rounded-2xl text-slate-400 shadow-sm">
             <Copy className="w-10 h-10 mx-auto mb-3 text-slate-600" />
             <p className="font-bold text-sm text-slate-200">Noch keine Vorlagen gespeichert</p>
-            <p className="text-xs text-slate-500 mt-1">Klicke oben auf "Aktuelles Layout speichern", um Kanäle und Rollen zu sichern.</p>
+            <p className="text-xs text-slate-500 mt-1">Klicke oben auf &quot;Aktuelles Layout speichern&quot;, um Kanäle und Rollen zu sichern.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">

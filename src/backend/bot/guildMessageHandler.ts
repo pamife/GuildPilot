@@ -23,6 +23,11 @@ export async function handleGuildMessage(message: Message) {
 }
 
 export function setupGuildMessageHandler(client: Client) {
+  client.on(Events.MessageUpdate, async (_old, updated) => {
+    if (!updated.guildId) return;
+    try { const message = updated.partial ? await updated.fetch() : updated; await processAutoModMessage(message, true); }
+    catch { console.warn("[AutoMod] Could not inspect edited message."); }
+  });
   client.on(Events.MessageCreate, message => {
     void handleGuildMessage(message).catch(error => console.error("[Guild Messages] Processing failed:", error));
   });

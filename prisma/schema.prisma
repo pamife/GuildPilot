@@ -60,6 +60,8 @@ model ModerationSettings {
   logChannelId   String?
   reviewRoleIds  String  @default("[]")
   timeoutRoleIds String  @default("[]")
+  permissions    String  @default("{}")
+  dmDefault      Boolean @default(false)
 }
 
 model AutoModSettings {
@@ -88,8 +90,60 @@ model ModerationCase {
   error              String?
   createdAt          DateTime @default(now())
 
+  dmStatus           String   @default("not_requested")
+  logMessageUrl      String?
+  result             String?
+  reviewId           String?
+
   @@id([guildId, number])
   @@index([guildId, targetId, number])
+}
+
+model ModerationLease {
+  key       String @id
+  token     String
+  expiresAt DateTime
+}
+
+model GeminiSettings {
+  guildId        String @id
+  enabled        Boolean @default(false)
+  channelIds     String @default("[]")
+  rules          String @default("")
+  channelRules   String @default("{}")
+  reviewChannelId String?
+  maxMessages    Int @default(50)
+  maxChars       Int @default(1000)
+  maxCalls       Int @default(3)
+  lastSuccessAt  DateTime?
+  nextRunAt      DateTime?
+  error          String?
+}
+
+model GeminiCursor {
+  guildId       String
+  channelId     String
+  messageId     String
+  lastSuccessAt DateTime?
+  error         String?
+  @@id([guildId, channelId])
+}
+
+model GeminiHint {
+  id          String @id @default(uuid())
+  guildId     String
+  channelId   String
+  dedupeKey   String @unique
+  category    String
+  severity    String
+  reason      String
+  references  String
+  status      String @default("open")
+  assignedTo  String?
+  updatedBy   String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  @@index([guildId, status, createdAt])
 }
 
 model Template {

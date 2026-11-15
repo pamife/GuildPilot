@@ -303,7 +303,7 @@ export function QuickImportModal({
                               <div>
                                 <p className="font-semibold text-xs">{p.name}</p>
                                 <p className="text-[10px] text-slate-400">
-                                  Button: "{p.buttonText}" • {p.reasonsCount} Gründe • {p.questionsCount} Fragen
+                                  Button: &quot;{p.buttonText}&quot; • {p.reasonsCount} Gründe • {p.questionsCount} Fragen
                                 </p>
                               </div>
                             </div>

@@ -877,7 +877,7 @@ export function ApplicationsView({ selectedGuildId, channels, roles, guilds = []
                       </div>
                     ) : (
                       <div className="text-center py-4 bg-canvas rounded-xl border border-[#1f1f23] text-xs text-zinc-400">
-                        No forms attached. Click "+ Add Form to Panel" above!
+                        No forms attached. Click &quot;+ Add Form to Panel&quot; above!
                       </div>
                     )}
                   </div>

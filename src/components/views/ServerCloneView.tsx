@@ -516,7 +516,7 @@ export function ServerCloneView({
                               <div>
                                 <p className="font-semibold text-xs">{p.name}</p>
                                 <p className="text-[10px] text-zinc-400">
-                                  Button: "{p.buttonText}" • {p.reasonsCount} reasons • {p.questionsCount} questions
+                                  Button: &quot;{p.buttonText}&quot; • {p.reasonsCount} reasons • {p.questionsCount} questions
                                 </p>
                               </div>
                             </div>
@@ -1012,7 +1012,7 @@ export function ServerCloneView({
                   <div>
                     <p className="font-semibold text-zinc-200">Auto-create missing Discord Channels & Categories</p>
                     <p className="text-[10px] text-zinc-400">
-                      Creates categories and channels that don't exist on the target server.
+                      Creates categories and channels that don&apos;t exist on the target server.
                     </p>
                   </div>
                 </label>

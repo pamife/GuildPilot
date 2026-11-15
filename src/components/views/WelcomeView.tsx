@@ -954,7 +954,7 @@ export function WelcomeView({
             <p className="font-semibold text-slate-300">💡 Pro-Tipp:</p>
             <p>
               Du kannst das System sofort im ausgewählten Discord-Kanal ausprobieren, indem du oben rechts auf{" "}
-              <strong className="text-indigo-400">"Testnachricht senden"</strong> klickst.
+              <strong className="text-indigo-400">&quot;Testnachricht senden&quot;</strong> klickst.
             </p>
           </div>
         </div>

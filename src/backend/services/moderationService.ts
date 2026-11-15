@@ -8,6 +8,9 @@ export const defaultAutoMod: AutoModSettings = {
   flood: { ...defaultRule, exemptRoleIds: [], exemptChannelIds: [], threshold: 6, windowSeconds: 8 },
   repeat: { ...defaultRule, exemptRoleIds: [], exemptChannelIds: [], threshold: 3, windowSeconds: 20 },
   invites: { ...defaultRule, exemptRoleIds: [], exemptChannelIds: [], allowedCodes: [] },
+  mentions: { ...defaultRule, exemptRoleIds: [], exemptChannelIds: [], threshold: 5, everyone: false },
+  words: { ...defaultRule, exemptRoleIds: [], exemptChannelIds: [], words: [], wholeWord: true },
+  domains: { ...defaultRule, exemptRoleIds: [], exemptChannelIds: [], domains: [], allowedDomains: [], subdomains: true },
 };
 
 export async function getModerationSettings(guildId: string): Promise<ModerationSettings> {
@@ -16,12 +19,14 @@ export async function getModerationSettings(guildId: string): Promise<Moderation
     logChannelId: row?.logChannelId ?? null,
     reviewRoleIds: JSON.parse(row?.reviewRoleIds ?? "[]"),
     timeoutRoleIds: JSON.parse(row?.timeoutRoleIds ?? "[]"),
+    permissions: JSON.parse(row?.permissions ?? "{}"),
+    dmDefault: row?.dmDefault ?? false,
   };
 }
 
 export async function getAutoModSettings(guildId: string): Promise<AutoModSettings> {
   const row = await moderationDb.autoModSettings.findUnique({ where: { guildId } });
-  return row ? JSON.parse(row.rules) : defaultAutoMod;
+  return row ? { ...defaultAutoMod, ...JSON.parse(row.rules) } : structuredClone(defaultAutoMod);
 }
 
 const operations = new Map<string, Promise<unknown>>();

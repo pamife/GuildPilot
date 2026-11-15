@@ -3,7 +3,7 @@ import {
   ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, escapeMarkdown, Guild, PermissionFlagsBits,
 } from "discord.js";
 import type { ModerationSettings } from "../../types/moderation";
-import { getModerationSettings } from "../services/moderationService";
+import { getModerationSettings, moderationDb } from "../services/moderationService";
 import { applicationMessage } from "./applicationComponents";
 
 export async function privateModLogChannel(guild: Guild, id: string) {
@@ -41,7 +41,7 @@ export function describeCase(record: ModerationCase) {
     ? "\n**Outcome unconfirmed**"
     : `\n**Action failed:** ${escapeMarkdown(record.error ?? "Discord rejected the action.")}`;
   return [
-    `**#${record.number} · ${actions[record.action]}** · <t:${Math.floor(record.createdAt.getTime() / 1000)}:f>`,
+    `**#${record.number} · ${(actions[record.action] ?? record.action)}** · <t:${Math.floor(record.createdAt.getTime() / 1000)}:f>`,
     `Trigger: ${trigger}${duration}${reversal}`,
     `Reason: ${escapeMarkdown(record.reason)}${outcome}`,
   ].join("\n");
@@ -55,11 +55,12 @@ export async function publishModerationCase(guild: Guild, record: ModerationCase
     const row = new ActionRowBuilder<ButtonBuilder>().addComponents(
       moderationButton(`history:${record.number}`, "View history"),
     );
-    if (record.action === "timeout" && record.status === "succeeded" &&
-        (record.timeoutUntil?.getTime() ?? 0) > Date.now()) {
-      row.addComponents(moderationButton(`lift:${record.number}`, "Remove timeout", ButtonStyle.Danger));
+    if (["warn", "timeout", "ban", "slowmode"].includes(record.action) && record.status === "succeeded") {
+      row.addComponents(moderationButton(`lift:${record.number}`, "Reverse case", ButtonStyle.Danger));
     }
-    await channel.send(applicationMessage(`Target: <@${record.targetId}>\n${describeCase(record)}`, [row]));
+    const target = ["purge", "slowmode"].includes(record.action) ? `<#${record.targetId}>` : `<@${record.targetId}>`;
+    const sent = await channel.send(applicationMessage(`Target: ${target}\n${describeCase(record)}`, [row]));
+    if (sent?.url) await moderationDb.moderationCase.update({ where: { guildId_number: { guildId: guild.id, number: record.number } }, data: { logMessageUrl: sent.url } });
   } catch (error) {
     console.warn(`[Moderation] Could not publish case ${guild.id}/${record.number}:`, error);
     return "The case was saved, but the mod-log card could not be sent. Check channel access and privacy.";

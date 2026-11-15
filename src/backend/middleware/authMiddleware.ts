@@ -8,7 +8,7 @@ export interface AuthUser {
   username: string;
   avatar: string | null;
   role: "OWNER" | "USER";
-  scope?: "applications";
+  scope?: "applications" | "staff";
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -62,7 +62,7 @@ export function extractAuthUser(req: Request): AuthUser | null {
       username: string;
       avatar: string | null;
       role?: string;
-      scope?: "applications";
+      scope?: "applications" | "staff";
     };
 
     const role: "OWNER" | "USER" = isOwner(decoded.id) ? "OWNER" : "USER";
@@ -93,6 +93,12 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
 
 export function restrictApplicationSession(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const user = extractAuthUser(req);
+  if (user?.scope === "staff") {
+    if (/^\/api\/auth\/(me|logout)\/?$/.test(req.path) ||
+        /^\/api\/guilds\/(moderation-access|application-access)\/?$/.test(req.path) ||
+        /^\/api\/guilds\/\d{17,20}\/(moderation|automod|gemini|applications)(?:\/|$)/.test(req.path)) return next();
+    return res.status(403).json({ error: "This session is limited to moderation and applications." });
+  }
   if (user?.scope !== "applications") return next();
   if (/^\/api\/auth\/(me|logout)\/?$/.test(req.path) ||
       /^\/api\/guilds\/(application-access\/?$|\d{16,22}\/applications(?:\/|$))/.test(req.path)) return next();

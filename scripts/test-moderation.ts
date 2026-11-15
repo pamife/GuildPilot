@@ -45,7 +45,7 @@ async function exercise() {
   const guild = {
     id: guildId, ownerId, name: "Guild", roles: { everyone },
     channels: { fetch: async (id: string) => id === logId ? logChannel : null },
-    members: { fetch: async ({ user }: { user: string }) => members.get(user), fetchMe: async () => ({ id: botId }) },
+    members: { fetch: async ({ user }: { user: string }) => members.get(user), fetchMe: async () => members.get(botId) },
   };
   function member(id: string, position: number, permissions: bigint, roles: string[]) {
     const value = {
@@ -66,6 +66,7 @@ async function exercise() {
     members.set(id, value);
     return value;
   }
+  member(botId, 10, Administrator, []);
   const target = member(targetId, 1, 0n, []);
   member(otherId, 1, 0n, []);
   const review = member(moderatorId, 3, ManageMessages, [reviewRole]);
@@ -89,7 +90,7 @@ async function exercise() {
     ["Good", "Bad", "Old"]);
   assert.deepEqual(inviteCodes("fake-discord.gg/Bad example.org/discord.gg/Bad"), []);
   const detect = createAutoModDetector();
-  const inviteRule = { flood, repeat, invites: { ...invites, enabled: true, action: "delete" as const,
+  const inviteRule = { ...defaultAutoMod, flood, repeat, invites: { ...invites, enabled: true, action: "delete" as const,
     allowedCodes: ["Good"], exemptChannelIds: [logId], exemptRoleIds: [reviewRole] } };
   const sample = { guildId, channelId, parentId: null, userId: targetId, roleIds: new Set<string>(),
     messageId: "1", content: "discord.gg/Bad", timestamp: 1000 };
@@ -99,7 +100,7 @@ async function exercise() {
   assert.deepEqual(detect(inviteRule, { ...sample, parentId: logId }).matches, []);
   assert.deepEqual(detect(inviteRule, sample), { matches: ["invites"], shouldDelete: true });
 
-  const spam = { flood: { ...flood, enabled: true, threshold: 2, windowSeconds: 2 },
+  const spam = { ...defaultAutoMod, flood: { ...flood, enabled: true, threshold: 2, windowSeconds: 2 },
     repeat: { ...repeat, enabled: true, threshold: 2, windowSeconds: 2 }, invites };
   const firstSample = { ...sample, content: "Hello WORLD ", timestamp: 5000 };
   assert.deepEqual(detect(spam, firstSample).matches, []);

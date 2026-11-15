@@ -26,6 +26,9 @@ import welcomeRoutes from "./routes/welcome";
 import autoReactRoutes from "./routes/autoReact";
 import countingRoutes from "./routes/counting";
 import levelingRoutes from "./routes/leveling";
+import geminiRoutes from "./routes/gemini";
+import { startGeminiScheduler } from "./services/geminiReviewService";
+import { discordClient } from "./bot/client";
 import moderationRoutes from "./routes/moderation";
 import serverCloneRoutes from "./routes/serverClone";
 import memberRoutes from "./routes/members";
@@ -61,6 +64,7 @@ app.use("/api/guilds", applicationRoutes);
 app.use("/api/guilds", countingRoutes);
 app.use("/api/guilds", levelingRoutes);
 app.use("/api/guilds", moderationRoutes);
+app.use("/api/guilds", geminiRoutes);
 app.use("/api/guilds", guildRoutes);
 app.use("/api/guilds", channelRoutes);
 app.use("/api/guilds", roleRoutes);
@@ -137,6 +141,7 @@ function verifySecurityConfiguration() {
 // Start Server, Discord Client, and Hourly Restart Scheduler
 server.listen(Number(PORT), HOST, async () => {
   verifySecurityConfiguration();
+  startGeminiScheduler(() => discordClient);
   console.log(`[GuildPilot Backend] Running securely on http://${HOST}:${PORT}`);
   initHourlyRestartScheduler();
   await initDiscordBot();

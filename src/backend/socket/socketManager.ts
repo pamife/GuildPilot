@@ -50,7 +50,7 @@ function extractSocketUser(socket: Socket): AuthUser | null {
       id: string;
       username: string;
       avatar: string | null;
-      scope?: "applications";
+      scope?: "applications" | "staff";
     };
 
     const role: "OWNER" | "USER" = isOwner(decoded.id) ? "OWNER" : "USER";
@@ -129,7 +129,7 @@ export function initSocketIO(server: HTTPServer) {
         return;
       }
 
-      if (currentUser.scope === "applications") return;
+      if (currentUser.scope) return;
       const perm = await checkUserGuildPermission(currentUser.id, guildId);
       if (perm.allowed) {
         socket.join(`guild:${guildId}`);

@@ -1048,7 +1048,7 @@ export function CustomMessagesView({
                 <MessageSquareText className="w-10 h-10 mx-auto text-zinc-600" />
                 <p className="text-sm font-bold text-zinc-400">No saved custom messages found.</p>
                 <p className="text-xs text-zinc-500 max-w-md mx-auto">
-                  Create a message in the Designer tab and click "Save Message" to keep it here for future editing and re-dispatching.
+                  Create a message in the Designer tab and click &quot;Save Message&quot; to keep it here for future editing and re-dispatching.
                 </p>
                 <button
                   onClick={handleNewMessage}

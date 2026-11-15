@@ -740,7 +740,7 @@ export function HostServerView() {
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 text-[11px] text-amber-300 space-y-1.5 mt-2">
               <p className="font-semibold flex items-center gap-1.5">
                 <AlertTriangle className="w-3.5 h-3.5 text-amber-400 shrink-0" />
-                Dienst "keep-awake" ist inaktiv
+                Dienst &quot;keep-awake&quot; ist inaktiv
               </p>
               <p className="text-slate-400 text-[11px] leading-relaxed">
                 Der Dienst verhindert Standby & Ruhezustand auf dem Server. Zur Aktivierung führe folgendes auf dem Host aus:

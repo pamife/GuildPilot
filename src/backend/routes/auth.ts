@@ -9,6 +9,7 @@ import {
   getJwtSecret,
 } from "../middleware/authMiddleware";
 import { getAllowedOrigins, isAllowedOrigin } from "../config/runtime";
+import { moderationGuildsFor } from "./moderation";
 import { applicationGuildsFor } from "../services/applicationAccess";
 
 const router = Router();
@@ -105,7 +106,8 @@ router.get("/callback", async (req, res) => {
 
     const discordUser = userResponse.data;
     const isUserOwner = isOwner(discordUser.id);
-    if (!isUserOwner && !(await applicationGuildsFor(discordUser.id)).length) {
+    const hasModeration = !isUserOwner && (await moderationGuildsFor(discordUser.id)).length > 0;
+    if (!isUserOwner && !hasModeration && !(await applicationGuildsFor(discordUser.id)).length) {
       console.warn(`[Auth] Login rejected for Discord user ${discordUser.id}.`);
       return res.redirect(`${frontendUrl}?error=access_denied`);
     }
@@ -154,7 +156,7 @@ router.get("/callback", async (req, res) => {
       username: formattedUsername,
       avatar: avatarUrl,
       role,
-      scope: isUserOwner ? undefined : "applications",
+      scope: isUserOwner ? undefined : hasModeration ? "staff" : "applications",
     };
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: "7d" });

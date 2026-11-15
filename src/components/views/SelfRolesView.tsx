@@ -931,7 +931,7 @@ export function SelfRolesView({ selectedGuildId, channels, roles }: SelfRolesVie
                 {(!formData.options || formData.options.length === 0) ? (
                   <div className="p-8 text-center bg-panel border border-line rounded-2xl text-xs text-slate-500 space-y-2">
                     <Layers className="w-8 h-8 mx-auto text-slate-600" />
-                    <p>Keine Rollen hinzugefügt. Klicke oben auf "Rolle hinzufügen".</p>
+                    <p>Keine Rollen hinzugefügt. Klicke oben auf &quot;Rolle hinzufügen&quot;.</p>
                   </div>
                 ) : (
                   <div className="space-y-3">

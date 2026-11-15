@@ -326,8 +326,8 @@ docker compose up -d
 
 ## 🔒 Sicherheitskonzept
 
-- **Single-Owner-Prinzip:** Der Zugriff auf das Dashboard ist strikt auf die in `ALLOWED_USER_ID` hinterlegte Discord-ID beschränkt.
-- **JWT-Cookie-Authentifizierung:** Sichere, verschlüsselte Session-Cookies mit SameSite- und HttpOnly-Attributen.
+- **Getrennte Arbeitsbereiche:** Die in `ALLOWED_USER_ID` hinterlegte Discord-ID verwaltet den Bot. Berechtigte Moderatoren und Bewerbungsprüfer erhalten über denselben Discord-Login einen eingeschränkten Arbeitsbereich. Moderationsrechte werden auch für den Bot-Eigentümer anhand seiner tatsächlichen Servermitgliedschaft und Discord-Rechte geprüft.
+- **JWT-Cookie-Authentifizierung:** Signierte JWTs in Session-Cookies mit SameSite- und HttpOnly-Attributen.
 - **Lokale Datenhoheit:** Sämtliche Konfigurationen, Backups und Vorlagen verbleiben in der lokalen SQLite-Datenbank.
 
 ---
@@ -335,3 +335,58 @@ docker compose up -d
 ## 📜 Lizenz
 
 Dieses Projekt steht unter der **MIT-Lizenz** – siehe die [LICENSE](LICENSE)-Datei für Details.
+
+
+## Moderationsarbeitsplatz, AutoMod und Gemini Review
+
+### Einrichtung und Update
+
+1. Sichere die SQLite-Datenbank und `transcripts/`. Auf Debian/Docker: `git pull --ff-only`, `docker compose build`, `docker compose up -d`. Der vorhandene Backend-Entrypoint sichert `/data/guildpilot.db` und synchronisiert das Schema ohne destruktive Optionen. Das Frontend bleibt auf Container-Port 3000, Backend/Bot auf 3001.
+2. Für Installationen mit Prisma-Migrationshistorie nach dem Backup `npx prisma migrate deploy` ausführen. Neu sind `20261115010000_moderation_workspace` (additive Moderations-/Review-Felder und Tabellen) und `20261115020000_complete_legacy_schema` (fehlende Tabellen der bisherigen Baseline, mit `IF NOT EXISTS`). Bei älteren `db push`-Installationen weiter den vorhandenen Docker-Entrypoint beziehungsweise `npx prisma db push` ohne `--accept-data-loss` verwenden; eine bestehende Datenbank nicht zurücksetzen. Fallnummern, Regeln und bisherige Rollen bleiben erhalten.
+3. Aktiviere **Server Members Intent** und **Message Content Intent** im Discord Developer Portal. Der Bot braucht je nach Funktion **Manage Messages**, **Read Message History**, **Moderate Members**, **Kick Members**, **Ban Members**, **Manage Channels** sowie eine Rolle oberhalb der betroffenen Mitglieder. **View Audit Log** ermöglicht die sichere Zuordnung einer Ban-Rücknahme zum ursprünglichen Fall. Die fehlenden Serverrechte zeigt das Panel; Kanalrechte und Hierarchie prüft jede Aktion frisch.
+4. Öffne im Dashboard **Moderation → Einstellungen**. Lege dort den privaten **Mod-Log-Kanal**, die **Rollen pro Berechtigung** und den **DM-Standardwert** fest. Verweigere `@everyone` den Kanalzugriff und gib ihn nur dem Bot und zuständigen Rollen. Leere Rollenlisten geben regulären Mitgliedern kein Recht; Discord-Administratoren benötigen keine zusätzliche GuildPilot-Rolle. Die bisherige Manage-Server-Einstellungsberechtigung bleibt erhalten, bis ausdrücklich Einstellungsrollen konfiguriert werden.
+5. Moderatorinnen und Moderatoren melden sich mit dem vorhandenen Discord-Login an. Ihr eingeschränkter Arbeitsbereich bietet auch weiterhin den Wechsel zu Bewerbungen. Nach neu vergebenen Rollen gegebenenfalls neu anmelden. Schreibzugriffe im Moderationsbereich verlangen bei Cookie-Sessions einen erlaubten `Origin`; `FRONTEND_URL`/`CORS_ORIGINS` müssen die tatsächlich verwendete Panel-Adresse enthalten.
+
+### Maßnahmen und Fälle
+
+**Moderation** bietet Mitgliedersuche nach Name/ID sowie Warn, Timeout, Untimeout, Kick, Ban, Unban per ID, Purge und Slowmode. Der Dialog zeigt vor der Ausführung Ziel und Begründung; bei Purge zusätzlich die Höchstzahl. Purge durchsucht die letzten 100 Nachrichten, löscht maximal 1–100 und überspringt Nachrichten ab 14 Tagen; optional ist ein Nutzerfilter möglich. Slowmode `0` schaltet die Wartezeit aus. Dieselben Aktionen sind als `/warn`, `/timeout`, `/untimeout`, `/kick`, `/ban`, `/unban`, `/purge`, `/slowmode` in Discord registriert; `/cases` zeigt den privaten Verlauf.
+
+**Fälle** bietet Suche, Datums-/Nutzer-/Aktions-/Quellen-/Statusfilter und Seiten mit je 25 Fällen. Details zeigen Ergebnis, DM-Zustellung, Discord-Link und verknüpfte Rücknahmen. Warnungen, aktive Timeouts, zuordenbarer Slowmode und eindeutig zuordenbare Bans können mit Begründung über die Falldetails oder Mod-Log-Buttons zurückgenommen werden. Ein alter Timeout-/Ban-Fall hebt keine neuere Maßnahme auf. Eine direkte Unban-Aktion per ID ist unabhängig von einer Fallrücknahme möglich.
+
+Webpanel und Discord verwenden denselben Moderationsservice. Konfigurierte Rollen ersetzen keine Discord-Berechtigungen. Requests reservieren vor Nebenwirkungen eine eindeutige Fallnummer und eine Anfrage-ID; der Aktionsdialog verwendet diese ID bei einem Verbindungsretry erneut. DMs werden vor Kick/Ban versucht und separat protokolliert. Fehler bei DMs oder Logs blockieren die Maßnahme nicht. Ein `pending`-Fall bedeutet, dass die Ausführung nicht sicher bestätigt wurde (beispielsweise Prozessabbruch während einer Discord-Anfrage). GuildPilot wiederholt solche Aktionen nicht automatisch und blockiert weitere Aktionen gegen dasselbe Ziel bis zur administrativen Klärung des Falls anhand des Discord-Zustands und eines Datenbank-Backups. Keine Software kann einen Discord-Aufruf und SQLite gemeinsam atomar bestätigen.
+
+### Regelbasiertes AutoMod
+
+Unter **AutoMod** lassen sich Nachrichtenflut, Wiederholungen, Mention-Spam, Einladungen, Wörter und Domains konfigurieren. Jede Regel startet deaktiviert und bietet Kanal-/Rollenausnahmen sowie `Log only` oder `Delete and log`. Einladungen haben eine Code-Allowlist; Wortfilter optional Ganzwortabgleich; Domainfilter verwenden geparste Hostnamen, Allowlist und eine Subdomain-Option. `@everyone`/`@here` sind separat schaltbar. Bei Flut/Wiederholungen kann eine standardmäßig deaktivierte Eskalation nach mehreren Treffern einen kurzen Timeout auslösen.
+
+Mehrere Regel-Treffer einer Nachricht werden zusammengefasst. Inhaltsfilter prüfen auch Bearbeitungen; dabei werden Counting und XP nicht erneut ausgeführt. Erfolgreich gelöschte neue Nachrichten erreichen Counting und Leveling nicht; Log-only-Nachrichten laufen regulär weiter. Bewerbungs-DMs bleiben ausgenommen. Die Vorschau unter AutoMod verwendet gespeicherte Regeln, simuliert eine Nachricht pro Zeile und führt keine Discord-Aktion aus. Jüngste Treffer stehen darunter, wenn die Fallverlaufsberechtigung vorhanden ist.
+
+### Stündliches Gemini Review
+
+Setze ausschließlich auf dem Backend `GEMINI_API_KEY` und `GEMINI_MODEL` in `.env`. Wähle ein für dein Google-Projekt verfügbares Modell mit Structured Output; Modellnamen und Verfügbarkeit ändern sich. Der Browser erhält nur den Integrationsstatus. Schlüssel werden weder in Fällen noch in Review-Fehlern oder Logs gespeichert. Der offizielle `@google/genai`-Client wird erst bei einem Review-Aufruf verwendet; ein Ausfall verhindert keinen Bot-Start.
+
+Unter **Moderation → Einstellungen → Gemini** aktivierst du die Prüfung und wählst ausdrücklich die Kanäle, kurze Server-/Kanalregeln, Limits und optional einen privaten Zusammenfassungskanal. Die Auswahl weist darauf hin, dass Text an Google Gemini gesendet wird. Kein Kanal wird automatisch ausgewählt. Bekannte Bewerbungs-, Ticket- und Log-Kanäle/Kategorien sind zusätzlich gesperrt. Staff-Kanäle nicht auswählen. Standardmäßig ist die Integration pro Server deaktiviert.
+
+Der erste geplante Lauf erfolgt 60 Minuten nach Aktivierung; danach im 60-Minuten-Abstand mit bis zu einer Minute Scheduler-Toleranz. **Gemini Review → Jetzt prüfen** verwendet dieselben Beschränkungen. Ein Serverlauf sperrt alle seine Kanäle auch gegenüber anderen Backend-Instanzen auf derselben SQLite-Datei. Pro Server und Lauf gelten maximal 200 gelesene Nachrichten einschließlich kurzem Kontext, 100–2000 Zeichen pro Nachricht und 1–5 Modellaufrufe einschließlich begrenzter Retries. Der erste Rückblick ist auf eine Stunde begrenzt. Dauerhafte Kanal-Cursor werden erst gemeinsam mit validierten Hinweisen bestätigt; Fehler überspringen nichts. Bei Rückstau bleiben spätere Nachrichten für folgende Läufe erhalten. Kanalrotation bevorzugt länger nicht erfolgreich geprüfte Kanäle.
+
+Nur Text menschlicher normaler Nachrichten/Antworten wird verarbeitet. Dateien, Bilder, Webhooks, Bot-/Systemnachrichten und Nutzerprofile werden nicht gesendet; Links werden nicht geladen. Prompt-Injection-Anweisungen im Chat gelten als Daten. Gemini hat keine Tools oder Moderationsrechte. Das strukturierte Ergebnis wird serverseitig validiert; Hinweise mit fremden Referenzen werden verworfen. Gespeichert werden kurze Hinweise, Nachrichten-/Nutzerreferenzen, Bearbeitungsstatus und Laufmetadaten, kein Chatarchiv.
+
+**Gemini Review** zeigt offene/geprüfte/als Fehlalarm geschlossene Hinweise, Zuweisungen, Nachrichtenlinks, letzten erfolgreichen Lauf, nächsten Termin und Fehler. Eine manuelle Maßnahme öffnet denselben Bestätigungsdialog mit vorausgefülltem Kontext. Ihre tatsächliche Berechtigung wird erneut geprüft. Erst eine erfolgreiche Maßnahme verknüpft Hinweis und Fall; eine Modellantwort allein erzeugt niemals Warnungen, DMs, Löschungen oder Sanktionen.
+
+### Prüfungen und API-Referenzen
+
+```sh
+npm run test:counting
+npm run test:leveling
+npm run test:applications
+npm run test:moderation
+npm run test:moderation-workspace
+npm run test:migrations
+npm run typecheck
+npm run lint
+npm run build
+```
+
+`test:moderation-workspace` verwendet temporäres SQLite, echte Express-Routen und Discord-/Gemini-Mocks. Es prüft Rechte/CSRF/IDOR, Idempotenz, Maßnahmen/Rücknahmen, Filter/Bearbeitungen, Cursor, Retries, parallele Reviews, Prompt-Injection und die ausdrücklich bestätigte Fallverknüpfung. `test:migrations` prüft mit gesichertem Testbestand ein Upgrade und den vollständigen Schemaabgleich. Die übrigen Integrationsprüfungen decken unter anderem neue Datenbanken sowie Counting-/XP-Verhalten ab. `npm run test:security` benötigt einen laufenden Test-Backend-Prozess und passende Testwerte für `API_BASE_URL`, `JWT_SECRET` und `ALLOWED_USER_ID`; niemals hierfür Produktionsschlüssel einsetzen. Die bestehenden Hook-/Bildoptimierungswarnungen sind nicht fatal.
+
+Verwendete offizielle API-Dokumentation: [Discord-Mitglieder, Timeouts und Bans](https://docs.discord.com/developers/resources/guild), [Nachrichten, Pagination und Bulk Delete](https://docs.discord.com/developers/resources/message), [Kanal-Slowmode](https://docs.discord.com/developers/resources/channel), [Components V2](https://docs.discord.com/developers/components/overview), [Gemini Structured Output](https://ai.google.dev/gemini-api/docs/structured-output), [Google GenAI HTTP-Timeouts und Retries](https://googleapis.github.io/js-genai/release_docs/interfaces/types.HttpOptions.html).

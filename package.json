@@ -19,7 +19,11 @@
     "test:counting": "tsx scripts/test-counting.ts",
     "test:leveling": "tsx scripts/test-leveling.ts",
     "test:applications": "tsx scripts/test-applications.ts",
-    "test:moderation": "tsx scripts/test-moderation.ts"
+    "test:moderation": "tsx scripts/test-moderation.ts",
+    "typecheck": "tsc --noEmit",
+    "lint": "next lint",
+    "test:moderation-workspace": "tsx scripts/test-moderation-workspace.ts",
+    "test:migrations": "tsx scripts/test-moderation-migrations.ts"
   },
   "keywords": [
     "discord",
@@ -33,6 +37,7 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
+    "@google/genai": "^3.3.0",
     "@napi-rs/canvas": "^1.0.6",
     "@prisma/client": "^5.15.0",
     "@types/cookie-parser": "^1.4.7",
@@ -64,6 +69,8 @@
   "devDependencies": {
     "autoprefixer": "^10.4.19",
     "concurrently": "^8.2.2",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.35",
     "postcss": "^8.4.38",
     "tailwindcss": "^3.4.4",
     "tsx": "^4.15.1"

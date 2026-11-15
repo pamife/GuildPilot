@@ -23,7 +23,7 @@ import { WelcomeView } from "@/components/views/WelcomeView";
 import { AutoReactView } from "@/components/views/AutoReactView";
 import { CountingView } from "@/components/views/CountingView";
 import { LevelingView } from "@/components/views/LevelingView";
-import { AutoModView, ModerationView } from "@/components/views/ModerationView";
+import { ModerationWorkspace } from "@/components/views/ModerationWorkspace";
 import { ServerCloneView } from "@/components/views/ServerCloneView";
 import { MemberManagerView } from "@/components/views/MemberManagerView";
 import { BackupsView } from "@/components/views/BackupsView";
@@ -36,6 +36,7 @@ type ScreenMode = "servers" | "guild" | "owner";
 function DashboardContent() {
   const { showToast } = useToast();
 
+  const [staffApplications, setStaffApplications] = useState(false);
   const [screenMode, setScreenMode] = useState<ScreenMode>("servers");
   const [currentView, setCurrentView] = useState<ViewType>("overview");
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -98,7 +99,7 @@ function DashboardContent() {
   const fetchGuilds = useCallback(async () => {
     if (!currentUser) return;
     try {
-      const res = await api.get(currentUser.scope === "applications" ? "/guilds/application-access" : "/guilds");
+      const res = await api.get(currentUser.scope === "staff" ? "/guilds/moderation-access" : currentUser.scope === "applications" ? "/guilds/application-access" : "/guilds");
       setGuilds(res.data || []);
     } catch (err: any) {
       console.error("Failed to fetch guilds:", err);
@@ -172,14 +173,14 @@ function DashboardContent() {
   }, [currentUser, fetchGuilds, fetchUpdateNotification]);
 
   useEffect(() => {
-    if (selectedGuildId && screenMode === "guild" && currentUser?.scope !== "applications") {
+    if (selectedGuildId && screenMode === "guild" && !currentUser?.scope) {
       fetchGuildData();
     }
   }, [selectedGuildId, screenMode, fetchGuildData, currentUser?.scope]);
 
   // Socket.IO Room Management for Selected Guild
   useEffect(() => {
-    if (!selectedGuildId || screenMode !== "guild" || currentUser?.scope === "applications") return;
+    if (!selectedGuildId || screenMode !== "guild" || currentUser?.scope) return;
     const socket = getSocket();
     const join = () => socket.emit("joinGuild", { guildId: selectedGuildId });
     if (socket.connected) join();
@@ -508,6 +509,10 @@ function DashboardContent() {
     );
   }
 
+  if (currentUser.scope === "staff" && selectedGuildId) {
+    return <div className="flex h-screen flex-col overflow-auto bg-canvas"><div className="flex justify-between p-4 text-white"><button onClick={() => setScreenMode("servers")}>Server-Übersicht</button><button onClick={() => setStaffApplications(v => !v)}>{staffApplications ? "Moderation" : "Bewerbungen"}</button><button onClick={handleLogout}>Abmelden</button></div>{staffApplications ? <ApplicationsView key={selectedGuildId} selectedGuildId={selectedGuildId} channels={[]} roles={[]} guilds={guilds} /> : <ModerationWorkspace key={selectedGuildId} guildId={selectedGuildId} />}</div>;
+  }
+
   if (currentUser.scope === "applications") {
     return (
       <div className="flex h-screen flex-col overflow-hidden bg-canvas">
@@ -635,10 +640,10 @@ function DashboardContent() {
           />
         )}
         {currentView === "moderation" && selectedGuildId && (
-          <ModerationView key={selectedGuildId} guildId={selectedGuildId} channels={channels} roles={roles} />
+          <ModerationWorkspace key={selectedGuildId} guildId={selectedGuildId} />
         )}
         {currentView === "automod" && selectedGuildId && (
-          <AutoModView key={selectedGuildId} guildId={selectedGuildId} channels={channels} roles={roles} />
+          <ModerationWorkspace key={`${selectedGuildId}:automod`} guildId={selectedGuildId} initialTab="AutoMod" />
         )}
         {currentView === "applications" && (
           <ApplicationsView

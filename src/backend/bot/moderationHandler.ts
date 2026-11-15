@@ -1,16 +1,18 @@
 import type { ModerationCase } from "@prisma/client";
 import {
-  ActionRowBuilder, ButtonBuilder, ButtonInteraction, ButtonStyle, ChatInputCommandInteraction, Client,
-  ContainerBuilder, DiscordAPIError, escapeMarkdown, Events, Guild, GuildMember, ModalSubmitInteraction,
-  Interaction, InteractionContextType, MessageFlags, ModalBuilder, PermissionFlagsBits, RESTJSONErrorCodes,
+  ActionRowBuilder, ButtonBuilder, ButtonInteraction, ChatInputCommandInteraction, Client,
+  ContainerBuilder, DiscordAPIError, Events, Guild, ModalSubmitInteraction,
+  Interaction, InteractionContextType, MessageFlags, ModalBuilder, RESTJSONErrorCodes,
   SlashCommandBuilder, TextInputBuilder, TextInputStyle,
 } from "discord.js";
-import type { ModerationSettings } from "../../types/moderation";
+import type { ModerationAction } from "../../types/moderation";
+import { authorizeAction, authorizePermission, executeModeration, ModerationError } from "../services/moderationActions";
+export { canModerate, canLiftRecordedTimeout } from "../services/moderationActions";
 import {
-  finishCase, getModerationSettings, moderationDb, reserveCase, serializeModeration,
+  moderationDb,
 } from "../services/moderationService";
 import { applicationMessage } from "./applicationComponents";
-import { describeCase, moderationButton, publishModerationCase } from "./moderationLog";
+import { describeCase, moderationButton } from "./moderationLog";
 
 const maxReasonLength = 450;
 const maxTimeoutMinutes = 28 * 24 * 60;
@@ -35,71 +37,29 @@ export const moderationCommands = [
     .addIntegerOption(option => option.setName("minutes").setDescription("Timeout duration in minutes")
       .setMinValue(1).setMaxValue(maxTimeoutMinutes).setRequired(true))),
   withReason(command("untimeout", "Remove a server member's active timeout")),
+  withDm(withReason(command("kick", "Kick a server member"))),
+  withDm(withReason(command("ban", "Ban a user"))),
+  new SlashCommandBuilder().setName("unban").setDescription("Unban a user by ID").setContexts(InteractionContextType.Guild)
+    .addStringOption(o => o.setName("user_id").setDescription("Discord user ID").setRequired(true))
+    .addStringOption(o => o.setName("reason").setDescription("Reason").setRequired(true).setMaxLength(450)),
+  new SlashCommandBuilder().setName("purge").setDescription("Delete up to 100 recent messages").setContexts(InteractionContextType.Guild)
+    .addChannelOption(o => o.setName("channel").setDescription("Text channel").setRequired(true))
+    .addIntegerOption(o => o.setName("count").setDescription("Maximum messages").setMinValue(1).setMaxValue(100).setRequired(true))
+    .addStringOption(o => o.setName("reason").setDescription("Reason").setRequired(true).setMaxLength(450))
+    .addUserOption(o => o.setName("user").setDescription("Optional author filter")),
+  new SlashCommandBuilder().setName("slowmode").setDescription("Set or disable slowmode").setContexts(InteractionContextType.Guild)
+    .addChannelOption(o => o.setName("channel").setDescription("Text channel").setRequired(true))
+    .addIntegerOption(o => o.setName("seconds").setDescription("Seconds; 0 disables").setMinValue(0).setMaxValue(21600).setRequired(true))
+    .addStringOption(o => o.setName("reason").setDescription("Reason").setRequired(true).setMaxLength(450)),
   command("cases", "Privately view a user's moderation history"),
 ];
 
-type Operation = "warn" | "timeout" | "untimeout" | "cases";
+type Operation = ModerationAction | "cases";
 type ModInteraction = ChatInputCommandInteraction | ButtonInteraction | ModalSubmitInteraction;
 
-class ModerationError extends Error {}
-
-export function canModerate(
-  actor: GuildMember, target: GuildMember | null, action: Operation, settings: ModerationSettings,
-) {
-  const timeout = action === "timeout" || action === "untimeout";
-  const permission = timeout ? PermissionFlagsBits.ModerateMembers : PermissionFlagsBits.ManageMessages;
-  const roles = timeout ? settings.timeoutRoleIds : settings.reviewRoleIds;
-  if (!actor.permissions.has(permission)) return false;
-  if (!actor.permissions.has(PermissionFlagsBits.Administrator) &&
-      !roles.some(id => id !== actor.guild.id && actor.roles.cache.has(id))) return false;
-
-  if (!target) return action === "cases";
-  if (actor.id === target.id) return action === "cases";
-  if (target.id === actor.guild.ownerId) return false;
-  return actor.id === actor.guild.ownerId || actor.roles.highest.comparePositionTo(target.roles.highest) > 0;
-}
-
-export function canLiftRecordedTimeout(record: ModerationCase, latest: ModerationCase | null, currentUntil: number) {
-  return record.action === "timeout" && record.status === "succeeded" &&
-    latest?.number === record.number && record.timeoutUntil?.getTime() === currentUntil &&
-    currentUntil > Date.now();
-}
-
-function latestRecordedTimeout(guildId: string, targetId: string) {
-  return moderationDb.moderationCase.findFirst({
-    where: { guildId, targetId, action: "timeout", status: { in: ["pending", "succeeded"] } },
-    orderBy: { number: "desc" },
-  });
-}
-
-async function fetchTarget(guild: Guild, id: string, action: Operation) {
-  try {
-    return await guild.members.fetch({ user: id, force: true });
-  } catch (error) {
-    if (error instanceof DiscordAPIError && error.code === RESTJSONErrorCodes.UnknownMember) {
-      if (action === "cases") return null;
-      throw new ModerationError("This user is no longer a server member.");
-    }
-    throw error;
-  }
-}
-
 async function authorize(guild: Guild, actorId: string, targetId: string, action: Operation) {
-  const [settings, actor, target] = await Promise.all([
-    getModerationSettings(guild.id),
-    guild.members.fetch({ user: actorId, force: true }),
-    fetchTarget(guild, targetId, action),
-  ]);
-  if (!canModerate(actor, target, action, settings)) {
-    throw new ModerationError("You need the configured moderator role, Discord permission and sufficient role hierarchy.");
-  }
-  if ((action === "timeout" || action === "untimeout") && target) {
-    const bot = await guild.members.fetchMe({ force: true });
-    if (target.id === bot.id || !target.moderatable) {
-      throw new ModerationError("The bot cannot manage this timeout. Check Moderate Members and the bot's role hierarchy.");
-    }
-  }
-  return { settings, target };
+  if (action === "cases") return authorizePermission(guild, actorId, "cases");
+  return authorizeAction(guild, actorId, targetId, action);
 }
 
 async function showHistory(guild: Guild, actorId: string, targetId: string, before?: number) {
@@ -123,66 +83,17 @@ async function showHistory(guild: Guild, actorId: string, targetId: string, befo
   return applicationMessage(history, row.components.length ? [row] : []);
 }
 
-async function moderate(
-  guild: Guild, interaction: ModInteraction, targetId: string, action: Exclude<Operation, "cases">,
-  reasonInput: string, minutes?: number, dm = false, fromCase?: ModerationCase,
-) {
-  const reason = reasonInput.trim();
-  if (!reason || reason.length > maxReasonLength) throw new ModerationError("Enter a valid reason.");
-  if (action === "timeout" && (!minutes || !Number.isInteger(minutes) || minutes < 1 || minutes > maxTimeoutMinutes)) {
-    throw new ModerationError("Choose a timeout from 1 minute to 28 days.");
-  }
-
-  return serializeModeration(`member:${guild.id}:${targetId}`, async () => {
-    const sourceId = `interaction:${interaction.id}`;
-    if (await moderationDb.moderationCase.findUnique({ where: { sourceId } })) return;
-    const { settings, target } = await authorize(guild, interaction.user.id, targetId, action);
-    if (!target) throw new ModerationError("This user is no longer a server member.");
-    let reversesCaseNumber: number | undefined;
-
-    if (action === "untimeout") {
-      const latest = await latestRecordedTimeout(guild.id, targetId);
-      const currentUntil = target.communicationDisabledUntilTimestamp ?? 0;
-      if (fromCase && !canLiftRecordedTimeout(fromCase, latest, currentUntil)) {
-        throw new ModerationError("This case no longer owns the active timeout. Use /untimeout for the current timeout.");
-      }
-      if (currentUntil <= Date.now()) throw new ModerationError("This member has no active timeout.");
-      if (latest && canLiftRecordedTimeout(latest, latest, currentUntil)) reversesCaseNumber = latest.number;
-    }
-
-    const { created } = await reserveCase({
-      sourceId, guildId: guild.id, targetId, action, reason, moderatorId: interaction.user.id,
-      durationSeconds: minutes ? minutes * 60 : undefined, reversesCaseNumber,
-    });
-    if (!created) return;
-
-    let timeoutUntil: Date | null = null;
-    let discordError: string | undefined;
-    try {
-      if (action !== "warn") {
-        const updated = await target.timeout(minutes ? minutes * 60_000 : null, reason);
-        timeoutUntil = updated.communicationDisabledUntil;
-      }
-    } catch (error) {
-      console.warn(`[Moderation] Discord rejected ${action} for ${guild.id}/${targetId}:`, error);
-      discordError = "Discord could not confirm the timeout change. Check the member's current timeout and the bot's permissions.";
-    }
-
-    const record = await finishCase(sourceId, discordError ? "failed" : "succeeded", { timeoutUntil, error: discordError });
-    const logError = await publishModerationCase(guild, record, settings);
-    const notes = [logError];
-    if (dm && !discordError) {
-      try {
-        const actionText = action === "warn" ? "You received a warning." : `You received a ${minutes}-minute timeout.`;
-        await target.send(applicationMessage(
-          `## Moderation in ${escapeMarkdown(guild.name)}\n${actionText}\nReason: ${escapeMarkdown(reason)}`,
-        ));
-      } catch {
-        notes.push("The action was applied, but the user's DM could not be delivered.");
-      }
-    }
-    await interaction.editReply(applicationMessage([describeCase(record), ...notes.filter(Boolean)].join("\n\n")));
+async function moderate(guild: Guild, interaction: ModInteraction, targetId: string, action: ModerationAction,
+  reason: string, minutes?: number, dm?: boolean, fromCase?: ModerationCase) {
+  const slash = interaction.isChatInputCommand() ? interaction : null;
+  const { record, notes } = await executeModeration(guild, interaction.user.id, {
+    action, targetId, reason, requestId: `interaction:${interaction.id}`, dm,
+    durationSeconds: action === "slowmode" ? slash?.options.getInteger("seconds") ?? 0 : minutes ? minutes * 60 : undefined,
+    count: action === "purge" ? slash?.options.getInteger("count", true) : undefined,
+    userFilter: action === "purge" ? slash?.options.getUser("user")?.id : undefined,
+    reverseNumber: fromCase?.number,
   });
+  await interaction.editReply(applicationMessage([describeCase(record), ...notes].join("\n\n")));
 }
 
 async function handleCaseControl(interaction: ModInteraction, guild: Guild, customId: string) {
@@ -207,21 +118,19 @@ async function handleCaseControl(interaction: ModInteraction, guild: Guild, cust
 
   if (interaction.isButton() && control === "history") {
     await interaction.editReply(await showHistory(guild, interaction.user.id, record.targetId));
-  } else if (opensModal && record.action === "timeout") {
-    const [{ target }, latest] = await Promise.all([
-      authorize(guild, interaction.user.id, record.targetId, "untimeout"),
-      latestRecordedTimeout(guild.id, record.targetId),
-    ]);
-    if (!canLiftRecordedTimeout(record, latest, target?.communicationDisabledUntilTimestamp ?? 0)) {
-      throw new ModerationError("This case no longer owns the active timeout.");
-    }
-    const input = new TextInputBuilder().setCustomId("reason").setLabel("Reason for removing the timeout")
+  } else if (opensModal && ["warn", "timeout", "ban", "slowmode"].includes(record.action)) {
+    const reverse = { warn: "revoke_warn", timeout: "untimeout", ban: "unban", slowmode: "slowmode" }[record.action] as ModerationAction;
+    await authorizeAction(guild, interaction.user.id, record.targetId, reverse);
+    await authorizePermission(guild, interaction.user.id, "cases");
+    const input = new TextInputBuilder().setCustomId("reason").setLabel("Reason for reversal")
       .setRequired(true).setMaxLength(maxReasonLength).setStyle(TextInputStyle.Paragraph);
     await interaction.showModal(new ModalBuilder().setCustomId(`mod:confirm:${record.number}`)
-      .setTitle(`Remove timeout #${record.number}`)
+      .setTitle(`Reverse case #${record.number}`)
       .addComponents(new ActionRowBuilder<TextInputBuilder>().addComponents(input)));
-  } else if (interaction.isModalSubmit() && control === "confirm" && record.action === "timeout") {
-    await moderate(guild, interaction, record.targetId, "untimeout",
+  } else if (interaction.isModalSubmit() && control === "confirm") {
+    const reverse = { warn: "revoke_warn", timeout: "untimeout", ban: "unban", slowmode: "slowmode" }[record.action] as ModerationAction;
+    if (!reverse) throw new ModerationError("This case cannot be reversed.");
+    await moderate(guild, interaction, record.targetId, reverse,
       interaction.fields.getTextInputValue("reason"), undefined, false, record);
   }
 }
@@ -244,12 +153,14 @@ export function setupModerationInteractions(client: Client) {
 
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       const action = interaction.commandName as Operation;
-      const targetId = interaction.options.getUser("user", true).id;
+      const targetId = action === "unban" ? interaction.options.getString("user_id", true) :
+        action === "purge" || action === "slowmode" ? interaction.options.getChannel("channel", true).id :
+        interaction.options.getUser("user", true).id;
       if (action === "cases") {
         await interaction.editReply(await showHistory(interaction.guild, interaction.user.id, targetId));
       } else {
         await moderate(interaction.guild, interaction, targetId, action, interaction.options.getString("reason", true),
-          interaction.options.getInteger("minutes") ?? undefined, interaction.options.getBoolean("dm") ?? false);
+          interaction.options.getInteger("minutes") ?? undefined, interaction.options.getBoolean("dm") ?? undefined);
       }
     } catch (error) {
       if (error instanceof DiscordAPIError &&
