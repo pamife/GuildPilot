@@ -11,6 +11,7 @@ import { setupCustomMessageInteractions } from "./customMessageHandler";
 import { setupWelcomeInteractions } from "./welcomeHandler";
 import { setupAutoReactInteractions } from "./autoReactHandler";
 import { createAutoLeaveBackup } from "../services/backupService";
+import { backfillApplicationReviewAccents } from "../services/applicationReview";
 
 export let hasMessageContentIntent = true;
 
@@ -46,6 +47,9 @@ function registerClientEvents(client: Client) {
 
   client.once(Events.ClientReady, (c) => {
     void registerSlashCommands(c);
+    void backfillApplicationReviewAccents(c).catch(error => {
+      console.error("[Applications] Could not backfill review accents:", error);
+    });
     console.log(`[TheGodGen Bot] Logged in as ${c.user.tag}`);
     broadcastEvent("botStatusChange", {
       ready: true,

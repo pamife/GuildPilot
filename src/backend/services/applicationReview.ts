@@ -1,6 +1,7 @@
 import {
-  ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, ComponentType, DiscordAPIError, escapeMarkdown,
-  Guild, GuildMember, OverwriteType, PermissionFlagsBits, RESTJSONErrorCodes, TextChannel,
+  ActionRowBuilder, ButtonBuilder, ButtonStyle, ChannelType, Client, ComponentType, ContainerBuilder,
+  DiscordAPIError, escapeMarkdown, Guild, GuildMember, OverwriteType, PermissionFlagsBits,
+  RESTJSONErrorCodes, TextChannel,
 } from "discord.js";
 import { createHash } from "node:crypto";
 import { applicationMessage, applicationMessageEdit } from "../bot/applicationComponents";
@@ -20,6 +21,17 @@ export const finalDecision = (app: ReviewedApplication) => Boolean(app.decidedAt
 export const appButton = (id: string, label: string, style = ButtonStyle.Secondary) =>
   new ButtonBuilder().setCustomId(id).setLabel(label).setStyle(style);
 export const appRow = (...buttons: ButtonBuilder[]) => new ActionRowBuilder<ButtonBuilder>().addComponents(buttons);
+
+function reviewAccent(app: ReviewedApplication) {
+  const status = app.status === "CLOSED"
+    ? app.history.find(entry => decisionStatuses.includes(entry.status))?.status
+    : app.status;
+  switch (status) {
+    case "ACCEPTED": return 0x57f287;
+    case "DENIED": return 0xed4245;
+    default: return 0xfaa61a;
+  }
+}
 
 export class ApplicationError extends Error {
   constructor(message: string, readonly statusCode = 400) { super(message); }
@@ -174,7 +186,7 @@ export function applicationReviewPages(app: ReviewedApplication) {
 async function legacyReviewMessageIds(app: ReviewedApplication, channel: TextChannel) {
   if (!app.reviewMessageId || !app.reviewParts || channel.id !== app.reviewChannelId) return [];
   const bot = await channel.guild.members.fetchMe();
-  const prefix = `### Application #${app.appNumber} · Part `;
+  const prefix = `Application #${app.appNumber} · Part `;
   const ids: string[] = [];
   let before: string | undefined;
   // Old versions stored only a count. Identify only this bot's numbered review
@@ -188,7 +200,7 @@ async function legacyReviewMessageIds(app: ReviewedApplication, channel: TextCha
     if (!messages.size) break;
     for (const message of messages.values()) {
       if (BigInt(message.id) <= BigInt(app.reviewMessageId) || message.author.id !== bot.id) continue;
-      const body = message.content || text(message.components);
+      const body = (message.content || text(message.components)).replace(/^### /, "");
       if (!body.startsWith(prefix)) continue;
       const part = body.slice(prefix.length).match(/^(\d+)\n/);
       if (part && Number(part[1]) >= 1 && Number(part[1]) <= app.reviewParts) ids.push(message.id);
@@ -198,6 +210,56 @@ async function legacyReviewMessageIds(app: ReviewedApplication, channel: TextCha
     before = oldest;
   }
   return ids.sort((a, b) => BigInt(a) < BigInt(b) ? -1 : 1);
+}
+
+export async function backfillApplicationReviewAccents(client: Client<true>) {
+  const reviews = await db.application.findMany({
+    where: { reviewMessageId: { not: null }, reviewChannelId: { not: null } },
+    select: { id: true, guildId: true },
+  });
+  for (const { id, guildId } of reviews) {
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild?.available) continue;
+    try {
+      await serializeApplication(`review:${id}`, async () => {
+        const app = await getApplicationById(id);
+        if (!app?.reviewChannelId || !app.reviewMessageId) return;
+        const channel = await guild.channels.fetch(app.reviewChannelId);
+        if (channel?.type !== ChannelType.GuildText ||
+            !channel.permissionOverwrites.cache.get(guildId)?.deny.has(PermissionFlagsBits.ViewChannel)) return;
+        const extraIds = app.reviewExtraMessageIds == null
+          ? await legacyReviewMessageIds(app, channel) : readStrings(app.reviewExtraMessageIds);
+        const accent = reviewAccent(app);
+        for (const messageId of [app.reviewMessageId, ...extraIds]) {
+          try {
+            const message = await channel.messages.fetch({ message: messageId, force: true, cache: false });
+            if (message.author.id !== client.user.id) continue;
+            const [component] = message.components;
+            if (message.components.length === 1 && component?.type === ComponentType.Container) {
+              const data = component.toJSON();
+              if (data.accent_color === accent) continue;
+              await channel.messages.edit(messageId, applicationMessageEdit(channel.messages,
+                new ContainerBuilder({ ...data, accent_color: accent })));
+            } else if (message.content && message.components.every(row => row.type === ComponentType.ActionRow)) {
+              const container = new ContainerBuilder({ accent_color: accent, components: [
+                { type: ComponentType.TextDisplay, content: message.content },
+                ...message.components.map(row => row.toJSON()),
+              ] });
+              await channel.messages.edit(messageId, applicationMessageEdit(channel.messages, container));
+            }
+          } catch (error) {
+            if (!unknownDiscordMessage(error)) {
+              console.warn(`[Applications] Could not update the accent of review message ${messageId}:`,
+                error instanceof DiscordAPIError ? error.code : (error as Error).name);
+            }
+          }
+        }
+      });
+    } catch (error) {
+      console.warn(`[Applications] Could not update review accents for ${id}:`,
+        error instanceof DiscordAPIError ? error.code : (error as Error).name);
+    }
+  }
 }
 
 async function postReview(app: ReviewedApplication, guild: Guild, retry: boolean) {
@@ -214,7 +276,9 @@ async function postReview(app: ReviewedApplication, guild: Guild, retry: boolean
     let messageId = app.reviewMessageId;
     let extraIds = app.reviewExtraMessageIds == null
       ? await legacyReviewMessageIds(app, channel) : readStrings(app.reviewExtraMessageIds);
-    const pages = applicationReviewPages(app);
+    const accent = reviewAccent(app);
+    const pages = applicationReviewPages(app).map(text => new ContainerBuilder()
+      .setAccentColor(accent).addTextDisplayComponents(display => display.setContent(text)));
     const controls = reviewControls(app);
     if (messageId && channel.id !== channelId) {
       messageId = null;

@@ -137,7 +137,7 @@ async function exercise(phase: string) {
   const { applicationDb: db } = await import("../src/backend/services/applicationAccess");
   const { handleApplicationDmInteraction: click, setupApplicationDmMessages, deployApplicationDmPanel } = await import("../src/backend/bot/applicationDm");
   const { deployApplicationPanel, setupApplicationInteractions } = await import("../src/backend/bot/applicationHandler");
-  const { runApplicationReview, applicationReviewPages } = await import("../src/backend/services/applicationReview");
+  const { runApplicationReview, applicationReviewPages, backfillApplicationReviewAccents } = await import("../src/backend/services/applicationReview");
   const { applicationMessage } = await import("../src/backend/bot/applicationComponents");
   const { applicationFilePath } = await import("../src/backend/services/applicationFiles");
   const { getApplicationById } = await import("../src/backend/services/applicationService");
@@ -175,9 +175,18 @@ async function exercise(phase: string) {
         if (reviewDeleteFails) throw new Error("Temporary Discord failure");
         if (!reviewMessages.delete(id)) return unknownMessage();
       },
-      fetch: async ({ before, limit }: any) => new Collection([...reviewMessages.entries()]
-        .filter(([id]) => !before || BigInt(id) < BigInt(before))
-        .sort(([a], [b]) => BigInt(a) > BigInt(b) ? -1 : 1).slice(0, limit)),
+      fetch: async ({ before, limit, message }: any) => {
+        if (message) {
+          const existing = reviewMessages.get(message);
+          if (!existing) return unknownMessage();
+          return { ...existing, components: existing.components.map((component: any) => ({
+            type: component.toJSON().type, toJSON: () => component.toJSON(),
+          })) };
+        }
+        return new Collection([...reviewMessages.entries()]
+          .filter(([id]) => !before || BigInt(id) < BigInt(before))
+          .sort(([a], [b]) => BigInt(a) > BigInt(b) ? -1 : 1).slice(0, limit));
+      },
     },
   });
   channels.set(startChannelId, { id: startChannelId, type: ChannelType.GuildText, send: async (payload: any) => {
@@ -353,6 +362,7 @@ async function exercise(phase: string) {
   const repairedIds = [...reviewMessages.keys()];
   await review("retry_review");
   assert.deepEqual([...reviewMessages.keys()], repairedIds);
+  assert.ok(repairedIds.every(id => componentList(reviewMessages.get(id))[0].accent_color === 0xfaa61a));
 
   const short = { ...initial, files: [], answers: Array.from({ length: 8 }, (_, index) => ({ ...initial.answers[0],
     position: index, questionLabel: `Short question ${index + 1}`, value: `Short answer ${index + 1}` })) };
@@ -366,10 +376,11 @@ async function exercise(phase: string) {
   // Compact existing per-question posts in place, including across history pages.
   // Keep other messages and recover a failed cleanup without creating duplicates.
   const legacyMain = nextId();
-  reviewMessages.set(legacyMain, { id: legacyMain, author: bot, ...applicationMessage("Legacy review header") });
+  reviewMessages.set(legacyMain, { id: legacyMain, author: bot, content: "Legacy review header", components: [] });
   const legacyParts = Array.from({ length: 8 }, (_, index) => {
     const id = nextId();
-    reviewMessages.set(id, { id, author: bot, ...applicationMessage(`### Application #4 · Part ${index + 1}\nOld answer`) });
+    const content = `Application #4 · Part ${index + 1}\nOld answer`;
+    reviewMessages.set(id, { id, author: bot, ...(index ? applicationMessage(`### ${content}`) : { content, components: [] }) });
     return id;
   });
   const otherIds = Array.from({ length: 101 }, (_, index) => {
@@ -379,7 +390,20 @@ async function exercise(phase: string) {
     return id;
   });
   await db.appForm.update({ where: { id: "legacy-form" }, data: { reviewChannelId, reviewerRoles: JSON.stringify([reviewerRole]) } });
-  await db.application.update({ where: { id: "legacy-app" }, data: { reviewChannelId, reviewMessageId: legacyMain, reviewParts: 8 } });
+  await db.application.update({ where: { id: "legacy-app" }, data: {
+    reviewChannelId, reviewMessageId: legacyMain, reviewParts: 8, status: "CLOSED",
+    history: { create: { status: "DENIED" } },
+  } });
+  const backfillClient = { guilds: discordClient.guilds, user: bot } as Parameters<typeof backfillApplicationReviewAccents>[0];
+  const beforeBackfill = [...reviewMessages.keys()];
+  await backfillApplicationReviewAccents(backfillClient);
+  assert.deepEqual([...reviewMessages.keys()], beforeBackfill);
+  assert.equal(messageText(reviewMessages.get(legacyMain)), "Legacy review header");
+  for (const id of [legacyMain, ...legacyParts]) assert.equal(componentList(reviewMessages.get(id))[0].accent_color, 0xed4245);
+  assert.ok(otherIds.every(id => componentList(reviewMessages.get(id))[0].accent_color === undefined));
+  const colored = reviewMessages.get(legacyMain).components;
+  await backfillApplicationReviewAccents(backfillClient);
+  assert.equal(reviewMessages.get(legacyMain).components, colored);
   reviewDeleteFails = true;
   const retryLegacy = () => runApplicationReview(guildId, "legacy-app", reviewerId, { action: "retry_review" });
   assert.ok((await retryLegacy()).warnings.length);
@@ -412,6 +436,7 @@ async function exercise(phase: string) {
   const decisions = await Promise.allSettled([review("accept", { reason: "Welcome" }), review("deny")]);
   assert.equal(decisions.filter(result => result.status === "fulfilled").length, 1);
   assert.equal(assigned, 1);
+  assert.ok(repairedIds.every(id => componentList(reviewMessages.get(id))[0].accent_color === 0x57f287));
 
   const express = (await import("express")).default;
   const { createServer } = await import("node:http");
