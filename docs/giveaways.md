@@ -13,7 +13,7 @@
 
 1. Lege unter **Einstellungen** die Kanäle, Zeitzone, Standarddauer und Teilnahmebedingungen fest. **Manuelle Prüfung** ist die Standardeinstellung für Ziehung und Veröffentlichung.
 2. Öffne **Giveaway erstellen** oder verwende eine gespeicherte Vorlage. Gib Preis, Gestaltung, Teilnahmebedingungen, Abholoptionen und Zeitplan an. Start und Ende werden in der gewählten IANA-Zeitzone eingegeben und als UTC gespeichert. Bei einer doppelt auftretenden Ortszeit kannst du den späteren Zeitpunkt wählen.
-3. **Vorschau anzeigen** rendert die Components-V2-Nachricht aus demselben Backend-Builder, der die Discord-Ankündigung erstellt.
+3. **Vorschau anzeigen** rendert die Components-V2-Nachricht aus demselben Backend-Builder, der die Discord-Ankündigung erstellt. Der Bot verwendet englische Standardtexte, etwa **Enter Giveaway** und **Claim Prize**. Eigene Titel, Beschreibungen und Button-Texte werden wie eingegeben angezeigt. Beim Neustart aktualisiert der Bot Ankündigungen für aktive und pausierte Giveaways.
 4. Speichere den Entwurf und wähle **Jetzt veröffentlichen** oder **Start planen**. Veröffentlichte Bedingungen und Gewinnchancen sind gesperrt. Während des Giveaways kannst du unter **Ankündigung gestalten** die Darstellung aktualisieren und im selben Tab pausieren, fortsetzen, verlängern, vorzeitig beenden oder stornieren.
 5. Unter **Teilnahmen** stehen Suchfunktion, Filter, Verifikationsdetails und Teilnahmeverlauf zur Verfügung. Solange das Giveaway offen ist, kann das Team erneut prüfen, einen Risikohinweis einordnen oder mit protokollierter Begründung ausschließen. Mitgliedschaft, Kontoalter, Rollen und Mitgliedschaftsdauer sind getrennte Prüfungen.
 

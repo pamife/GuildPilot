@@ -4,11 +4,26 @@ import { Guild, GuildMember, User } from "discord.js";
 import { entryDeadline, GiveawayConfig, Verification } from "../../../types/giveaways";
 import { entryVerification, lookupMember, verifyEligibility } from "./eligibility";
 import { Actor, auditGiveaway, configOf, db, enabled, getGiveaway, lockGiveaway, system, transaction, Tx } from "./store";
-import { conflict } from "./validation";
+import { conflict, GiveawayInteractionError } from "./validation";
 
 const open = ["ACTIVE", "PAUSED"];
 const key = (giveawayId: string, userId: string) => ({ giveawayId_userId: { giveawayId, userId } });
 const entryDelay = 7_000;
+
+function ineligibleReply(config: GiveawayConfig, verification: Verification) {
+  const { rules } = config;
+  const reasons: Record<keyof Verification["checks"], string> = {
+    member: "You must be a member of this server.",
+    account: `Your Discord account must be at least ${rules.accountDays} ${rules.accountDays === 1 ? "day" : "days"} old.`,
+    tenure: `You must have been on this server for at least ${rules.memberDays} ${rules.memberDays === 1 ? "day" : "days"}.`,
+    required: rules.roleMatch === "ALL" ? "You need all of the required roles." : "You need at least one of the required roles.",
+    excluded: "One of your roles is excluded from this giveaway.",
+    manual: "Your entry has been excluded from this giveaway.",
+  };
+  const failed = (Object.keys(reasons) as (keyof typeof reasons)[])
+    .filter(key => verification.checks[key].result === "FAILED");
+  return ["You’re not eligible to enter this giveaway.", ...failed.map(key => reasons[key])].join(" ");
+}
 
 async function signals(tx: Tx, giveaway: Giveaway, userId: string) {
   const [attempts, documented] = await Promise.all([
@@ -24,7 +39,7 @@ export async function participate(guild: Guild, giveawayId: string, messageId: s
   const before = await getGiveaway(guild.id, giveawayId);
   const start = new Date();
   if (user.bot || before.status !== "ACTIVE" || before.messageId !== messageId || start >= entryDeadline(before.endAt, configOf(before).rules)) {
-    conflict("Die Teilnahme ist geschlossen.");
+    throw new GiveawayInteractionError("Entries are closed.");
   }
   const lookup = action === "join" ? await lookupMember(guild, user.id) : "UNAVAILABLE";
   return transaction(async tx => {
@@ -32,15 +47,17 @@ export async function participate(guild: Guild, giveawayId: string, messageId: s
     const config = configOf(row);
     const now = new Date();
     if (row.status !== "ACTIVE" || row.messageId !== messageId || now >= entryDeadline(row.endAt, config.rules) || !await enabled(tx, guild.id)) {
-      conflict("Die Teilnahme ist geschlossen.");
+      throw new GiveawayInteractionError("Entries are closed.");
     }
     const existing = await tx.giveawayEntry.findUnique({ where: key(row.id, user.id) });
     if (action === "leave") {
-      if (!config.rules.withdraw || !existing || existing.withdrawnAt) conflict("Du hast keine aktive Teilnahme, die du zurückziehen kannst.");
+      if (!config.rules.withdraw || !existing || existing.withdrawnAt) {
+        throw new GiveawayInteractionError("You don’t have an active entry you can withdraw.");
+      }
       await tx.giveawayEntry.update({ where: key(row.id, user.id), data: { withdrawnAt: now } });
       await auditGiveaway(tx, row, user, "ENTRY_WITHDRAWN", { userId: user.id });
       await queueRefresh(tx, row);
-      return "Du hast deine Teilnahme zurückgezogen.";
+      return "You withdrew your entry.";
     }
     let { attempts, documented } = await signals(tx, row, user.id);
     const duplicate = Boolean(existing && !existing.withdrawnAt);
@@ -54,8 +71,8 @@ export async function participate(guild: Guild, giveawayId: string, messageId: s
       if (duplicate && existing) await tx.giveawayEntry.update({
         where: key(row.id, user.id), data: entryVerification(verifyEligibility(config, user.id, lookup, attempts, documented, existing.exclusion, now)),
       });
-      if (duplicate) return "Du nimmst bereits teil.";
-      return `Teilnahme abgelehnt. ${Object.values(verification.checks).filter(check => check.result === "FAILED").map(check => check.detail).join(" · ").slice(0, 1400)}`;
+      if (duplicate) return "You’ve already entered this giveaway.";
+      return ineligibleReply(config, verification);
     }
     const profile = {
       username: user.username, displayName: typeof lookup === "object" ? lookup.displayName : user.globalName || user.username,
@@ -67,7 +84,9 @@ export async function participate(guild: Guild, giveawayId: string, messageId: s
     });
     await auditGiveaway(tx, row, user, "ENTRY_JOINED", { userId: user.id, eligibility: verification.status });
     await queueRefresh(tx, row);
-    return verification.status === "REVIEW" ? "Deine Teilnahme wurde erfasst. Offene Voraussetzungen werden vor der Ziehung geprüft." : "Du nimmst jetzt am Giveaway teil!";
+    return verification.status === "REVIEW"
+      ? "Your entry was recorded. We’ll review any outstanding eligibility checks before the draw."
+      : "You’ve entered the giveaway!";
   });
 }
 

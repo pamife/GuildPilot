@@ -116,7 +116,7 @@ async function run(item: GiveawayJob, guild: Guild, ensureLease: () => Promise<v
     if (!item.firstSendAt && (row.status !== "ACTIVE" || entryDeadline(row.endAt, config.rules) <= new Date() || !await enabled(db, row.guildId))) return none;
     const channel = await destination(guild, config.channelId, config.pingRoleId);
     return { messageId: await send(channel, {
-      content: `<@&${config.pingRoleId}> · 🎉 Neues Giveaway\n${originalUrl(row)}\n${reference}`,
+      content: `<@&${config.pingRoleId}> · 🎉 New Giveaway\n${originalUrl(row)}\n${reference}`,
       allowedMentions: { ...safeMentions, roles: [config.pingRoleId] },
     }, row.status === "ACTIVE" && entryDeadline(row.endAt, config.rules) > new Date() && await enabled(db, row.guildId)) };
   }

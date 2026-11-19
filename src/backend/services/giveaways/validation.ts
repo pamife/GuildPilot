@@ -7,6 +7,8 @@ import { PluginError } from "../pluginService";
 export function invalid(message: string): never { throw new PluginError(400, message); }
 export function conflict(message: string): never { throw new PluginError(409, message); }
 
+export class GiveawayInteractionError extends Error {}
+
 export function object(value: unknown): Record<string, unknown> {
   if (!value || typeof value !== "object" || Array.isArray(value)) invalid("Ungültige Eingabe.");
   return value as Record<string, unknown>;

@@ -67,7 +67,7 @@ router.post("/preview", endpoint(async (req, res) => {
   const body = object(req.body);
   const config = parseConfig(body.config);
   const endAt = date(body.endAt);
-  res.json(entryAnnouncement(config, { id: "0".repeat(32), status: "ACTIVE", endAt, publishedRound: 0, commitment: "Vorschau" }, 0, "Vorschau", true));
+  res.json(entryAnnouncement(config, { id: "0".repeat(32), status: "ACTIVE", endAt, publishedRound: 0, commitment: "Preview" }, 0, "Preview", true));
 }));
 router.post("/items", endpoint(async (req, res) => {
   const body = object(req.body);

@@ -5,6 +5,7 @@ import { drawInitial, publishResults } from "../services/giveaways/drawing";
 import { advanceLifecycle, dueLifecycle } from "../services/giveaways/lifecycle";
 import { buildSnapshot, participate, syncMemberChange } from "../services/giveaways/participants";
 import { configOf, db, system } from "../services/giveaways/store";
+import { GiveawayInteractionError } from "../services/giveaways/validation";
 import { PluginError } from "../services/pluginService";
 
 export function setupGiveaways(client: Client) {
@@ -12,7 +13,7 @@ export function setupGiveaways(client: Client) {
   const run = (key: string, fn: () => Promise<unknown>) => {
     if (tasks.has(key)) return;
     tasks.add(key);
-    void fn().catch(error => console.error(`[Giveaways] ${key}:`, error instanceof Error ? error.message : "Unbekannter Fehler"))
+    void fn().catch(error => console.error(`[Giveaways] ${key}:`, error instanceof Error ? error.message : "Unknown error"))
       .finally(() => tasks.delete(key));
   };
 
@@ -73,6 +74,11 @@ export function setupGiveaways(client: Client) {
   }
 
   client.once(Events.ClientReady, () => {
+    const now = new Date();
+    run("queue existing announcement refresh", () => db.giveaway.updateMany({
+      where: { status: { in: ["ACTIVE", "PAUSED"] }, messageId: { not: null }, OR: [{ refreshAt: null }, { refreshAt: { gt: now } }] },
+      data: { refreshAt: now },
+    }));
     tick();
     const timer = setInterval(tick, 4_000);
     timer.unref();
@@ -99,17 +105,17 @@ export function setupGiveaways(client: Client) {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
       let message: string;
       if (action === "claim" || action === "decline") {
-        if (interaction.guildId) throw new PluginError(400, "Verwende den Button in deiner Direktnachricht.");
+        if (interaction.guildId) throw new GiveawayInteractionError("Use the button in your direct message.");
         message = await respondToClaim(key, interaction.user, action);
       } else {
-        if (!interaction.guild?.available) throw new PluginError(503, "Der Discord-Server ist gerade nicht erreichbar.");
+        if (!interaction.guild?.available) throw new GiveawayInteractionError("This Discord server is currently unavailable.");
         message = action === "public-claim"
           ? await respondToPublicClaim(interaction.guild.id, key, interaction.message.id, interaction.user)
           : await participate(interaction.guild, key, interaction.message.id, interaction.user, action === "join" ? "join" : "leave");
       }
       await interaction.editReply({ content: message, allowedMentions: { parse: [] } });
     } catch (error) {
-      const content = error instanceof PluginError && error.status !== 404 ? error.message : "Diese Giveaway-Aktion konnte nicht abgeschlossen werden.";
+      const content = error instanceof GiveawayInteractionError ? error.message : "We couldn’t complete this giveaway action.";
       if (interaction.deferred) await interaction.editReply({ content, allowedMentions: { parse: [] } }).catch(() => {});
     }
   });

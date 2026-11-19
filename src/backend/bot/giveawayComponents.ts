@@ -3,7 +3,9 @@ import {
   MessageCreateOptions, MessageFlags, SeparatorBuilder, SeparatorSpacingSize, TextDisplayBuilder,
 } from "discord.js";
 import { discordText } from "../../types/changelog";
-import { entryDeadline, GiveawayConfig, giveawayCopy, unix } from "../../types/giveaways";
+import { defaultGiveawayButtonLabel, entryDeadline, GiveawayConfig, giveawayCopy, unix } from "../../types/giveaways";
+
+const entryCount = new Intl.NumberFormat("en-US");
 
 export const safeMentions = { parse: [], roles: [], users: [], repliedUser: false } satisfies MessageCreateOptions["allowedMentions"];
 
@@ -44,21 +46,22 @@ export function entryAnnouncement(config: GiveawayConfig, row: {
   const media = [...new Set([config.banner, config.image].filter(Boolean))];
   if (media.length) ui.gallery(media);
   ui.separator();
-  const status = row.status === "CANCELLED" ? "Abgesagt" : row.publishedRound ? "Ergebnis veröffentlicht"
-    : row.status === "PAUSED" ? "Pausiert" : acceptsEntries ? "Teilnahme offen" : "Teilnahme geschlossen";
+  const status = row.status === "CANCELLED" ? "Cancelled" : row.publishedRound ? "Results announced"
+    : row.status === "PAUSED" ? "Paused" : acceptsEntries ? "Entries open" : "Entries closed";
   ui.text([
-    `🎁 **Preis** · ${discordText(config.prize)}`,
-    `🏆 **Gewinnerplätze** · ${config.winnerCount}`,
-    `👥 **Teilnahmen** · ${count.toLocaleString("de")}`,
-    `⏰ **Ende** · <t:${ends}:F> (<t:${ends}:R>)`,
-    config.rules.entryBufferMinutes > 0 ? `🚪 **Teilnahmeschluss** · <t:${unix(entryDeadline(row.endAt, config.rules))}:F>` : "",
+    `🎁 **Prize** · ${discordText(config.prize)}`,
+    `🏆 **Winner slots** · ${config.winnerCount}`,
+    `👥 **Entries** · ${entryCount.format(count)}`,
+    `⏰ **Ends** · <t:${ends}:F> (<t:${ends}:R>)`,
+    config.rules.entryBufferMinutes > 0 ? `🚪 **Entry deadline** · <t:${unix(entryDeadline(row.endAt, config.rules))}:F>` : "",
     `**${status}**`,
   ].filter(Boolean).join("\n"));
-  if (requirements.length) ui.text(`**Teilnahmebedingungen**\n${requirements.map(item => `• ${item}`).join("\n")}`);
+  if (requirements.length) ui.text(`**Entry requirements**\n${requirements.map(item => `• ${item}`).join("\n")}`);
   for (const text of details) ui.text(discordText(text));
   if (acceptsEntries) {
-    const buttons = [action(`gp-gw:join:${row.id}`, config.buttonLabel.replace(/@(everyone|here)/gi, "@\u200b$1"), ButtonStyle.Primary, config.buttonEmoji)];
-    if (config.rules.withdraw) buttons.push(action(`gp-gw:leave:${row.id}`, "Teilnahme zurückziehen", ButtonStyle.Secondary));
+    const label = config.buttonLabel === "Teilnehmen" ? defaultGiveawayButtonLabel : config.buttonLabel;
+    const buttons = [action(`gp-gw:join:${row.id}`, label.replace(/@(everyone|here)/gi, "@\u200b$1"), ButtonStyle.Primary, config.buttonEmoji)];
+    if (config.rules.withdraw) buttons.push(action(`gp-gw:leave:${row.id}`, "Withdraw Entry", ButtonStyle.Secondary));
     ui.separator();
     ui.buttons(...buttons);
   }
@@ -70,14 +73,14 @@ export function entryAnnouncement(config: GiveawayConfig, row: {
 export function resultsAnnouncement(config: GiveawayConfig, giveawayId: string, users: string[], newlyAnnounced: string[], count: number,
   url: string | null, reference: string, round: number) {
   const ui = components(config.color);
-  ui.text(round > 1 ? "-# 🎊 AKTUALISIERTE GEWINNERLISTE" : "-# 🎊 GIVEAWAY BEENDET");
+  ui.text(round > 1 ? "-# 🎊 UPDATED WINNERS" : "-# 🎊 GIVEAWAY ENDED");
   ui.text(`# 🏆 ${discordText(config.title)}`);
   if (config.image) ui.gallery([config.image]);
   ui.separator();
-  ui.text(`**🎁 Preis** · ${discordText(config.prize)}\n**👥 Teilnahmen** · ${count.toLocaleString("de")}\n\n**Bestätigte Gewinner**\n${users.length ? users.map(id => `• <@${id}>`).join("\n") : "Es konnte kein Gewinn vergeben werden."}`);
+  ui.text(`**🎁 Prize** · ${discordText(config.prize)}\n**👥 Entries** · ${entryCount.format(count)}\n\n**Confirmed winners**\n${users.length ? users.map(id => `• <@${id}>`).join("\n") : "No prizes were awarded."}`);
   const buttons: ButtonBuilder[] = [];
-  if (config.claimsEnabled && users.length) buttons.push(action(`gp-gw:public-claim:${giveawayId}`, "Preis abholen", ButtonStyle.Primary, "🎁"));
-  if (url) buttons.push(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("Zum Giveaway").setURL(url));
+  if (config.claimsEnabled && users.length) buttons.push(action(`gp-gw:public-claim:${giveawayId}`, "Claim Prize", ButtonStyle.Primary, "🎁"));
+  if (url) buttons.push(new ButtonBuilder().setStyle(ButtonStyle.Link).setLabel("View Giveaway").setURL(url));
   if (buttons.length) ui.buttons(...buttons);
   ui.text(`-# ${reference}`);
   return { ...ui.message(), allowedMentions: { ...safeMentions, users: newlyAnnounced } };
@@ -86,13 +89,13 @@ export function resultsAnnouncement(config: GiveawayConfig, giveawayId: string, 
 export function winnerDm(config: GiveawayConfig, guildName: string, reference: string,
   claim?: { token: string; deadline: Date }, extension = false) {
   const ui = components(config.color);
-  ui.text(extension ? "# ⏰ Deine Abholfrist wurde verlängert" : "# 🎉 Herzlichen Glückwunsch!");
-  ui.text(`**${discordText(config.title)}** · ${discordText(guildName)}\n🎁 **Dein Preis** · ${discordText(config.prize)}`);
+  ui.text(extension ? "# ⏰ Your claim deadline has been extended" : "# 🎉 Congratulations!");
+  ui.text(`**${discordText(config.title)}** · ${discordText(guildName)}\n🎁 **Your prize** · ${discordText(config.prize)}`);
   if (claim) {
     ui.separator();
-    ui.text(`Hole deinen Preis bis <t:${unix(claim.deadline)}:F> (<t:${unix(claim.deadline)}:R>) ab.`);
-    ui.buttons(action(`gp-gw:claim:${claim.token}`, "Preis abholen", ButtonStyle.Primary),
-      action(`gp-gw:decline:${claim.token}`, "Preis ablehnen", ButtonStyle.Secondary));
+    ui.text(`Claim your prize by <t:${unix(claim.deadline)}:F> (<t:${unix(claim.deadline)}:R>).`);
+    ui.buttons(action(`gp-gw:claim:${claim.token}`, "Claim Prize", ButtonStyle.Primary),
+      action(`gp-gw:decline:${claim.token}`, "Decline Prize", ButtonStyle.Secondary));
   }
   ui.text(`-# ${reference}`);
   return ui.message();

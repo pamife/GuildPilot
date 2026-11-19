@@ -88,6 +88,7 @@ export interface GiveawayConfig extends GiveawaySettings {
 }
 
 export const appearanceKeys = ["color", "titleOverride", "description", "image", "banner", "footer", "buttonLabel", "buttonEmoji", "branding"] as const;
+export const defaultGiveawayButtonLabel = "Enter Giveaway";
 
 export const giveawayDefaults: GiveawaySettings = {
   channelId: null, winnerChannelId: null, pingRoleId: null, auditChannelId: null,
@@ -103,7 +104,7 @@ export const giveawayDefaults: GiveawaySettings = {
 export function newGiveaway(settings: GiveawaySettings): GiveawayConfig {
   return {
     ...settings, title: "", prize: "", prizeDescription: "", sponsor: "", information: "", terms: "",
-    titleOverride: "", description: "", image: "", banner: "", footer: "", buttonLabel: "Teilnehmen",
+    titleOverride: "", description: "", image: "", banner: "", footer: "", buttonLabel: defaultGiveawayButtonLabel,
     buttonEmoji: "🎉", branding: "Discord Giveaway",
   };
 }
@@ -116,11 +117,11 @@ export function entryDeadline(end: Date, rules: GiveawayRules) {
 
 export function giveawayRequirements(rules: GiveawayRules) {
   return [
-    rules.requireMember && "Bei der Ziehung noch Mitglied des Servers sein",
-    rules.accountDays > 0 && `Discord-Konto mindestens ${rules.accountDays} Tage alt`,
-    rules.memberDays > 0 && `Mindestens ${rules.memberDays} Tage auf dem Server`,
-    rules.requiredRoles.length > 0 && `${rules.roleMatch === "ALL" ? "Alle Rollen" : "Mindestens eine Rolle"}: ${rules.requiredRoles.map(id => `<@&${id}>`).join(", ")}`,
-    rules.excludedRoles.length > 0 && `Ausgeschlossene Rollen: ${rules.excludedRoles.map(id => `<@&${id}>`).join(", ")}`,
+    rules.requireMember && "Be a member of the server when winners are drawn.",
+    rules.accountDays > 0 && `Minimum Discord account age: ${rules.accountDays} ${rules.accountDays === 1 ? "day" : "days"}`,
+    rules.memberDays > 0 && `Minimum server membership: ${rules.memberDays} ${rules.memberDays === 1 ? "day" : "days"}`,
+    rules.requiredRoles.length > 0 && `${rules.roleMatch === "ALL" ? "All required roles" : "At least one of these roles"}: ${rules.requiredRoles.map(id => `<@&${id}>`).join(", ")}`,
+    rules.excludedRoles.length > 0 && `Excluded roles: ${rules.excludedRoles.map(id => `<@&${id}>`).join(", ")}`,
   ].filter((value): value is string => Boolean(value));
 }
 

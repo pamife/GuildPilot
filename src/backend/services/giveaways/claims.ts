@@ -2,7 +2,7 @@ import { Giveaway } from "@prisma/client";
 import { Guild } from "discord.js";
 import { replaceCandidate } from "./drawing";
 import { Actor, Tx, auditGiveaway, configOf, db, id, job, lockGiveaway, system, transaction } from "./store";
-import { conflict } from "./validation";
+import { conflict, GiveawayInteractionError } from "./validation";
 
 export async function resolveStatus(tx: Tx, row: Giveaway) {
   const outstanding = await tx.giveawayClaim.count({
@@ -45,9 +45,13 @@ export async function finishPublication(tx: Tx, row: Giveaway, candidateIds: str
 export async function respondToClaim(token: string, actor: Actor, action: "claim" | "decline", guildId?: string, messageId?: string) {
   return transaction(async tx => {
     const found = await tx.giveawayClaim.findUnique({ where: { token }, include: { candidate: true } });
-    if (!found || found.candidate.userId !== actor.id || (guildId && found.guildId !== guildId)) conflict("Diese Abholung ist nicht verfügbar.");
+    if (!found || found.candidate.userId !== actor.id || (guildId && found.guildId !== guildId)) {
+      throw new GiveawayInteractionError("This prize claim is unavailable.");
+    }
     const row = await lockGiveaway(tx, found.guildId, found.candidate.giveawayId);
-    if (!found.candidate.announcedAt || (guildId && messageId !== row.resultId)) conflict("Diese Abholung ist nicht verfügbar.");
+    if (!found.candidate.announcedAt || (guildId && messageId !== row.resultId)) {
+      throw new GiveawayInteractionError("This prize claim is unavailable.");
+    }
     return updateResponse(tx, row, found.id, actor, action);
   });
 }
@@ -55,25 +59,27 @@ export async function respondToClaim(token: string, actor: Actor, action: "claim
 export async function respondToPublicClaim(guildId: string, giveawayId: string, messageId: string, actor: Actor) {
   return transaction(async tx => {
     const row = await lockGiveaway(tx, guildId, giveawayId);
-    if (row.resultId !== messageId) conflict("Verwende die aktuelle Gewinnerankündigung.");
+    if (row.resultId !== messageId) throw new GiveawayInteractionError("Use the latest winner announcement.");
     const found = await tx.giveawayClaim.findFirst({ where: {
       guildId, candidate: { giveawayId, userId: actor.id, announcedAt: { not: null }, status: "APPROVED" },
     } });
-    if (!found) conflict("Für dich ist keine Abholung verfügbar.");
+    if (!found) throw new GiveawayInteractionError("You don’t have a prize to claim for this giveaway.");
     return updateResponse(tx, row, found.id, actor, "claim");
   });
 }
 
 async function updateResponse(tx: Tx, row: Giveaway, claimId: string, actor: Actor, action: "claim" | "decline") {
   const found = await tx.giveawayClaim.findUniqueOrThrow({ where: { id: claimId }, include: { candidate: true } });
-  if (found.status === "CLAIMED" && action === "claim") return "Deine Abholung ist bereits bestätigt.";
-  if (found.status !== "PENDING" || found.deadline <= new Date() || found.candidate.status !== "APPROVED") conflict("Die Abholung ist geschlossen oder abgelaufen.");
+  if (found.status === "CLAIMED" && action === "claim") return "You’ve already claimed this prize.";
+  if (found.status !== "PENDING" || found.deadline <= new Date() || found.candidate.status !== "APPROVED") {
+    throw new GiveawayInteractionError("This prize claim is closed or has expired.");
+  }
   const status = action === "claim" ? "CLAIMED" : "DECLINED";
   await tx.giveawayClaim.update({ where: { id: claimId }, data: { status, claimedAt: action === "claim" ? new Date() : null } });
   await auditGiveaway(tx, row, actor, action === "claim" ? "CLAIM_SUBMITTED" : "CLAIM_DECLINED",
     { claimId, userId: actor.id, before: found.status, after: status }, configOf(row).notifyClaims);
   await statusAfterClaim(tx, row);
-  return action === "claim" ? "Deine Abholung wurde bestätigt. Das Team kann dir den Preis übergeben." : "Du hast den Preis abgelehnt.";
+  return action === "claim" ? "Your claim is confirmed. The server team can now deliver your prize." : "You declined the prize.";
 }
 
 export async function manageClaim(guildId: string, giveawayId: string, claimId: string, actor: Actor,

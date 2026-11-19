@@ -154,6 +154,18 @@ async function run() {
     assert.equal(preview.components[0].type, ComponentType.Container);
     assert.equal(preview.content, undefined);
     assert.deepEqual(preview.allowedMentions.parse, []);
+    const previewText = JSON.stringify(preview.components);
+    assert.match(previewText, /Entry requirements/);
+    assert.match(previewText, /Enter Giveaway/);
+    assert.match(previewText, /Withdraw Entry/);
+    const legacyPreview = await expect("/preview", 200, { method: "POST", body: {
+      ...payload, config: { ...config, buttonLabel: "Teilnehmen" },
+    } });
+    assert.match(JSON.stringify(legacyPreview.components), /Enter Giveaway/);
+    const customPreview = await expect("/preview", 200, { method: "POST", body: {
+      ...payload, config: { ...config, buttonLabel: "Count Me In" },
+    } });
+    assert.match(JSON.stringify(customPreview.components), /Count Me In/);
 
     await expect("/items", 201, { method: "POST", body: payload });
     await expect("/items", 201, { method: "POST", body: payload });
@@ -181,11 +193,11 @@ async function run() {
     assert.equal(edited.footer, "Neue Fußzeile");
     const channelMessage = active.messageId!;
     const join = (user: User) => participate(fake.guild, giveawayId, channelMessage, user, "join");
-    await assert.rejects(participate(fake.guild, giveawayId, "wrong", alpha, "join"), /geschlossen/);
+    await assert.rejects(participate(fake.guild, giveawayId, "wrong", alpha, "join"), /Entries are closed/);
     const results = await Promise.all([join(alpha), join(alpha), join(alpha)]);
-    assert.equal(results.filter(result => result.includes("bereits")).length, 2);
-    assert.match(await join(altRole), /abgelehnt/);
-    assert.match(await join(newAccount), /abgelehnt/);
+    assert.equal(results.filter(result => result.includes("already entered")).length, 2);
+    assert.match(await join(altRole), /One of your roles is excluded/);
+    assert.match(await join(newAccount), /Your Discord account must be at least 15 days old/);
     assert.equal(verifyEligibility(config, altRole.id, fake.users.get(altRole.id)!.member).checks.excluded.result, "FAILED");
     assert.equal(verifyEligibility(config, altRole.id, fake.users.get(altRole.id)!.member).checks.required.result, "FAILED");
     assert.equal(verifyEligibility(config, newAccount.id, fake.users.get(newAccount.id)!.member).checks.account.result, "FAILED");
@@ -195,21 +207,21 @@ async function run() {
     await join(beta);
     await join(gamma);
     fake.users.get(unknown.id)!.unavailable = true;
-    assert.match(await join(unknown), /erfasst/);
+    assert.match(await join(unknown), /Your entry was recorded/);
     await syncMemberChange(guildId, gamma.id, "LEFT");
     assert.equal((await expect(`${path}/participants?filter=left`, 200)).total, 1);
     await syncMemberChange(guildId, gamma.id, fake.users.get(gamma.id)!.member);
-    await participate(fake.guild, giveawayId, channelMessage, beta, "leave");
+    assert.equal(await participate(fake.guild, giveawayId, channelMessage, beta, "leave"), "You withdrew your entry.");
     assert.equal((await expect(`${path}/participants?filter=withdrawn`, 200)).total, 1);
     await join(beta);
     await refreshAnnouncement(fake.guild, await row());
-    assert.match(JSON.stringify(fake.lastEdit()?.components), /Teilnahmen\*\* · 4/);
+    assert.match(JSON.stringify(fake.lastEdit()?.components), /Entries\*\* · 4/);
 
     await post("/lifecycle/pause", 204);
-    await assert.rejects(join(alpha), /geschlossen/);
+    await assert.rejects(join(alpha), /Entries are closed/);
     await post("/lifecycle/resume", 204);
     await expect("", 200, { method: "PATCH", body: { enabled: false } });
-    await assert.rejects(join(alpha), /geschlossen/);
+    await assert.rejects(join(alpha), /Entries are closed/);
     await expect("", 200, { method: "PATCH", body: { enabled: true } });
 
     await db.giveaway.update({ where: { id: giveawayId }, data: { endAt: when(-1_000) } });
@@ -254,6 +266,8 @@ async function run() {
     assert.equal(fake.sent.size, 2, "Must recover the existing Discord message after a lost response");
     assert.equal((await row()).status, "AWAITING_CLAIM");
     assert.deepEqual(fake.sent.last().body.allowed_mentions.users, [winner.userId]);
+    assert.match(JSON.stringify(fake.sent.last().body.components), /Confirmed winners/);
+    assert.match(JSON.stringify(fake.sent.last().body.components), /Claim Prize/);
 
     const evidence = await expect(`${path}/transparency`, 200);
     const summary = await expect(`${path}/transparency?redacted=true`, 200);
@@ -268,17 +282,19 @@ async function run() {
     const dm = await db.giveawayJob.findFirstOrThrow({ where: { kind: "DM", giveawayId } });
     await processJob(discordClient, dm.id);
     assert.equal(fake.dm.first().body.flags, MessageFlags.IsComponentsV2);
+    assert.match(JSON.stringify(fake.dm.first().body.components), /Congratulations!/);
+    assert.match(JSON.stringify(fake.dm.first().body.components), /Decline Prize/);
     const claim = await db.giveawayClaim.findUniqueOrThrow({ where: { candidateId: winner.id } });
     detail = await expect(path, 200);
     assert.equal(detail.candidates[1].claim.token, undefined);
-    await assert.rejects(claims.respondToClaim(claim.token, { id: outsider, username: outsider }, "claim"), /nicht verfügbar/);
+    await assert.rejects(claims.respondToClaim(claim.token, { id: outsider, username: outsider }, "claim"), /This prize claim is unavailable/);
     await db.giveawayClaim.update({ where: { id: claim.id }, data: { deadline: when(-1_000) } });
     await claims.expireClaims();
     assert.equal((await db.giveawayClaim.findUniqueOrThrow({ where: { id: claim.id } })).status, "EXPIRED");
     await post(`/claims/${claim.id}/extend`, 204, { deadline: when(day).toISOString() });
     const actor = { id: winner.userId, username: "Winner" };
-    assert.match(await claims.respondToClaim(claim.token, actor, "claim"), /bestätigt/);
-    assert.match(await claims.respondToClaim(claim.token, actor, "claim"), /bereits/);
+    assert.match(await claims.respondToClaim(claim.token, actor, "claim"), /Your claim is confirmed/);
+    assert.match(await claims.respondToClaim(claim.token, actor, "claim"), /already claimed/);
     await post(`/claims/${claim.id}/fulfill`, 204, { confirmed: true, notes: "Übergabe erfolgt." });
     assert.equal((await row()).status, "COMPLETED");
 
