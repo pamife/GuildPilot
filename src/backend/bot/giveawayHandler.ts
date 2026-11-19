@@ -1,12 +1,57 @@
-import { Client, Events, MessageFlags } from "discord.js";
+import { ButtonInteraction, Client, Events, MessageFlags } from "discord.js";
+import { entryDeadline } from "../../types/giveaways";
+import { giveawayInfo } from "./giveawayComponents";
 import { expireClaims, respondToClaim, respondToPublicClaim } from "../services/giveaways/claims";
-import { processJob, refreshAnnouncement } from "../services/giveaways/delivery";
+import { originalUrl, processJob, refreshAnnouncement, resultUrl } from "../services/giveaways/delivery";
 import { drawInitial, publishResults } from "../services/giveaways/drawing";
 import { advanceLifecycle, dueLifecycle } from "../services/giveaways/lifecycle";
 import { buildSnapshot, participate, syncMemberChange } from "../services/giveaways/participants";
-import { configOf, db, system } from "../services/giveaways/store";
+import { configOf, db, enabled, getGiveaway, system } from "../services/giveaways/store";
 import { GiveawayInteractionError } from "../services/giveaways/validation";
 import { PluginError } from "../services/pluginService";
+
+const claimInfo = { status: true, deadline: true } as const;
+
+async function infoTarget(interaction: ButtonInteraction, action: "info" | "dm-info", key: string) {
+  const messageId = interaction.message.id;
+  if (action === "dm-info") {
+    if (interaction.guildId) throw new GiveawayInteractionError("Use the Info button in your direct message.");
+    const winner = await db.giveawayCandidate.findFirst({
+      where: { id: key, userId: interaction.user.id, announcedAt: { not: null } },
+      include: { giveaway: true, claim: { select: claimInfo } },
+    });
+    if (!winner || !await db.giveawayJob.findFirst({
+      where: { giveawayId: winner.giveawayId, kind: "DM", messageId, doneAt: { not: null } },
+      select: { id: true },
+    })) throw new GiveawayInteractionError("These giveaway details are unavailable.");
+    return { row: winner.giveaway, claim: winner.claim };
+  }
+  if (!interaction.guild?.available) throw new GiveawayInteractionError("This Discord server is currently unavailable.");
+  const row = await getGiveaway(interaction.guild.id, key);
+  if (messageId !== row.messageId && messageId !== row.resultId && !await db.giveawayJob.findFirst({
+    where: { giveawayId: row.id, kind: "RESULT", messageId, doneAt: { not: null } },
+    select: { id: true },
+  })) throw new GiveawayInteractionError("These giveaway details are unavailable.");
+  const winner = row.resultId && await db.giveawayCandidate.findFirst({
+    where: { giveawayId: row.id, userId: interaction.user.id, announcedAt: { not: null } },
+    select: { claim: { select: claimInfo } },
+  });
+  return { row, claim: winner ? winner.claim : null };
+}
+
+async function replyWithInfo(interaction: ButtonInteraction, action: "info" | "dm-info", key: string) {
+  const { row, claim } = await infoTarget(interaction, action, key);
+  const config = configOf(row);
+  const [count, acceptsEntries] = await Promise.all([
+    db.giveawayEntry.count({ where: { giveawayId: row.id, withdrawnAt: null } }),
+    row.status === "ACTIVE" && entryDeadline(row.endAt, config.rules) > new Date() && enabled(db, row.guildId),
+  ]);
+  await interaction.editReply(giveawayInfo(config, row, {
+    count, acceptsEntries, claim,
+    originalUrl: interaction.message.id === row.messageId ? null : originalUrl(row),
+    resultsUrl: interaction.message.id === row.resultId ? null : resultUrl(row),
+  }));
+}
 
 export function setupGiveaways(client: Client) {
   const tasks = new Set<string>();
@@ -98,11 +143,15 @@ export function setupGiveaways(client: Client) {
 
   client.on(Events.InteractionCreate, async interaction => {
     if (!interaction.isButton() || !interaction.customId.startsWith("gp-gw:")) return;
-    const match = /^gp-gw:(join|leave|claim|decline|public-claim):([a-f0-9]{32})$/.exec(interaction.customId);
+    const match = /^gp-gw:(join|leave|claim|decline|public-claim|info|dm-info):([a-f0-9]{32})$/.exec(interaction.customId);
     if (!match) return;
     const [, action, key] = match;
     try {
       await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+      if (action === "info" || action === "dm-info") {
+        await replyWithInfo(interaction, action, key);
+        return;
+      }
       let message: string;
       if (action === "claim" || action === "decline") {
         if (interaction.guildId) throw new GiveawayInteractionError("Use the button in your direct message.");

@@ -5,7 +5,7 @@ import { AddressInfo } from "node:net";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import {
-  ChannelType, Client, Collection, ComponentType, DiscordAPIError, Guild, GuildMember, MessageCreateOptions,
+  ButtonInteraction, ChannelType, Client, Collection, ComponentType, DiscordAPIError, Events, Guild, GuildMember, InteractionEditReplyOptions, MessageCreateOptions,
   MessageFlags, MessagePayload, PermissionFlagsBits, PermissionsBitField, RESTPostAPIChannelMessageJSONBody, SnowflakeUtil, User,
 } from "discord.js";
 import express from "express";
@@ -95,7 +95,28 @@ async function run() {
   const { processJob, refreshAnnouncement } = await import("../src/backend/services/giveaways/delivery");
   const { advanceLifecycle } = await import("../src/backend/services/giveaways/lifecycle");
   const { buildSnapshot, participate, syncMemberChange } = await import("../src/backend/services/giveaways/participants");
+  const { setupGiveaways } = await import("../src/backend/bot/giveawayHandler");
   const fake = fakeDiscord(discordClient);
+  const interactionClient = new Client({ intents: [] });
+  setupGiveaways(interactionClient);
+  const handleButton = interactionClient.listeners(Events.InteractionCreate)[0];
+  async function pressInfo(customId: string, messageId: string, userId: string, guild: Guild | null = fake.guild) {
+    const replies: InteractionEditReplyOptions[] = [];
+    let deferred = false;
+    const interaction = {
+      isButton: () => true, customId, message: { id: messageId }, user: { id: userId },
+      guild, guildId: guild?.id ?? null,
+      get deferred() { return deferred; },
+      async deferReply({ flags }: { flags: number }) {
+        assert.equal(flags, MessageFlags.Ephemeral);
+        deferred = true;
+      },
+      async editReply(options: InteractionEditReplyOptions) { replies.push(options); },
+    } as unknown as ButtonInteraction;
+    await handleButton(interaction);
+    assert.equal(replies.length, 1);
+    return replies[0];
+  }
   const app = express();
   app.use(express.json());
   app.use("/api/guilds", router);
@@ -118,6 +139,7 @@ async function run() {
     return data ? JSON.parse(data) : null;
   }
   const config = { ...newGiveaway(giveawayDefaults), title: "Community @everyone", prize: "Nitro",
+    description: "A prize for our community.", terms: "One entry per person.",
     channelId, pingRoleId: requiredRole, dmWinners: true, claimsEnabled: true, riskAttempts: 1,
     rules: { ...giveawayDefaults.rules, requiredRoles: [requiredRole], excludedRoles: [excludedRole], accountDays: 15, memberDays: 2 },
   };
@@ -155,9 +177,12 @@ async function run() {
     assert.equal(preview.content, undefined);
     assert.deepEqual(preview.allowedMentions.parse, []);
     const previewText = JSON.stringify(preview.components);
-    assert.match(previewText, /Entry requirements/);
+    assert.doesNotMatch(previewText, /Entry requirements|One entry per person|A prize for our community/);
+    assert.match(previewText, /gp-gw:info:/);
     assert.match(previewText, /Enter Giveaway/);
-    assert.match(previewText, /Withdraw Entry/);
+    assert.match(previewText, /Withdraw/);
+    assert.match(JSON.stringify(preview.info.components), /Entry requirements/);
+    assert.match(JSON.stringify(preview.info.components), /One entry per person/);
     const legacyPreview = await expect("/preview", 200, { method: "POST", body: {
       ...payload, config: { ...config, buttonLabel: "Teilnehmen" },
     } });
@@ -192,6 +217,16 @@ async function run() {
     assert.equal(edited.winnerCount, 1);
     assert.equal(edited.footer, "Neue Fußzeile");
     const channelMessage = active.messageId!;
+    const infoId = `gp-gw:info:${giveawayId}`;
+    const publicInfo = await pressInfo(infoId, channelMessage, alpha.id);
+    assert.equal(publicInfo.flags, MessageFlags.IsComponentsV2);
+    assert.deepEqual(publicInfo.allowedMentions?.parse, []);
+    assert.match(JSON.stringify(publicInfo.components), /A prize for our community/);
+    assert.match(JSON.stringify(publicInfo.components), /Entry requirements/);
+    assert.doesNotMatch(JSON.stringify(publicInfo.components), new RegExp(active.seed));
+    assert.equal((await pressInfo(infoId, "other-message", alpha.id)).content, "These giveaway details are unavailable.");
+    const otherGuild = discordClient.guilds.cache.get(otherGuildId)!;
+    assert.equal((await pressInfo(infoId, channelMessage, alpha.id, otherGuild)).content, "We couldn’t complete this giveaway action.");
     const join = (user: User) => participate(fake.guild, giveawayId, channelMessage, user, "join");
     await assert.rejects(participate(fake.guild, giveawayId, "wrong", alpha, "join"), /Entries are closed/);
     const results = await Promise.all([join(alpha), join(alpha), join(alpha)]);
@@ -215,7 +250,7 @@ async function run() {
     assert.equal((await expect(`${path}/participants?filter=withdrawn`, 200)).total, 1);
     await join(beta);
     await refreshAnnouncement(fake.guild, await row());
-    assert.match(JSON.stringify(fake.lastEdit()?.components), /Entries\*\* · 4/);
+    assert.match(JSON.stringify(fake.lastEdit()?.components), /Entries: 4/);
 
     await post("/lifecycle/pause", 204);
     await assert.rejects(join(alpha), /Entries are closed/);
@@ -268,6 +303,13 @@ async function run() {
     assert.deepEqual(fake.sent.last().body.allowed_mentions.users, [winner.userId]);
     assert.match(JSON.stringify(fake.sent.last().body.components), /Confirmed winners/);
     assert.match(JSON.stringify(fake.sent.last().body.components), /Claim Prize/);
+    assert.match(JSON.stringify(fake.sent.last().body.components), /gp-gw:info:/);
+    const resultId = (await row()).resultId!;
+    const resultsInfo = await pressInfo(infoId, resultId, outsider);
+    assert.match(JSON.stringify(resultsInfo.components), /Original Giveaway/);
+    assert.doesNotMatch(JSON.stringify(resultsInfo.components), /Your prize claim/);
+    const personalResultsInfo = await pressInfo(infoId, resultId, winner.userId);
+    assert.match(JSON.stringify(personalResultsInfo.components), /Your prize claim/);
 
     const evidence = await expect(`${path}/transparency`, 200);
     const summary = await expect(`${path}/transparency?redacted=true`, 200);
@@ -285,6 +327,12 @@ async function run() {
     assert.match(JSON.stringify(fake.dm.first().body.components), /Congratulations!/);
     assert.match(JSON.stringify(fake.dm.first().body.components), /Decline Prize/);
     const claim = await db.giveawayClaim.findUniqueOrThrow({ where: { candidateId: winner.id } });
+    const dmInfoId = `gp-gw:dm-info:${winner.id}`;
+    assert.match(JSON.stringify(fake.dm.first().body.components), new RegExp(dmInfoId));
+    const dmInfo = await pressInfo(dmInfoId, fake.dm.first().id, winner.userId, null);
+    assert.match(JSON.stringify(dmInfo.components), /Your prize claim/);
+    assert.doesNotMatch(JSON.stringify(dmInfo.components), new RegExp(claim.token));
+    assert.equal((await pressInfo(dmInfoId, fake.dm.first().id, outsider, null)).content, "These giveaway details are unavailable.");
     detail = await expect(path, 200);
     assert.equal(detail.candidates[1].claim.token, undefined);
     await assert.rejects(claims.respondToClaim(claim.token, { id: outsider, username: outsider }, "claim"), /This prize claim is unavailable/);
@@ -337,6 +385,7 @@ async function run() {
   } finally {
     await new Promise<void>((resolve, reject) => server.close(error => error ? reject(error) : resolve()));
     await db.$disconnect();
+    interactionClient.destroy();
     discordClient.destroy();
   }
 }

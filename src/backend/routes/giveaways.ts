@@ -1,7 +1,7 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { GIVEAWAYS_PLUGIN } from "../../types/plugins";
 import { discordClient } from "../bot/client";
-import { entryAnnouncement } from "../bot/giveawayComponents";
+import { entryAnnouncement, giveawayInfo } from "../bot/giveawayComponents";
 import { AuthenticatedRequest } from "../middleware/authMiddleware";
 import { snowflake } from "../services/changelogValidation";
 import { PluginError } from "../services/pluginService";
@@ -67,7 +67,11 @@ router.post("/preview", endpoint(async (req, res) => {
   const body = object(req.body);
   const config = parseConfig(body.config);
   const endAt = date(body.endAt);
-  res.json(entryAnnouncement(config, { id: "0".repeat(32), status: "ACTIVE", endAt, publishedRound: 0, commitment: "Preview" }, 0, "Preview", true));
+  const preview = { id: "0".repeat(32), status: "ACTIVE", endAt, publishedRound: 0, commitment: "Preview" };
+  res.json({
+    ...entryAnnouncement(config, preview, 0, "Preview", true),
+    info: giveawayInfo(config, preview, { count: 0, acceptsEntries: true }),
+  });
 }));
 router.post("/items", endpoint(async (req, res) => {
   const body = object(req.body);

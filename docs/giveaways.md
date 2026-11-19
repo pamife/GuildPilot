@@ -13,7 +13,7 @@
 
 1. Lege unter **Einstellungen** die Kanäle, Zeitzone, Standarddauer und Teilnahmebedingungen fest. **Manuelle Prüfung** ist die Standardeinstellung für Ziehung und Veröffentlichung.
 2. Öffne **Giveaway erstellen** oder verwende eine gespeicherte Vorlage. Gib Preis, Gestaltung, Teilnahmebedingungen, Abholoptionen und Zeitplan an. Start und Ende werden in der gewählten IANA-Zeitzone eingegeben und als UTC gespeichert. Bei einer doppelt auftretenden Ortszeit kannst du den späteren Zeitpunkt wählen.
-3. **Vorschau anzeigen** rendert die Components-V2-Nachricht aus demselben Backend-Builder, der die Discord-Ankündigung erstellt. Der Bot verwendet englische Standardtexte, etwa **Enter Giveaway** und **Claim Prize**. Eigene Titel, Beschreibungen und Button-Texte werden wie eingegeben angezeigt. Beim Neustart aktualisiert der Bot Ankündigungen für aktive und pausierte Giveaways.
+3. **Vorschau anzeigen** rendert die Components-V2-Nachricht aus demselben Backend-Builder, der die Discord-Ankündigung erstellt. **Info** öffnet die Vorschau der privaten Detailansicht mit Beschreibung, Teilnahmebedingungen, Regeln und genauen Fristen. Die Ankündigung zeigt Preis, Status, Teilnehmerzahl und die verfügbaren Aktionen. Beim Neustart aktualisiert der Bot Ankündigungen für aktive und pausierte Giveaways.
 4. Speichere den Entwurf und wähle **Jetzt veröffentlichen** oder **Start planen**. Veröffentlichte Bedingungen und Gewinnchancen sind gesperrt. Während des Giveaways kannst du unter **Ankündigung gestalten** die Darstellung aktualisieren und im selben Tab pausieren, fortsetzen, verlängern, vorzeitig beenden oder stornieren.
 5. Unter **Teilnahmen** stehen Suchfunktion, Filter, Verifikationsdetails und Teilnahmeverlauf zur Verfügung. Solange das Giveaway offen ist, kann das Team erneut prüfen, einen Risikohinweis einordnen oder mit protokollierter Begründung ausschließen. Mitgliedschaft, Kontoalter, Rollen und Mitgliedschaftsdauer sind getrennte Prüfungen.
 
@@ -41,7 +41,7 @@ Damit lassen sich die Auswahl aus dem gespeicherten Pool und der Abgleich mit de
 
 ## Preisabholung und Audit
 
-Aktiviere die Abholung mit einer Frist im Editor. Nach der Veröffentlichung kann jeder bestätigte Gewinner den eigenen Preis über den Button der aktuellen Gewinnerankündigung abholen. Bei aktivierten DMs enthält die Direktnachricht zusätzlich Frist, Abholbutton und die Möglichkeit, den Preis abzulehnen. Falls Discord keine Direktnachricht zustellt, bleibt der öffentliche Abholbutton verfügbar.
+Aktiviere die Abholung mit einer Frist im Editor. Nach der Veröffentlichung kann jeder bestätigte Gewinner den eigenen Preis über **Claim Prize** in der aktuellen Gewinnerankündigung abholen. **Info** zeigt dem Gewinner dort auch den persönlichen Abholstatus und die Frist. Bei aktivierten DMs enthält die Direktnachricht zusätzlich die Möglichkeit, den Preis abzulehnen.
 
 Unter **Abholungen** kannst du die Frist verlängern, die Abholung stornieren oder nach einer bestätigten Abholung die Übergabe mit Notiz erfassen. Abgelaufene oder abgelehnte Gewinne lassen sich begründet neu ziehen. Die optionale Einstellung für automatische Ersatzziehungen greift nach Ablauf der Abholfrist. Auch dann gilt der Freigabemodus des Giveaways.
 

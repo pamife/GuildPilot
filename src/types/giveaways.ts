@@ -124,12 +124,3 @@ export function giveawayRequirements(rules: GiveawayRules) {
     rules.excludedRoles.length > 0 && `Excluded roles: ${rules.excludedRoles.map(id => `<@&${id}>`).join(", ")}`,
   ].filter((value): value is string => Boolean(value));
 }
-
-export function giveawayCopy(config: GiveawayConfig) {
-  return {
-    heading: config.titleOverride || config.title,
-    lead: [config.description, config.prizeDescription].filter(Boolean),
-    details: [config.sponsor && `Sponsor: ${config.sponsor}`, config.information, config.terms].filter(Boolean),
-    requirements: giveawayRequirements(config.rules),
-  };
-}

@@ -17,6 +17,12 @@ export function originalUrl(row: Giveaway) {
   return row.messageId && channelId ? `https://discord.com/channels/${row.guildId}/${channelId}/${row.messageId}` : null;
 }
 
+export function resultUrl(row: Giveaway) {
+  const { winnerChannelId, channelId } = configOf(row);
+  const destinationId = winnerChannelId ?? channelId;
+  return row.resultId && destinationId ? `https://discord.com/channels/${row.guildId}/${destinationId}/${row.resultId}` : null;
+}
+
 export async function destination(guild: Guild, channelId: string | null, roleId: string | null = null) {
   const channel = await validateDestination(guild, channelId, roleId, Boolean(roleId));
   const bot = await guild.members.fetchMe();
@@ -123,13 +129,13 @@ async function run(item: GiveawayJob, guild: Guild, ensureLease: () => Promise<v
   if (item.kind === "RESULT") {
     if (row.publishedRound >= payload.round) return none;
     const channel = await destination(guild, payload.channelId);
-    const [candidates, count] = await Promise.all([
-      db.giveawayCandidate.findMany({ where: { giveawayId: row.id, id: { in: payload.candidateIds }, status: "APPROVED" }, orderBy: { slot: "asc" } }),
-      db.giveawayEntry.count({ where: { giveawayId: row.id, withdrawnAt: null } }),
-    ]);
+    const candidates = await db.giveawayCandidate.findMany({
+      where: { giveawayId: row.id, id: { in: payload.candidateIds }, status: "APPROVED" },
+      orderBy: { slot: "asc" },
+    });
     if (candidates.length !== payload.candidateIds.length) throw new Error("Freigegebene Gewinnerliste ist inkonsistent.");
     const messageId = await send(channel, resultsAnnouncement(config, row.id, candidates.map(item => item.userId),
-      candidates.filter(item => !item.announcedAt).map(item => item.userId), count, originalUrl(row), reference, payload.round));
+      candidates.filter(item => !item.announcedAt).map(item => item.userId), reference, payload.round));
     if (!messageId) throw new Error("Discord-Ergebnis fehlt.");
     return { messageId, finish: (tx: Tx, current: Giveaway) => finishPublication(tx, current, payload.candidateIds, payload.round, messageId) };
   }
@@ -140,7 +146,7 @@ async function run(item: GiveawayJob, guild: Guild, ensureLease: () => Promise<v
     if ((payload.extension || !config.dmWinners) && !claim) return none;
     try {
       const channel = await guild.client.users.createDM(candidate.userId);
-      const messageId = await send(channel, winnerDm(config, guild.name, reference, claim, payload.extension));
+      const messageId = await send(channel, winnerDm(config, guild.name, reference, candidate.id, claim, payload.extension));
       return { messageId, finish: (tx: Tx, current: Giveaway) => auditGiveaway(tx, current, system, "WINNER_DM_SENT", { userId: candidate.userId, messageId }) };
     } catch (error) {
       if (!discordCode(error, 50007) && !discordCode(error, 10013)) throw error;

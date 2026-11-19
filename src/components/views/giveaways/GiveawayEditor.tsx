@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, ReactNode, useState } from "react";
+import { FormEvent, ReactNode, useId, useState } from "react";
 import { CalendarDays, Eye, Gift, Palette, Save, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
 import { GiveawayConfig, GiveawayRules, GiveawaySettings } from "@/types/giveaways";
@@ -107,16 +107,30 @@ export function ConfigFields<T extends GiveawaySettings>({ value, choices, chang
 
 interface DiscordComponent {
   type: number; content?: string; components?: DiscordComponent[]; label?: string; accent_color?: number;
-  emoji?: { name: string }; items?: { media: { url: string } }[];
+  custom_id?: string; style?: number; emoji?: { name: string }; items?: { media: { url: string } }[];
 }
+
+type PreviewData = { components: DiscordComponent[]; info?: { components: DiscordComponent[] } };
+const relativeTime = new Intl.RelativeTimeFormat("en");
 
 function formatPreview(text: string, choices: Options, zone: string) {
-  return text.replace(/<t:(\d+):[A-Z]>/g, (_match, unix: string) => dateLabel(new Date(Number(unix) * 1000).toISOString(), zone))
+  return text.replace(/<t:(\d+):([A-Z])>/g, (_match, unix: string, style: string) => {
+    const time = new Date(Number(unix) * 1000);
+    if (style !== "R") return dateLabel(time.toISOString(), zone);
+    const minutes = (time.getTime() - Date.now()) / 60_000;
+    if (Math.abs(minutes) < 1) return relativeTime.format(Math.round(minutes * 60), "second");
+    if (Math.abs(minutes) < 60) return relativeTime.format(Math.round(minutes), "minute");
+    if (Math.abs(minutes) < 1440) return relativeTime.format(Math.round(minutes / 60), "hour");
+    return relativeTime.format(Math.round(minutes / 1440), "day");
+  })
     .replace(/<@&(\d+)>/g, (_match, id: string) => `@${choices.roles.find(role => role.id === id)?.name ?? id}`)
-    .replace(/^(?:-#|#) /gm, "").replace(/(?<!\\)\*\*/g, "").replace(/\\([\\*_~`|>#[\]()])/g, "$1");
+    .replace(/^(?:-#|##?) /gm, "").replace(/(?<!\\)\*\*/g, "").replace(/\\([\\*_~`|>#[\]()])/g, "$1");
 }
 
-function Preview({ components, choices, timezone }: { components: DiscordComponent[]; choices: Options; timezone: string }) {
+function PreviewMessage({ components, choices, timezone, infoButton }: {
+  components: DiscordComponent[]; choices: Options; timezone: string;
+  infoButton?: { open: boolean; controls: string; toggle: () => void };
+}) {
   return <div className="space-y-3 rounded-xl border border-white/10 bg-[#25262a] p-4 text-[#f2f3f5]">
     {components.map((container, index) => <div key={index} className="space-y-3 border-l-4 pl-3"
       style={{ borderColor: `#${container.accent_color?.toString(16).padStart(6, "0") ?? "34d399"}` }}>
@@ -125,14 +139,36 @@ function Preview({ components, choices, timezone }: { components: DiscordCompone
         if (item.type === 12) return <div key={index} className="grid gap-2">{item.items?.map(({ media: { url } }) =>
           <div key={url} role="img" aria-label="Giveaway-Bild" className="aspect-video rounded-lg bg-[#1b1c20] bg-contain bg-center bg-no-repeat"
             style={{ backgroundImage: `url(${JSON.stringify(url)})` }} />)}</div>;
-        if (item.type === 1) return <div key={index} className="flex flex-wrap gap-2">{item.components?.map((item, i) =>
-          <span className={`rounded px-3 py-2 text-xs font-semibold ${i === 0 ? "bg-indigo-600" : "bg-[#41434a]"}`} key={i}>{item.emoji?.name} {item.label}</span>)}</div>;
-        return <p key={index} className={`whitespace-pre-wrap break-words ${item.content?.startsWith("# ") ? "text-xl font-bold" : item.content?.startsWith("-# ") ? "text-xs text-zinc-400" : "text-sm"}`}>
-          {formatPreview(item.content ?? "", choices, timezone)}
-        </p>;
+        if (item.type === 1) return <div key={index} className="flex flex-wrap gap-2">{item.components?.map((item, i) => {
+          const classes = `rounded px-3 py-2 text-xs font-semibold ${item.style === 1 ? "bg-indigo-600" : "bg-[#41434a]"}`;
+          const content = <>{item.emoji?.name} {item.label}</>;
+          return infoButton && item.custom_id?.startsWith("gp-gw:info:")
+            ? <button type="button" key={i} className={`${classes} hover:bg-[#50535a]`} aria-expanded={infoButton.open}
+              aria-controls={infoButton.controls} onClick={infoButton.toggle}>{content}</button>
+            : <span key={i} className={classes}>{content}</span>;
+        })}</div>;
+        return <div key={index} className="whitespace-pre-wrap break-words">{item.content?.split("\n").map((line, lineIndex) => {
+          const style = /^##? /.test(line) ? "text-xl font-bold" : line.startsWith("-# ") ? "text-xs text-zinc-400" : "text-sm";
+          const spoiler = /^(.*)\|\|([0-9a-f]{64}|Preview)\|\|$/.exec(line);
+          return <p key={lineIndex} className={style}>{formatPreview(spoiler?.[1] ?? line, choices, timezone)}
+            {spoiler && <span className="rounded bg-zinc-800 px-1">••••••</span>}</p>;
+        })}</div>;
       })}
     </div>)}
   </div>;
+}
+
+function Preview({ components, info, choices, timezone }: PreviewData & { choices: Options; timezone: string }) {
+  const [open, setOpen] = useState(false);
+  const detailsId = useId();
+  return <>
+    <PreviewMessage components={components} choices={choices} timezone={timezone}
+      infoButton={info && { open, controls: detailsId, toggle: () => setOpen(value => !value) }} />
+    {info && <div id={detailsId} hidden={!open} className="space-y-2">
+      <p className={`text-xs ${muted}`}>Private Antwort auf den Info-Button</p>
+      <PreviewMessage components={info.components} choices={choices} timezone={timezone} />
+    </div>}
+  </>;
 }
 
 type Mode = { config: GiveawayConfig; item?: Pick<Item, "id" | "startAt" | "endAt" | "revision">; template?: Template; asTemplate?: boolean; appearance?: boolean };
@@ -148,7 +184,7 @@ export function GiveawayEditor({ path, mode, choices, cancel, saved }: {
   const [laterStart, setLaterStart] = useState(false);
   const [laterEnd, setLaterEnd] = useState(false);
   const [editingTime, setEditingTime] = useState(false);
-  const [preview, setPreview] = useState<{ components: DiscordComponent[]; timezone: string }>();
+  const [preview, setPreview] = useState<PreviewData & { timezone: string }>();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [previewError, setPreviewError] = useState("");
@@ -167,7 +203,7 @@ export function GiveawayEditor({ path, mode, choices, cancel, saved }: {
     setBusy(true);
     try {
       const endAt = asTemplate ? new Date(Date.now() + config.durationHours * 3_600_000).toISOString() : timestamps().endAt;
-      const { data } = await api.post<{ components: DiscordComponent[] }>(`${path}/preview`, { config, endAt });
+      const { data } = await api.post<PreviewData>(`${path}/preview`, { config, endAt });
       setPreview({ ...data, timezone: config.timezone });
     } catch (error) {
       setPreviewError(error instanceof Error && !("response" in error) ? error.message : requestError(error));

@@ -1,7 +1,7 @@
 import { Prisma } from "@prisma/client";
 import { Giveaway, GiveawayEntry } from "@prisma/client";
 import { configOf, db, getGiveaway, publicGiveaway } from "./store";
-import { originalUrl } from "./delivery";
+import { originalUrl, resultUrl } from "./delivery";
 import { snapshotLine } from "./participants";
 
 const pageSize = 25;
@@ -87,8 +87,7 @@ export async function details(guildId: string, giveawayId: string) {
   });
   const profileByUser = new Map(profiles.map(profile => [profile.userId, profile]));
   return {
-    ...publicGiveaway(row), originalUrl: originalUrl(row),
-    resultUrl: row.resultId ? `https://discord.com/channels/${guildId}/${configOf(row).winnerChannelId ?? configOf(row).channelId}/${row.resultId}` : null,
+    ...publicGiveaway(row), originalUrl: originalUrl(row), resultUrl: resultUrl(row),
     totals: Object.fromEntries(groups.map(group => [group.eligibility, group._count])), unresolved, jobs,
     candidates: candidates.map(candidate => ({
       ...candidate, verification: JSON.parse(candidate.verification), profile: profileByUser.get(candidate.userId),
