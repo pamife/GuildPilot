@@ -1,14 +1,15 @@
 "use client";
 
-import { FileText, Puzzle, Settings2 } from "lucide-react";
+import { FileText, Gift, Puzzle, Settings2 } from "lucide-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "@/lib/api";
-import { CHANGELOG_PLUGIN, PluginState } from "@/types/plugins";
+import { CHANGELOG_PLUGIN, GIVEAWAYS_PLUGIN, PluginState } from "@/types/plugins";
 import { ChangelogWorkspace } from "./changelog/ChangelogWorkspace";
+import { GiveawayWorkspace } from "./giveaways/GiveawayWorkspace";
 import { button, panel, requestError } from "./changelog/ui";
 
-const workspaces = { [CHANGELOG_PLUGIN]: ChangelogWorkspace };
-const icons = { changelog: FileText };
+const workspaces = { [CHANGELOG_PLUGIN]: ChangelogWorkspace, [GIVEAWAYS_PLUGIN]: GiveawayWorkspace };
+const icons = { changelog: FileText, gift: Gift };
 
 export function PluginsView({ guildId }: { guildId: string }) {
   const path = `/guilds/${guildId}/plugins`;
@@ -100,7 +101,7 @@ export function PluginsView({ guildId }: { guildId: string }) {
                   {busy === plugin.id ? "Speichert …" : plugin.enabled ? "Deaktivieren" : "Aktivieren"}
                 </button>
                 {plugin.configurable && workspace && <button type="button" className={button}
-                  onClick={() => setActive(workspace)} disabled={!plugin.enabled || Boolean(busy)}>
+                  onClick={() => setActive(workspace)} disabled={(!plugin.enabled && workspace !== GIVEAWAYS_PLUGIN) || Boolean(busy)}>
                   <Settings2 size={15} aria-hidden="true" /> Konfigurieren
                 </button>}
               </div>

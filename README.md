@@ -382,6 +382,8 @@ npm run test:applications
 npm run test:moderation
 npm run test:moderation-workspace
 npm run test:migrations
+npm run test:plugins
+npm run test:giveaways
 npm run typecheck
 npm run lint
 npm run build
@@ -390,3 +392,7 @@ npm run build
 `test:moderation-workspace` verwendet temporäres SQLite, echte Express-Routen und Discord-/Gemini-Mocks. Es prüft Rechte/CSRF/IDOR, Idempotenz, Maßnahmen/Rücknahmen, Filter/Bearbeitungen, Cursor, Retries, parallele Reviews, Prompt-Injection und die ausdrücklich bestätigte Fallverknüpfung. `test:migrations` prüft mit gesichertem Testbestand ein Upgrade und den vollständigen Schemaabgleich. Die übrigen Integrationsprüfungen decken unter anderem neue Datenbanken sowie Counting-/XP-Verhalten ab. `npm run test:security` benötigt einen laufenden Test-Backend-Prozess und passende Testwerte für `API_BASE_URL`, `JWT_SECRET` und `ALLOWED_USER_ID`; niemals hierfür Produktionsschlüssel einsetzen. Die bestehenden Hook-/Bildoptimierungswarnungen sind nicht fatal.
 
 Verwendete offizielle API-Dokumentation: [Discord-Mitglieder, Timeouts und Bans](https://docs.discord.com/developers/resources/guild), [Nachrichten, Pagination und Bulk Delete](https://docs.discord.com/developers/resources/message), [Kanal-Slowmode](https://docs.discord.com/developers/resources/channel), [Components V2](https://docs.discord.com/developers/components/overview), [Gemini Structured Output](https://ai.google.dev/gemini-api/docs/structured-output), [Google GenAI HTTP-Timeouts und Retries](https://googleapis.github.io/js-genai/release_docs/interfaces/types.HttpOptions.html).
+
+## Giveaways
+
+Der [Giveaways-Leitfaden](docs/giveaways.md) beschreibt die Aktivierung, private Gewinnerfreigabe, Preisabholung und das Deployment.

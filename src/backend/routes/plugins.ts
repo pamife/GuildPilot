@@ -1,13 +1,15 @@
 import { NextFunction, Request, Response, Router } from "express";
 import { PermissionFlagsBits } from "discord.js";
 import { changelogDefaults } from "../../types/changelog";
-import { CHANGELOG_PLUGIN, PluginDefinition, plugins } from "../../types/plugins";
+import { CHANGELOG_PLUGIN, GIVEAWAYS_PLUGIN, PluginDefinition, plugins } from "../../types/plugins";
 import { discordClient } from "../bot/client";
 import { AuthenticatedRequest, requireAuth, requireManageServer, requireTrustedMutation } from "../middleware/authMiddleware";
 import { deleteAnnouncement, deleteDraft, getChangelog, listChangelogs, publishChangelog, saveChangelog } from "../services/changelogService";
 import { isChangelogChannel, parseChangelog, parseChangelogSettings, snowflake, validateDestination } from "../services/changelogValidation";
 import { getGuildPlugin, listGuildPlugins, PluginError, saveGuildPlugin } from "../services/pluginService";
 import { getUserManageableGuilds } from "../services/guildService";
+import { activation } from "../services/giveaways/store";
+import giveaways from "./giveaways";
 
 const permissions = { "manage-server": requireManageServer } satisfies Record<PluginDefinition["permission"], typeof requireManageServer>;
 
@@ -88,7 +90,7 @@ changelog.delete("/changelogs/:id/announcement", endpoint(async (req, res) => {
   res.json(await deleteAnnouncement(guild(req), draftId(req)));
 }));
 
-const features: Partial<Record<string, Router>> = { [CHANGELOG_PLUGIN]: changelog };
+const features: Partial<Record<string, Router>> = { [CHANGELOG_PLUGIN]: changelog, [GIVEAWAYS_PLUGIN]: giveaways };
 const catalog = Router({ mergeParams: true });
 catalog.get("/", requireManageServer, endpoint(async (req, res) => {
   res.json(await listGuildPlugins(req.params.guildId));
@@ -98,12 +100,15 @@ for (const plugin of plugins) {
   catalog.use(path, permissions[plugin.permission]);
   catalog.patch(path, endpoint(async (req, res) => {
     if (typeof req.body?.enabled !== "boolean") throw new PluginError(400, "Ungültiger Plugin-Status.");
-    const row = await saveGuildPlugin(req.params.guildId, plugin.id, { enabled: req.body.enabled });
+    const row = plugin.id === GIVEAWAYS_PLUGIN
+      ? await activation(req.params.guildId, req.user!, req.body.enabled)
+      : await saveGuildPlugin(req.params.guildId, plugin.id, { enabled: req.body.enabled });
     res.json({ ...plugin, enabled: row.enabled });
   }));
 
   const feature = features[plugin.id];
-  if (feature) catalog.use(path, (req, res, next) => {
+  if (plugin.id === GIVEAWAYS_PLUGIN && feature) catalog.use(path, feature);
+  else if (feature) catalog.use(path, (req, res, next) => {
     void getGuildPlugin(req.params.guildId, plugin.id).then((row) => {
       if (!row?.enabled) throw new PluginError(409, `${plugin.name} ist für diesen Server deaktiviert.`);
       res.locals.pluginConfig = row.config;

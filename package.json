@@ -21,6 +21,7 @@
     "test:applications": "tsx scripts/test-applications.ts",
     "test:moderation": "tsx scripts/test-moderation.ts",
     "test:plugins": "tsx scripts/test-plugins.ts",
+    "test:giveaways": "tsx scripts/test-giveaways.ts",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
     "test:moderation-workspace": "tsx scripts/test-moderation-workspace.ts",

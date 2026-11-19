@@ -12,6 +12,7 @@ import { setupWelcomeInteractions } from "./welcomeHandler";
 import { setupAutoReactInteractions } from "./autoReactHandler";
 import { createAutoLeaveBackup } from "../services/backupService";
 import { backfillApplicationReviewAccents } from "../services/applicationReview";
+import { setupGiveaways } from "./giveawayHandler";
 
 export let hasMessageContentIntent = true;
 
@@ -44,6 +45,7 @@ function registerClientEvents(client: Client) {
   setupLevelingInteractions(client);
   setupModerationInteractions(client);
   setupGuildMessageHandler(client);
+  setupGiveaways(client);
 
   client.once(Events.ClientReady, (c) => {
     void registerSlashCommands(c);

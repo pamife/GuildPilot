@@ -810,3 +810,181 @@ model GuildChangelog {
   @@id([guildId, id])
   @@index([guildId, status, updatedAt])
 }
+
+model Giveaway {
+  id            String   @id
+  guildId       String
+  creatorId     String
+  creatorName   String
+  status        String   @default("DRAFT")
+  config        String
+  revision      Int      @default(0)
+  startAt       DateTime
+  endAt         DateTime
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  closedAt      DateTime?
+  messageId     String?
+  resultId      String?
+  publication   Int      @default(0)
+  publishedRound Int    @default(0)
+  refreshAt     DateTime?
+  nextWorkAt    DateTime?
+  error         String?
+  seed          String
+  commitment    String
+  snapshotHash  String?
+  snapshotAt    DateTime?
+  poolHash      String?
+  shortageAccepted Boolean @default(false)
+  entries       GiveawayEntry[]
+  attempts      GiveawayAttempt[]
+  candidates    GiveawayCandidate[]
+  draws         GiveawayDraw[]
+
+  @@index([guildId, status, createdAt])
+  @@index([status, startAt])
+  @@index([status, endAt])
+  @@index([nextWorkAt])
+  @@index([refreshAt])
+}
+
+model GiveawayEntry {
+  giveawayId     String
+  userId         String
+  username       String
+  displayName    String
+  avatar         String?
+  enteredAt      DateTime @default(now())
+  withdrawnAt    DateTime?
+  exclusion      String?
+  joinVerification String
+  verification   String
+  eligibility    String
+  risk           String
+  membership     String
+  requiredCheck  String
+  accountCheck   String
+  riskDecision   String?
+  snapshot       String?
+  snapshotStatus String?
+  resolved       Boolean  @default(false)
+
+  giveaway Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Restrict)
+
+  @@id([giveawayId, userId])
+  @@index([giveawayId, withdrawnAt, enteredAt])
+  @@index([giveawayId, eligibility, withdrawnAt])
+  @@index([giveawayId, snapshotStatus])
+  @@index([userId])
+  @@index([enteredAt])
+}
+
+model GiveawayAttempt {
+  giveawayId String
+  userId     String
+  count      Int @default(0)
+  giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Restrict)
+
+  @@id([giveawayId, userId])
+}
+
+model GiveawayDraw {
+  id         String   @id
+  giveawayId String
+  drawIndex  Int
+  algorithm  String
+  seed       String
+  poolHash   String
+  poolSize   Int
+  createdAt  DateTime @default(now())
+  actor      String
+  reason     String?
+  giveaway   Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Restrict)
+  candidates GiveawayCandidate[]
+
+  @@unique([giveawayId, drawIndex])
+}
+
+model GiveawayCandidate {
+  id          String   @id
+  giveawayId  String
+  userId      String
+  drawId      String
+  slot        Int
+  status      String   @default("PENDING")
+  verification String
+  reason      String?
+  policy      String?
+  replacesId  String?
+  reviewedBy  String?
+  reviewedAt  DateTime?
+  announcedAt DateTime?
+  giveaway    Giveaway @relation(fields: [giveawayId], references: [id], onDelete: Restrict)
+  draw        GiveawayDraw @relation(fields: [drawId], references: [id], onDelete: Restrict)
+  claim       GiveawayClaim?
+
+  @@unique([giveawayId, userId])
+  @@index([giveawayId, slot, status])
+  @@index([userId, policy])
+}
+
+model GiveawayClaim {
+  id          String   @id
+  candidateId String   @unique
+  guildId     String
+  token       String   @unique
+  status      String   @default("PENDING")
+  deadline    DateTime
+  claimedAt   DateTime?
+  fulfilledAt DateTime?
+  notes       String?
+  candidate   GiveawayCandidate @relation(fields: [candidateId], references: [id], onDelete: Restrict)
+
+  @@index([status, deadline])
+  @@index([guildId, status])
+}
+
+model GiveawayTemplate {
+  id        String   @id
+  guildId   String
+  name      String
+  config    String
+  updatedAt DateTime @updatedAt
+
+  @@index([guildId, updatedAt])
+}
+
+model GiveawayAudit {
+  id         Int      @id @default(autoincrement())
+  guildId    String
+  giveawayId String?
+  event      String
+  actor      String
+  detail     String
+  createdAt  DateTime @default(now())
+
+  @@index([guildId, id])
+  @@index([guildId, giveawayId, id])
+  @@index([guildId, event, id])
+}
+
+model GiveawayJob {
+  id        String   @id
+  guildId   String
+  giveawayId String?
+  kind      String
+  payload   String
+  createdAt DateTime @default(now())
+  runAt     DateTime @default(now())
+  firstSendAt DateTime?
+  lockUntil DateTime?
+  lockToken String?
+  tries     Int      @default(0)
+  doneAt    DateTime?
+  messageId String?
+  error     String?
+
+  @@index([doneAt, runAt])
+  @@index([giveawayId, doneAt])
+}
