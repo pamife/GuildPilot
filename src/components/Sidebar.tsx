@@ -29,6 +29,7 @@ import {
   Archive,
   Search,
   SmilePlus,
+  Puzzle,
 } from "lucide-react";
 
 import { Brand } from "@/components/Brand";
@@ -42,6 +43,7 @@ export type ViewType =
   | "auto-react"
   | "counting"
   | "leveling"
+  | "plugins"
   | "moderation"
   | "automod"
   | "custom-messages"
@@ -72,12 +74,13 @@ interface SidebarProps {
   guilds: GuildOption[];
   selectedGuildId: string | null;
   onSelectGuild: (guildId: string) => void;
-  botStatus: { ready: boolean; tag: string; ping: number } | null;
+  botStatus?: { ready: boolean; tag: string; ping: number } | null;
   ownerUser: { username: string; avatar: string | null; role?: string } | null;
   isOwner?: boolean;
   onLogout: () => void;
   onRefreshGuilds?: () => void;
   onBackToServers?: () => void;
+  allowedViews?: ViewType[];
 }
 
 interface NavCategory {
@@ -105,6 +108,7 @@ export function Sidebar({
   onLogout,
   onRefreshGuilds,
   onBackToServers,
+  allowedViews,
 }: SidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const sidebarRef = useRef<HTMLElement>(null);
@@ -135,6 +139,12 @@ export function Sidebar({
           label: "Server-Übersicht",
           description: "Zentrale Metriken & Schnellzugriff",
           icon: LayoutDashboard,
+        },
+        {
+          id: "plugins",
+          label: "Plugins",
+          description: "Optionale Funktionen für diesen Server",
+          icon: Puzzle,
         },
       ],
     },
@@ -289,11 +299,11 @@ export function Sidebar({
   // Filter items if searching
   const filteredCategories = navCategories
     .map((cat) => {
-      if (!searchQuery.trim()) return cat;
+      const query = searchQuery.trim().toLowerCase();
       const filteredItems = cat.items.filter(
         (item) =>
-          item.label.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          item.description.toLowerCase().includes(searchQuery.toLowerCase()),
+          (!allowedViews || allowedViews.includes(item.id)) &&
+          (item.label.toLowerCase().includes(query) || item.description.toLowerCase().includes(query)),
       );
       return { ...cat, items: filteredItems };
     })
@@ -527,7 +537,7 @@ export function Sidebar({
           )}
         </nav>
         <div className="gp-sidebar-bottom">
-          <div className="gp-sidebar-status">
+          {botStatus !== undefined && <div className="gp-sidebar-status">
             <span
               className={`gp-status-dot ${botStatus?.ready ? "" : "gp-dot-offline"}`}
             />
@@ -543,7 +553,7 @@ export function Sidebar({
                 ? `${botStatus.ping} ms`
                 : "—"}
             </span>
-          </div>
+          </div>}
           <div className="gp-account">
             {ownerUser?.avatar ? (
               <img src={ownerUser.avatar} alt="" className="gp-avatar" />

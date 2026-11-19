@@ -23,6 +23,7 @@ import { WelcomeView } from "@/components/views/WelcomeView";
 import { AutoReactView } from "@/components/views/AutoReactView";
 import { CountingView } from "@/components/views/CountingView";
 import { LevelingView } from "@/components/views/LevelingView";
+import { PluginsView } from "@/components/views/PluginsView";
 import { ModerationWorkspace } from "@/components/views/ModerationWorkspace";
 import { ServerCloneView } from "@/components/views/ServerCloneView";
 import { MemberManagerView } from "@/components/views/MemberManagerView";
@@ -32,11 +33,11 @@ import { getSocket } from "@/lib/socket";
 import { Sparkles, ArrowLeft, Crown, ChevronRight, Command } from "lucide-react";
 
 type ScreenMode = "servers" | "guild" | "owner";
+type PluginGuilds = React.ComponentProps<typeof ServerSelectorView>["guilds"];
 
 function DashboardContent() {
   const { showToast } = useToast();
 
-  const [staffApplications, setStaffApplications] = useState(false);
   const [screenMode, setScreenMode] = useState<ScreenMode>("servers");
   const [currentView, setCurrentView] = useState<ViewType>("overview");
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -47,6 +48,7 @@ function DashboardContent() {
 
   // Data states
   const [guilds, setGuilds] = useState<any[]>([]);
+  const [pluginGuilds, setPluginGuilds] = useState<PluginGuilds>([]);
   const [selectedGuildId, setSelectedGuildId] = useState<string | null>(null);
 
   const [guildDetails, setGuildDetails] = useState<any>(null);
@@ -99,8 +101,16 @@ function DashboardContent() {
   const fetchGuilds = useCallback(async () => {
     if (!currentUser) return;
     try {
-      const res = await api.get(currentUser.scope === "staff" ? "/guilds/moderation-access" : currentUser.scope === "applications" ? "/guilds/application-access" : "/guilds");
-      setGuilds(res.data || []);
+      const scope = currentUser.scope;
+      const guildPath = scope === "staff" ? "/guilds/moderation-access" : scope === "applications" ? "/guilds/application-access" : "/guilds";
+      const [workspace, plugins] = await Promise.allSettled([
+        scope === "plugins" ? Promise.resolve({ data: [] }) : api.get(guildPath),
+        scope ? api.get<PluginGuilds>("/guilds/plugin-access") : Promise.resolve({ data: [] }),
+      ]);
+      setGuilds(workspace.status === "fulfilled" ? workspace.value.data : []);
+      setPluginGuilds(plugins.status === "fulfilled" ? plugins.value.data : []);
+      if (workspace.status === "rejected") throw workspace.reason;
+      if (plugins.status === "rejected") throw plugins.reason;
     } catch (err: any) {
       console.error("Failed to fetch guilds:", err);
       showToast("Fehler beim Laden der Serverliste.", "error");
@@ -442,13 +452,17 @@ function DashboardContent() {
     return <LoginView authWarning={authWarning} authError={authError} />;
   }
 
+  const selectableGuilds = currentUser.scope
+    ? [...new Map([...guilds, ...pluginGuilds].map((guild) => [guild.id, guild])).values()]
+    : guilds;
+
   // 3. Server Selector Screen
   if (screenMode === "servers") {
     return (
       <ServerSelectorView
         user={currentUser}
         isOwner={isOwner}
-        guilds={guilds}
+        guilds={selectableGuilds}
         onSelectGuild={(id) => {
           setGuildDetails(null);
           setBotStatus(null);
@@ -509,20 +523,27 @@ function DashboardContent() {
     );
   }
 
-  if (currentUser.scope === "staff" && selectedGuildId) {
-    return <div className="flex h-screen flex-col overflow-auto bg-canvas"><div className="flex justify-between p-4 text-white"><button onClick={() => setScreenMode("servers")}>Server-Übersicht</button><button onClick={() => setStaffApplications(v => !v)}>{staffApplications ? "Moderation" : "Bewerbungen"}</button><button onClick={handleLogout}>Abmelden</button></div>{staffApplications ? <ApplicationsView key={selectedGuildId} selectedGuildId={selectedGuildId} channels={[]} roles={[]} guilds={guilds} /> : <ModerationWorkspace key={selectedGuildId} guildId={selectedGuildId} />}</div>;
-  }
-
-  if (currentUser.scope === "applications") {
+  if (currentUser.scope && selectedGuildId) {
+    const allowed: ViewType[] = [];
+    if (guilds.some(({ id }) => id === selectedGuildId)) {
+      if (currentUser.scope === "staff") allowed.push("moderation");
+      allowed.push("applications");
+    }
+    if (pluginGuilds.some(({ id }) => id === selectedGuildId)) allowed.push("plugins");
+    const view = allowed.includes(currentView) ? currentView : allowed[0];
     return (
-      <div className="flex h-screen flex-col overflow-hidden bg-canvas">
-        <div className="flex items-center justify-between border-b border-slate-800 px-6 py-3 text-sm text-white">
-          <button onClick={() => setScreenMode("servers")} className="flex items-center gap-2">
-            <ArrowLeft className="h-4 w-4" /> Server-Übersicht
-          </button>
-          <button onClick={handleLogout}>Abmelden</button>
-        </div>
-        <ApplicationsView key={selectedGuildId} selectedGuildId={selectedGuildId} channels={[]} roles={[]} guilds={guilds} />
+      <div className="gp-workspace">
+        <Sidebar currentView={view ?? "overview"} allowedViews={allowed} onSelectView={setCurrentView}
+          guilds={selectableGuilds} selectedGuildId={selectedGuildId} onSelectGuild={setSelectedGuildId}
+          ownerUser={currentUser} onLogout={handleLogout} onRefreshGuilds={fetchGuilds}
+          onBackToServers={() => setScreenMode("servers")} />
+        <main className="gp-workspace-main" id="main-content">
+          {view === "plugins" && <PluginsView key={selectedGuildId} guildId={selectedGuildId} />}
+          {view === "moderation" && <ModerationWorkspace key={selectedGuildId} guildId={selectedGuildId} />}
+          {view === "applications" && <ApplicationsView key={selectedGuildId} selectedGuildId={selectedGuildId}
+            channels={[]} roles={[]} guilds={guilds} />}
+          {!view && <p role="status" className="p-5 text-sm">Für diesen Server ist kein Arbeitsbereich verfügbar.</p>}
+        </main>
       </div>
     );
   }
@@ -628,6 +649,9 @@ function DashboardContent() {
         )}
         {currentView === "leveling" && selectedGuildId && (
           <LevelingView key={selectedGuildId} guildId={selectedGuildId} channels={channels} roles={roles} />
+        )}
+        {currentView === "plugins" && selectedGuildId && (
+          <PluginsView key={selectedGuildId} guildId={selectedGuildId} />
         )}
         {currentView === "custom-messages" && (
           <CustomMessagesView

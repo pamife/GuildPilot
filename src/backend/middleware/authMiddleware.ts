@@ -2,13 +2,14 @@ import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import { PermissionFlagsBits, PermissionsBitField } from "discord.js";
 import { discordClient, isBotReady } from "../bot/client";
+import { isAllowedOrigin } from "../config/runtime";
 
 export interface AuthUser {
   id: string;
   username: string;
   avatar: string | null;
   role: "OWNER" | "USER";
-  scope?: "applications" | "staff";
+  scope?: "applications" | "staff" | "plugins";
 }
 
 export interface AuthenticatedRequest extends Request {
@@ -62,7 +63,7 @@ export function extractAuthUser(req: Request): AuthUser | null {
       username: string;
       avatar: string | null;
       role?: string;
-      scope?: "applications" | "staff";
+      scope?: AuthUser["scope"];
     };
 
     const role: "OWNER" | "USER" = isOwner(decoded.id) ? "OWNER" : "USER";
@@ -93,16 +94,28 @@ export function requireAuth(req: AuthenticatedRequest, res: Response, next: Next
 
 export function restrictApplicationSession(req: AuthenticatedRequest, res: Response, next: NextFunction) {
   const user = extractAuthUser(req);
+  if (!user?.scope) return next();
+  if (/^\/api\/auth\/(me|logout)\/?$/.test(req.path) ||
+      /^\/api\/guilds\/(plugin-access\/?$|\d{17,20}\/plugins(?:\/|$))/.test(req.path)) return next();
+  if (user.scope === "plugins") {
+    return res.status(403).json({ error: "This session is limited to Plugins." });
+  }
   if (user?.scope === "staff") {
-    if (/^\/api\/auth\/(me|logout)\/?$/.test(req.path) ||
-        /^\/api\/guilds\/(moderation-access|application-access)\/?$/.test(req.path) ||
+    if (/^\/api\/guilds\/(moderation-access|application-access)\/?$/.test(req.path) ||
         /^\/api\/guilds\/\d{17,20}\/(moderation|automod|gemini|applications)(?:\/|$)/.test(req.path)) return next();
     return res.status(403).json({ error: "This session is limited to moderation and applications." });
   }
   if (user?.scope !== "applications") return next();
-  if (/^\/api\/auth\/(me|logout)\/?$/.test(req.path) ||
-      /^\/api\/guilds\/(application-access\/?$|\d{16,22}\/applications(?:\/|$))/.test(req.path)) return next();
+  if (/^\/api\/guilds\/(application-access\/?$|\d{16,22}\/applications(?:\/|$))/.test(req.path)) return next();
   return res.status(403).json({ error: "This session is limited to the Application Center." });
+}
+
+export function requireTrustedMutation(req: Request, res: Response, next: NextFunction) {
+  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
+  if (req.headers.origin ? !isAllowedOrigin(req.headers.origin) : Boolean(req.cookies?.guildpilot_token) || !req.headers.authorization?.startsWith("Bearer ")) {
+    return res.status(403).json({ error: "Untrusted or missing request origin." });
+  }
+  next();
 }
 
 /**

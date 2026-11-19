@@ -781,3 +781,32 @@ model User {
 
 
 
+model GuildPlugin {
+  guildId  String
+  pluginId String
+  enabled  Boolean @default(false)
+  config   String  @default("{}")
+
+  @@id([guildId, pluginId])
+}
+
+model GuildChangelog {
+  guildId       String
+  id            String
+  title         String
+  version       String
+  content       String
+  status        String   @default("draft")
+  revision      Int      @default(0)
+  updatedAt     DateTime @updatedAt
+  channelId     String?
+  channelName   String?
+  messageId     String?
+  pingMessageId String?
+  publishedAt   DateTime?
+  publisherId   String?
+  publisherName String?
+
+  @@id([guildId, id])
+  @@index([guildId, status, updatedAt])
+}

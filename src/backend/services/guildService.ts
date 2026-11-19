@@ -30,13 +30,14 @@ export async function getGuilds() {
 /**
  * Filtert Discord-Server, für die der angegebene Benutzer Verwaltungsrechte besitzt
  */
-export async function getUserManageableGuilds(userId: string) {
+export async function getUserManageableGuilds(userId: string, { fresh = false } = {}) {
   if (!isBotReady()) return [];
 
   const allGuilds = Array.from(discordClient.guilds.cache.values());
   const manageableGuilds = [];
 
   for (const guild of allGuilds) {
+    if (fresh && !guild.available) continue;
     if (guild.ownerId === userId) {
       manageableGuilds.push({
         id: guild.id,
@@ -50,9 +51,7 @@ export async function getUserManageableGuilds(userId: string) {
     }
 
     try {
-      const member =
-        guild.members.cache.get(userId) ||
-        (await guild.members.fetch(userId).catch(() => null));
+      const member = await guild.members.fetch({ user: userId, force: fresh }).catch(() => null);
 
       if (member) {
         const hasAdmin = member.permissions.has(PermissionsBitField.Flags.Administrator);

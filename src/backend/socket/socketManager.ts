@@ -50,7 +50,7 @@ function extractSocketUser(socket: Socket): AuthUser | null {
       id: string;
       username: string;
       avatar: string | null;
-      scope?: "applications" | "staff";
+      scope?: AuthUser["scope"];
     };
 
     const role: "OWNER" | "USER" = isOwner(decoded.id) ? "OWNER" : "USER";
@@ -144,7 +144,7 @@ export function initSocketIO(server: HTTPServer) {
 
     socket.on("joinApplicationGuild", async (payload: { guildId: string }) => {
       const guildId = payload?.guildId;
-      if (!user || typeof guildId !== "string" || !/^\d{16,22}$/.test(guildId)) return;
+      if (!user || user.scope === "plugins" || typeof guildId !== "string" || !/^\d{16,22}$/.test(guildId)) return;
       try {
         const member = await applicationMember(guildId, user.id);
         if (member && await applicationGuildAccess(member)) await socket.join(`applications:${guildId}`);

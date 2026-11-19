@@ -3,8 +3,7 @@ import { Prisma } from "@prisma/client";
 import { PermissionFlagsBits as P } from "discord.js";
 import { discordClient, hasMessageContentIntent } from "../bot/client";
 import { privateModLogChannel } from "../bot/moderationLog";
-import { AuthenticatedRequest, requireAuth } from "../middleware/authMiddleware";
-import { isAllowedOrigin } from "../config/runtime";
+import { AuthenticatedRequest, requireAuth, requireTrustedMutation } from "../middleware/authMiddleware";
 import { getAutoModSettings, getModerationSettings, moderationDb as db } from "../services/moderationService";
 import { authorizePermission, executeModeration, moderationAccess, ModerationError } from "../services/moderationActions";
 import { parseAutoMod, parseSettings, snowflake } from "../services/moderationValidation";
@@ -13,15 +12,8 @@ import { applicationGuildsFor } from "../services/applicationAccess";
 import type { ModerationPermission } from "../../types/moderation";
 
 const router = Router();
-export const moderationCsrf: RequestHandler = (req, res, next) => {
-  if (["GET", "HEAD", "OPTIONS"].includes(req.method)) return next();
-  if (req.headers.origin ? !isAllowedOrigin(req.headers.origin) : Boolean(req.cookies?.guildpilot_token) || !req.headers.authorization?.startsWith("Bearer ")) {
-    return res.status(403).json({ error: "Untrusted or missing request origin." });
-  }
-  next();
-};
 export function moderationRoute(permission: ModerationPermission | "access", handler: (req: AuthenticatedRequest, res: Parameters<RequestHandler>[1], guild: NonNullable<ReturnType<typeof discordClient.guilds.cache.get>>) => Promise<unknown>): RequestHandler[] {
-  return [requireAuth, moderationCsrf, async (req: AuthenticatedRequest, res) => {
+  return [requireAuth, requireTrustedMutation, async (req: AuthenticatedRequest, res) => {
     try {
       const guild = discordClient.guilds.cache.get(req.params.guildId);
       if (!guild?.available) throw new ModerationError("The bot is not connected to this server.", 503);

@@ -20,6 +20,7 @@
     "test:leveling": "tsx scripts/test-leveling.ts",
     "test:applications": "tsx scripts/test-applications.ts",
     "test:moderation": "tsx scripts/test-moderation.ts",
+    "test:plugins": "tsx scripts/test-plugins.ts",
     "typecheck": "tsc --noEmit",
     "lint": "next lint",
     "test:moderation-workspace": "tsx scripts/test-moderation-workspace.ts",

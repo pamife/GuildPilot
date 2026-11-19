@@ -11,6 +11,7 @@ import {
 import { getAllowedOrigins, isAllowedOrigin } from "../config/runtime";
 import { moderationGuildsFor } from "./moderation";
 import { applicationGuildsFor } from "../services/applicationAccess";
+import { getUserManageableGuilds } from "../services/guildService";
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -107,7 +108,8 @@ router.get("/callback", async (req, res) => {
     const discordUser = userResponse.data;
     const isUserOwner = isOwner(discordUser.id);
     const hasModeration = !isUserOwner && (await moderationGuildsFor(discordUser.id)).length > 0;
-    if (!isUserOwner && !hasModeration && !(await applicationGuildsFor(discordUser.id)).length) {
+    const hasApplications = !isUserOwner && !hasModeration && (await applicationGuildsFor(discordUser.id)).length > 0;
+    if (!isUserOwner && !hasModeration && !hasApplications && !(await getUserManageableGuilds(discordUser.id, { fresh: true })).length) {
       console.warn(`[Auth] Login rejected for Discord user ${discordUser.id}.`);
       return res.redirect(`${frontendUrl}?error=access_denied`);
     }
@@ -156,7 +158,7 @@ router.get("/callback", async (req, res) => {
       username: formattedUsername,
       avatar: avatarUrl,
       role,
-      scope: isUserOwner ? undefined : hasModeration ? "staff" : "applications",
+      scope: isUserOwner ? undefined : hasModeration ? "staff" : hasApplications ? "applications" : "plugins",
     };
 
     const token = jwt.sign(payload, jwtSecret, { expiresIn: "7d" });
