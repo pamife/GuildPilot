@@ -1,8 +1,8 @@
 import { randomBytes } from "node:crypto";
 import { Giveaway, Prisma } from "@prisma/client";
 import { appearanceKeys, GiveawayConfig, entryDeadline } from "../../../types/giveaways";
-import { Actor, Tx, auditGiveaway, configOf, db, enabled, hash, id, job, lockGiveaway, publicGiveaway, system, transaction } from "./store";
-import { conflict, invalid } from "./validation";
+import { Actor, Tx, auditGiveaway, claimDeliveryOf, configOf, db, enabled, hash, id, job, lockGiveaway, publicGiveaway, system, transaction } from "./store";
+import { conflict, invalid, parseClaimDelivery } from "./validation";
 
 export type Timing = { startAt: Date; endAt: Date };
 const editable = ["DRAFT", "SCHEDULED", "FAILED"];
@@ -13,23 +13,25 @@ export function checkTiming(config: GiveawayConfig, timing: Timing) {
   if (timing.endAt.getTime() - timing.startAt.getTime() > 366 * 86_400_000) invalid("Ein Giveaway darf höchstens 366 Tage dauern.");
 }
 
-export async function createGiveaway(guildId: string, actor: Actor, config: GiveawayConfig, timing: Timing, giveawayId = id()) {
+export async function createGiveaway(guildId: string, actor: Actor, config: GiveawayConfig, timing: Timing, giveawayId = id(), deliveryInput?: unknown) {
   checkTiming(config, timing);
+  const delivery = parseClaimDelivery(deliveryInput, config);
+  const claimDelivery = delivery ? JSON.stringify(delivery) : null;
   const seed = randomBytes(32).toString("hex");
   return transaction(async tx => {
     if (!await enabled(tx, guildId)) conflict("Giveaways ist für diesen Server deaktiviert.");
     const existing = await tx.giveaway.findUnique({ where: { id: giveawayId } });
     if (existing) {
       if (existing.guildId !== guildId || existing.creatorId !== actor.id ||
-        existing.config !== JSON.stringify(config) || existing.startAt.getTime() !== timing.startAt.getTime() ||
+        existing.config !== JSON.stringify(config) || existing.claimDelivery !== claimDelivery || existing.startAt.getTime() !== timing.startAt.getTime() ||
         existing.endAt.getTime() !== timing.endAt.getTime()) conflict("Diese Anfrage-ID wurde bereits verwendet.");
       return publicGiveaway(existing);
     }
     const row = await tx.giveaway.create({ data: {
-      id: giveawayId, guildId, creatorId: actor.id, creatorName: actor.username, config: JSON.stringify(config),
+      id: giveawayId, guildId, creatorId: actor.id, creatorName: actor.username, config: JSON.stringify(config), claimDelivery,
       ...timing, seed, commitment: hash(seed),
     } });
-    await auditGiveaway(tx, row, actor, "GIVEAWAY_CREATED", { config, ...timing, commitment: row.commitment });
+    await auditGiveaway(tx, row, actor, "GIVEAWAY_CREATED", { config, ...timing, commitment: row.commitment, claimDeliveryConfigured: Boolean(delivery) });
     return publicGiveaway(row);
   });
 }
@@ -40,7 +42,7 @@ async function assertNoAnnouncement(tx: Tx, row: Giveaway) {
   }
 }
 
-export async function editGiveaway(guildId: string, giveawayId: string, actor: Actor, revision: number, config: GiveawayConfig, timing: Timing) {
+export async function editGiveaway(guildId: string, giveawayId: string, actor: Actor, revision: number, config: GiveawayConfig, timing: Timing, deliveryInput?: unknown) {
   checkTiming(config, timing);
   return transaction(async tx => {
     const row = await lockGiveaway(tx, guildId, giveawayId, revision);
@@ -48,11 +50,14 @@ export async function editGiveaway(guildId: string, giveawayId: string, actor: A
     if (!editable.includes(row.status) || row.messageId) conflict("Die veröffentlichten Teilnahmebedingungen sind gesperrt.");
     await assertNoAnnouncement(tx, row);
     if (row.status === "SCHEDULED" && timing.startAt <= new Date()) invalid("Die neue Startzeit muss in der Zukunft liegen.");
-    const data = { config: JSON.stringify(config), ...timing, error: null, status: row.status === "FAILED" ? "DRAFT" : row.status };
+    const delivery = parseClaimDelivery(deliveryInput === undefined ? claimDeliveryOf(row) : deliveryInput, config);
+    const claimDelivery = delivery ? JSON.stringify(delivery) : null;
+    const data = { config: JSON.stringify(config), claimDelivery, ...timing, error: null, status: row.status === "FAILED" ? "DRAFT" : row.status };
     const updated = await tx.giveaway.update({ where: { id: row.id }, data });
     const before = configOf(row);
     await auditGiveaway(tx, row, actor, "GIVEAWAY_EDITED", {
       before: { config: before, startAt: row.startAt, endAt: row.endAt }, after: { config, ...timing },
+      claimDeliveryChanged: row.claimDelivery !== claimDelivery, claimDeliveryConfigured: Boolean(delivery),
     });
     if (JSON.stringify(before.rules) !== JSON.stringify(config.rules)) {
       await auditGiveaway(tx, row, actor, "ELIGIBILITY_POLICY_CHANGED", { before: before.rules, after: config.rules });

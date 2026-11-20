@@ -77,7 +77,7 @@ router.post("/items", endpoint(async (req, res) => {
   const body = object(req.body);
   const config = parseConfig(body.config);
   await validateConfig(guild(req), config);
-  const row = await createGiveaway(req.params.guildId, req.user!, config, timing(body), parseId(body.requestId));
+  const row = await createGiveaway(req.params.guildId, req.user!, config, timing(body), parseId(body.requestId), body.claimDelivery);
   res.status(201).json(row);
 }));
 router.get("/items/:giveawayId", endpoint(async (req, res) => res.json(await details(req.params.guildId, giveId(req)))));
@@ -85,7 +85,7 @@ router.put("/items/:giveawayId", endpoint(async (req, res) => {
   const body = object(req.body);
   const config = parseConfig(body.config);
   await validateConfig(guild(req), config);
-  res.json(await editGiveaway(req.params.guildId, giveId(req), req.user!, version(body), config, timing(body)));
+  res.json(await editGiveaway(req.params.guildId, giveId(req), req.user!, version(body), config, timing(body), body.claimDelivery));
 }));
 router.put("/items/:giveawayId/appearance", endpoint(async (req, res) => {
   const body = object(req.body);

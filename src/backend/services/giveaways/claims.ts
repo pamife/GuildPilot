@@ -1,7 +1,7 @@
 import { Giveaway } from "@prisma/client";
 import { Guild } from "discord.js";
 import { replaceCandidate } from "./drawing";
-import { Actor, Tx, auditGiveaway, configOf, db, id, job, lockGiveaway, system, transaction } from "./store";
+import { Actor, Tx, auditGiveaway, claimDeliveryOf, configOf, db, id, job, lockGiveaway, system, transaction } from "./store";
 import { conflict, GiveawayInteractionError } from "./validation";
 
 export async function resolveStatus(tx: Tx, row: Giveaway) {
@@ -76,10 +76,14 @@ async function updateResponse(tx: Tx, row: Giveaway, claimId: string, actor: Act
   }
   const status = action === "claim" ? "CLAIMED" : "DECLINED";
   await tx.giveawayClaim.update({ where: { id: claimId }, data: { status, claimedAt: action === "claim" ? new Date() : null } });
+  const delivery = action === "claim" ? claimDeliveryOf(row) : null;
+  if (delivery) await job(tx, row.guildId, row.id, "CLAIM_DM", { claimId }, `claim-dm-${claimId}`);
   await auditGiveaway(tx, row, actor, action === "claim" ? "CLAIM_SUBMITTED" : "CLAIM_DECLINED",
     { claimId, userId: actor.id, before: found.status, after: status }, configOf(row).notifyClaims);
   await statusAfterClaim(tx, row);
-  return action === "claim" ? "Your claim is confirmed. The server team can now deliver your prize." : "You declined the prize.";
+  if (action === "decline") return "You declined the prize.";
+  return delivery ? "Your claim is confirmed. Check your DMs for your prize details."
+    : "Your claim is confirmed. The server team can now deliver your prize.";
 }
 
 export async function manageClaim(guildId: string, giveawayId: string, claimId: string, actor: Actor,

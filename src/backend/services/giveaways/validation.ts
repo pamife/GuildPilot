@@ -1,6 +1,6 @@
 import { Guild, PermissionFlagsBits } from "discord.js";
 import { isBannerUrl } from "../../../types/changelog";
-import { GiveawayConfig, GiveawayRules, GiveawaySettings, rejectionPolicies, RejectionPolicy } from "../../../types/giveaways";
+import { GiveawayClaimDelivery, GiveawayConfig, GiveawayRules, GiveawaySettings, rejectionPolicies, RejectionPolicy } from "../../../types/giveaways";
 import { discordCode, isChangelogChannel, snowflake, validateDestination } from "../changelogValidation";
 import { PluginError } from "../pluginService";
 
@@ -106,6 +106,20 @@ export function parseConfig(input: unknown): GiveawayConfig {
     buttonLabel: string(data.buttonLabel, "Button-Text", 70, 1), buttonEmoji,
     branding: string(data.branding, "Branding", 100),
   };
+}
+
+export function parseClaimDelivery(input: unknown, config: GiveawayConfig): GiveawayClaimDelivery | null {
+  if (input == null) return null;
+  const data = object(input);
+  const note = string(data.note, "Private Abholnachricht", 1000, 0, true);
+  if (!Array.isArray(data.codes) || data.codes.length > config.winnerCount) invalid("Gib höchstens einen Code pro Gewinnerplatz ein.");
+  const codes = data.codes.map(value => string(value, "Preiscode", 160, 1));
+  if (codes.some(code => /[`\t]/.test(code))) invalid("Preiscodes dürfen keine Backticks oder Tabulatoren enthalten.");
+  if (new Set(codes).size !== codes.length) invalid("Jeder Gewinnerplatz benötigt einen eigenen Code.");
+  if (codes.length && codes.length !== config.winnerCount) invalid("Gib für jeden Gewinnerplatz einen eigenen Code ein.");
+  if (!note && !codes.length) return null;
+  if (!config.claimsEnabled) invalid("Aktiviere die Preisabholung für die private Abholnachricht.");
+  return { note, codes };
 }
 
 export function date(value: unknown) {

@@ -3,7 +3,7 @@
 import { FormEvent, ReactNode, useId, useState } from "react";
 import { CalendarDays, Eye, Gift, Palette, Save, ShieldCheck } from "lucide-react";
 import { api } from "@/lib/api";
-import { GiveawayConfig, GiveawayRules, GiveawaySettings } from "@/types/giveaways";
+import { GiveawayClaimDelivery, GiveawayConfig, GiveawayRules, GiveawaySettings } from "@/types/giveaways";
 import { button, DestinationSelect, field, label, muted, panel, primary, requestError } from "../changelog/ui";
 import { dateLabel, Item, localTime, newId, Options, Template, toInstant } from "./shared";
 
@@ -54,8 +54,8 @@ function RolePicker({ name, values, options, change }: {
   </div>;
 }
 
-export function ConfigFields<T extends GiveawaySettings>({ value, choices, change, settings = false }: {
-  value: T; choices: Options; change: (value: T) => void; settings?: boolean;
+export function ConfigFields<T extends GiveawaySettings>({ value, choices, change, settings = false, claimDelivery }: {
+  value: T; choices: Options; change: (value: T) => void; settings?: boolean; claimDelivery?: ReactNode;
 }) {
   const set = <K extends keyof GiveawaySettings>(key: K, next: GiveawaySettings[K]) => change({ ...value, [key]: next });
   const rule = <K extends keyof GiveawayRules>(key: K, next: GiveawayRules[K]) => change({ ...value, rules: { ...value.rules, [key]: next } });
@@ -95,6 +95,7 @@ export function ConfigFields<T extends GiveawaySettings>({ value, choices, chang
         <Switch name="Gewinner per Discord-DM benachrichtigen" checked={value.dmWinners} change={v => set("dmWinners", v)} />
         <Switch name="Preisabholung mit Frist aktivieren" checked={value.claimsEnabled} change={v => set("claimsEnabled", v)} />
         <NumberField name="Abholfrist in Stunden" value={value.claimHours} min={1} max={8760} change={hours => set("claimHours", hours)} />
+        {value.claimsEnabled && claimDelivery}
         <Switch name="Nach Fristablauf privat Ersatz ziehen" checked={value.autoReplaceExpired} change={v => set("autoReplaceExpired", v)} />
         <Switch name="Team über Abholungen im Audit-Kanal informieren" checked={value.notifyClaims} change={v => set("notifyClaims", v)} />
         <NumberField name="Hinweis unter diesem Kontoalter (Tage)" value={value.riskAccountDays} max={3650} change={days => set("riskAccountDays", days)} />
@@ -171,13 +172,18 @@ function Preview({ components, info, choices, timezone }: PreviewData & { choice
   </>;
 }
 
-type Mode = { config: GiveawayConfig; item?: Pick<Item, "id" | "startAt" | "endAt" | "revision">; template?: Template; asTemplate?: boolean; appearance?: boolean };
+type Mode = {
+  config: GiveawayConfig; item?: Pick<Item, "id" | "startAt" | "endAt" | "revision">; template?: Template;
+  asTemplate?: boolean; appearance?: boolean; claimDelivery?: GiveawayClaimDelivery | null;
+};
 export function GiveawayEditor({ path, mode, choices, cancel, saved }: {
   path: string; mode: Mode; choices: Options; cancel: () => void; saved: (id?: string) => void;
 }) {
   const { item, template, asTemplate, appearance } = mode;
   const [requestId] = useState(newId);
   const [config, setConfig] = useState(mode.config);
+  const [claimNote, setClaimNote] = useState(mode.claimDelivery?.note ?? "");
+  const [claimCodes, setClaimCodes] = useState(mode.claimDelivery?.codes.join("\n") ?? "");
   const [templateName, setTemplateName] = useState(template?.name ?? "");
   const [start, setStart] = useState(() => localTime(item?.startAt ?? new Date(Date.now() + 5 * 60_000), config.timezone));
   const [end, setEnd] = useState(() => localTime(item?.endAt ?? new Date(Date.now() + config.durationHours * 3_600_000), config.timezone));
@@ -222,7 +228,10 @@ export function GiveawayEditor({ path, mode, choices, cancel, saved }: {
         await api.put(`${path}/templates/${template?.id ?? requestId}`, { name: templateName, config });
         saved();
       } else {
-        const payload = { config, ...timestamps(), revision: item?.revision, requestId };
+        const claimDelivery = config.claimsEnabled
+          ? { note: claimNote, codes: claimCodes.split(/\r?\n/).map(code => code.trim()).filter(Boolean) }
+          : null;
+        const payload = { config, claimDelivery, ...timestamps(), revision: item?.revision, requestId };
         const response = item ? await api.put<Item>(`${path}/items/${item.id}`, payload) : await api.post<Item>(`${path}/items`, payload);
         saved(response.data.id);
       }
@@ -281,7 +290,21 @@ export function GiveawayEditor({ path, mode, choices, cancel, saved }: {
                 onChange={event => setConfig({ ...config, color: event.target.value })} /></Field></>}
           </div>
         </Section>
-        {!appearance && <ConfigFields value={config} choices={choices} change={changeConfig} />}
+        {!appearance && <ConfigFields value={config} choices={choices} change={changeConfig} claimDelivery={!asTemplate && (
+          <fieldset className="space-y-3 rounded-lg border border-[var(--gp-border)] p-3 sm:col-span-2">
+            <legend className="px-1 text-sm font-semibold">Private Abhol-DM</legend>
+            <p className={`text-xs ${muted}`}>Der Bot sendet diese Nachricht an den Gewinner, sobald er auf Claim Prize klickt.</p>
+            <Field name="Notiz für den Gewinner">
+              <textarea className={field} rows={2} maxLength={1000} placeholder="Open a ticket" value={claimNote}
+                onChange={event => setClaimNote(event.target.value)} />
+            </Field>
+            <Field name={config.winnerCount === 1 ? "Preiscode" : "Preiscodes in der Reihenfolge der Gewinnerplätze"}>
+              <textarea className={`${field} font-mono`} rows={config.winnerCount === 1 ? 1 : 3} maxLength={3220}
+                placeholder={config.winnerCount === 1 ? "Optional" : "Optional · ein eigener Code pro Zeile"}
+                value={claimCodes} onChange={event => setClaimCodes(event.target.value)} />
+            </Field>
+          </fieldset>
+        )} />}
       </div>
       <aside className="space-y-4 xl:sticky xl:top-4">
         <Section title="Discord-Vorschau" icon={<Eye size={19} />}>

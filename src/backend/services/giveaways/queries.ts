@@ -1,6 +1,6 @@
 import { Prisma } from "@prisma/client";
 import { Giveaway, GiveawayEntry } from "@prisma/client";
-import { configOf, db, getGiveaway, publicGiveaway } from "./store";
+import { claimDeliveryOf, configOf, db, getGiveaway, publicGiveaway } from "./store";
 import { originalUrl, resultUrl } from "./delivery";
 import { snapshotLine } from "./participants";
 
@@ -88,6 +88,7 @@ export async function details(guildId: string, giveawayId: string) {
   const profileByUser = new Map(profiles.map(profile => [profile.userId, profile]));
   return {
     ...publicGiveaway(row), originalUrl: originalUrl(row), resultUrl: resultUrl(row),
+    claimDelivery: !row.messageId ? claimDeliveryOf(row) : null,
     totals: Object.fromEntries(groups.map(group => [group.eligibility, group._count])), unresolved, jobs,
     candidates: candidates.map(candidate => ({
       ...candidate, verification: JSON.parse(candidate.verification), profile: profileByUser.get(candidate.userId),

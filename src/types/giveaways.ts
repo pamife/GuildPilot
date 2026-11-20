@@ -87,6 +87,11 @@ export interface GiveawayConfig extends GiveawaySettings {
   branding: string;
 }
 
+export interface GiveawayClaimDelivery {
+  note: string;
+  codes: string[];
+}
+
 export const appearanceKeys = ["color", "titleOverride", "description", "image", "banner", "footer", "buttonLabel", "buttonEmoji", "branding"] as const;
 export const defaultGiveawayButtonLabel = "Enter Giveaway";
 

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { ChevronLeft, ChevronRight, Gift } from "lucide-react";
 import { api } from "@/lib/api";
-import { GiveawayConfig, GiveawaySettings, RejectionPolicy, Verification, checkLabels } from "@/types/giveaways";
+import { GiveawayClaimDelivery, GiveawayConfig, GiveawaySettings, RejectionPolicy, Verification, checkLabels } from "@/types/giveaways";
 import { button, muted, panel, requestError } from "../changelog/ui";
 
 export interface Options { channels: { id: string; name: string }[]; roles: { id: string; name: string }[] }
@@ -27,6 +27,7 @@ export interface Item {
   creatorName: string; revision: number; participantCount: number; validCount: number;
 }
 export interface Detail extends Omit<Item, "participantCount" | "validCount"> {
+  claimDelivery: GiveawayClaimDelivery | null;
   commitment: string; snapshotHash: string | null; snapshotAt: string | null; poolHash: string | null;
   publication: number; publishedRound: number; shortageAccepted: boolean; messageId: string | null;
   totals: Record<string, number>; unresolved: number; candidates: Candidate[]; error: string | null;

@@ -818,6 +818,7 @@ model Giveaway {
   creatorName   String
   status        String   @default("DRAFT")
   config        String
+  claimDelivery String?
   revision      Int      @default(0)
   startAt       DateTime
   endAt         DateTime

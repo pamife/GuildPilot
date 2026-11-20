@@ -1,6 +1,6 @@
 import { createHash, randomBytes } from "node:crypto";
 import { Giveaway, Prisma } from "@prisma/client";
-import { GiveawayConfig, GiveawaySettings, giveawayDefaults } from "../../../types/giveaways";
+import { GiveawayClaimDelivery, GiveawayConfig, GiveawaySettings, giveawayDefaults } from "../../../types/giveaways";
 import { GIVEAWAYS_PLUGIN } from "../../../types/plugins";
 import { pluginDb, PluginError } from "../pluginService";
 import { conflict } from "./validation";
@@ -9,6 +9,8 @@ export const db = pluginDb;
 export const id = () => randomBytes(16).toString("hex");
 export const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 export const configOf = (row: Pick<Giveaway, "config">): GiveawayConfig => JSON.parse(row.config);
+export const claimDeliveryOf = (row: Pick<Giveaway, "claimDelivery">): GiveawayClaimDelivery | null =>
+  row.claimDelivery ? JSON.parse(row.claimDelivery) : null;
 export const settingsOf = (value?: string): GiveawaySettings => {
   const settings = JSON.parse(value ?? "{}");
   return { ...giveawayDefaults, ...settings, rules: { ...giveawayDefaults.rules, ...settings.rules } };
@@ -104,6 +106,6 @@ export async function enabled(tx: Tx, guildId: string) {
 }
 
 export function publicGiveaway(row: Giveaway) {
-  const { seed: _seed, ...safe } = row;
+  const { seed: _seed, claimDelivery: _claimDelivery, ...safe } = row;
   return { ...safe, config: configOf(row) };
 }

@@ -122,7 +122,7 @@ export function GiveawayDetail({ path, giveawayId, pluginEnabled, back, edit, du
       <Section title="Discord-Zustellung" icon={<ClipboardCheck size={20} />}>
         {item.error && <p className="text-sm text-amber-200">{item.error}</p>}
         {item.jobs.length ? item.jobs.map(job => <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--gp-border)] py-2 last:border-0" key={job.id}>
-          <div><p className="text-sm font-medium">{({ ANNOUNCEMENT: "Giveaway", RESULT: "Gewinnerliste", PING: "Rollenping", DM: "Direktnachricht", AUDIT: "Audit-Meldung", EXPIRED_REPLACEMENT: "Ersatz nach Fristablauf" } as Record<string, string>)[job.kind] ?? job.kind}</p>
+          <div><p className="text-sm font-medium">{({ ANNOUNCEMENT: "Giveaway", RESULT: "Gewinnerliste", PING: "Rollenping", DM: "Direktnachricht", CLAIM_DM: "Private Abhol-DM", AUDIT: "Audit-Meldung", EXPIRED_REPLACEMENT: "Ersatz nach Fristablauf" } as Record<string, string>)[job.kind] ?? job.kind}</p>
             <p className={`text-xs ${muted}`}>{job.error ?? (job.doneAt ? "Verarbeitet" : "In Warteschlange")} · {job.tries} Versuche</p>
           </div>
           {job.error && !job.doneAt ? <button className={button} disabled={busy} onClick={() => void run(`${url}/jobs/${job.id}/retry`)}>Erneut versuchen</button>

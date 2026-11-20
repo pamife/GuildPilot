@@ -131,3 +131,13 @@ export function winnerDm(config: GiveawayConfig, guildName: string, reference: s
   ui.text(`-# ${reference}`);
   return ui.message();
 }
+
+export function claimDm(config: GiveawayConfig, guildName: string, reference: string, note: string, code?: string) {
+  const ui = components(config.color);
+  ui.text(`# 🎁 Your prize\n-# ${discordText(config.title)} · ${discordText(guildName)}`);
+  ui.text(discordText(config.prize));
+  if (code) ui.text(`**Redemption code**\n\`\`\`\n${code}\n\`\`\``);
+  if (note) ui.text(discordText(note));
+  ui.text(`-# ${reference}`);
+  return ui.message();
+}

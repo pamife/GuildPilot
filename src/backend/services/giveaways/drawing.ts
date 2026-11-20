@@ -3,7 +3,7 @@ import { Giveaway, GiveawayCandidate } from "@prisma/client";
 import { Guild } from "discord.js";
 import { RejectionPolicy, Verification } from "../../../types/giveaways";
 import { verifyCandidate } from "./participants";
-import { Actor, Tx, auditGiveaway, configOf, db, getGiveaway, hash, id, job, lockGiveaway, system, transaction } from "./store";
+import { Actor, Tx, auditGiveaway, claimDeliveryOf, configOf, db, getGiveaway, hash, id, job, lockGiveaway, system, transaction } from "./store";
 import { conflict, invalid } from "./validation";
 
 export const algorithm = "hmac-sha256-rejection-v1";
@@ -149,6 +149,9 @@ export async function replaceCandidate(guild: Guild, giveawayId: string, candida
     });
     if (latest?.id !== current.id) conflict("Dieser Platz wurde bereits neu besetzt.");
     if (!current.announcedAt && current.status !== "REJECTED") conflict("Lehne den Kandidaten mit einer Begründung ab.");
+    if (current.claim?.claimedAt && claimDeliveryOf(row)?.codes[current.slot - 1]) {
+      conflict("Der Code für diesen Gewinnerplatz wurde bereits beansprucht. Bei einer Ersatzziehung würde derselbe Code erneut vergeben.");
+    }
     if (current.announcedAt && (current.status !== "APPROVED" || ["FULFILLED", "CANCELLED"].includes(current.claim?.status ?? ""))) conflict("Dieser Gewinn ist abgeschlossen.");
     if (current.announcedAt) {
       validateRejection(policy, verification, current.claim?.status);

@@ -3,11 +3,11 @@ import {
   Client, DiscordAPIError, DMChannel, Guild, Message, MessageCreateOptions, PermissionFlagsBits, TextChannel, NewsChannel,
 } from "discord.js";
 import { entryDeadline } from "../../../types/giveaways";
-import { deliveryReference, entryAnnouncement, resultsAnnouncement, safeMentions, winnerDm } from "../../bot/giveawayComponents";
+import { claimDm, deliveryReference, entryAnnouncement, resultsAnnouncement, safeMentions, winnerDm } from "../../bot/giveawayComponents";
 import { discordCode, validateDestination } from "../changelogValidation";
 import { PluginError } from "../pluginService";
 import { finishPublication, replaceExpired } from "./claims";
-import { auditGiveaway, configOf, db, enabled, getGiveaway, hash, id, job, lockGiveaway, system, transaction, Tx } from "./store";
+import { auditGiveaway, claimDeliveryOf, configOf, db, enabled, getGiveaway, hash, id, job, lockGiveaway, system, transaction, Tx } from "./store";
 
 type Channel = TextChannel | NewsChannel | DMChannel;
 const lease = 90_000;
@@ -153,6 +153,24 @@ async function run(item: GiveawayJob, guild: Guild, ensureLease: () => Promise<v
       return { finish: (tx: Tx, current: Giveaway) => auditGiveaway(tx, current, system, "WINNER_DM_FAILED", {
         userId: candidate.userId, reason: "Discord erlaubt keine Direktnachricht. Der öffentliche Abholbutton bleibt verfügbar.",
       }, true) };
+    }
+  }
+  if (item.kind === "CLAIM_DM") {
+    const claim = await db.giveawayClaim.findFirst({
+      where: { id: payload.claimId, guildId: row.guildId, claimedAt: { not: null }, status: { in: ["CLAIMED", "FULFILLED"] },
+        candidate: { giveawayId: row.id, status: "APPROVED", announcedAt: { not: null } } },
+      include: { candidate: { select: { userId: true, slot: true } } },
+    });
+    const delivery = claimDeliveryOf(row);
+    if (!claim || !delivery) return none;
+    try {
+      const channel = await guild.client.users.createDM(claim.candidate.userId);
+      const messageId = await send(channel, claimDm(config, guild.name, reference, delivery.note, delivery.codes[claim.candidate.slot - 1]));
+      return { messageId, finish: (tx: Tx, current: Giveaway) => auditGiveaway(tx, current, system, "CLAIM_DM_SENT",
+        { claimId: claim.id, userId: claim.candidate.userId, messageId }) };
+    } catch (error) {
+      if (discordCode(error, 50007)) throw new PluginError(409, "Discord blockiert die Direktnachricht. Der Gewinner kann DMs erlauben.");
+      throw error;
     }
   }
   if (item.kind === "EXPIRED_REPLACEMENT") {

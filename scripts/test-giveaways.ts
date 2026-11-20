@@ -28,6 +28,8 @@ const discordError = (code: number, status: number) =>
 
 function fakeDiscord(client: Client) {
   let failSendAfterReceipt = false;
+  let blockDirectMessages = false;
+  const dmRecipients: string[] = [];
   const users = new Map<string, { member: GuildMember; unavailable?: boolean; left?: boolean }>();
   const sent = new Collection<string, any>();
   const dm = new Collection<string, any>();
@@ -74,7 +76,11 @@ function fakeDiscord(client: Client) {
   Object.defineProperty(client, "user", { value: { id: botId } });
   const guild = seedGuild(guildId);
   seedGuild(otherGuildId);
-  Object.defineProperty(client.users, "createDM", { value: async () => dmChannel });
+  Object.defineProperty(client.users, "createDM", { value: async (userId: string) => {
+    if (blockDirectMessages) throw discordError(50007, 403);
+    dmRecipients.push(userId);
+    return dmChannel;
+  } });
   function member(name: string, roleIds = [requiredRole], age = 40) {
     const id = SnowflakeUtil.generate({ timestamp: when(-age * day).getTime() }).toString();
     const user = { id, username: name, bot: false, displayAvatarURL: () => null } as unknown as User;
@@ -82,7 +88,8 @@ function fakeDiscord(client: Client) {
       roles: { cache: new Collection(roleIds.map(id => [id, roles.get(id)])) } } as unknown as GuildMember });
     return user;
   }
-  return { guild, member, users, sent, dm, failNextSend: () => { failSendAfterReceipt = true; }, lastEdit: () => edited };
+  return { guild, member, users, sent, dm, dmRecipients, blockDms: (block: boolean) => { blockDirectMessages = block; },
+    failNextSend: () => { failSendAfterReceipt = true; }, lastEdit: () => edited };
 }
 
 async function run() {
@@ -161,7 +168,8 @@ async function run() {
     await expect("/settings", 401, { user: null });
     await expect("/settings", 403, { user: outsider });
     await expect("", 403, { method: "PATCH", body: { enabled: true }, origin: "https://outside.invalid" });
-    const payload = { requestId: giveawayId, config, startAt: when(day).toISOString(), endAt: when(2 * day).toISOString() };
+    const reward = { note: "Open a ticket", codes: ["TEST-PRIZE-123"] };
+    const payload = { requestId: giveawayId, config, claimDelivery: reward, startAt: when(day).toISOString(), endAt: when(2 * day).toISOString() };
     await expect("/items", 409, { method: "POST", body: payload });
     await expect("", 200, { method: "PATCH", body: { enabled: true } });
     assert.equal((await expect("/settings", 200, { guild: otherGuildId })).enabled, false);
@@ -183,6 +191,7 @@ async function run() {
     assert.match(previewText, /Withdraw/);
     assert.match(JSON.stringify(preview.info.components), /Entry requirements/);
     assert.match(JSON.stringify(preview.info.components), /One entry per person/);
+    assert.doesNotMatch(JSON.stringify(preview), /TEST-PRIZE-123|Open a ticket/);
     const legacyPreview = await expect("/preview", 200, { method: "POST", body: {
       ...payload, config: { ...config, buttonLabel: "Teilnehmen" },
     } });
@@ -192,8 +201,17 @@ async function run() {
     } });
     assert.match(JSON.stringify(customPreview.components), /Count Me In/);
 
+    await expect("/items", 400, { method: "POST", body: { ...payload, config: { ...config, claimsEnabled: false } } });
+    await expect("/items", 400, { method: "POST", body: { ...payload, config: { ...config, winnerCount: 2 },
+      claimDelivery: { note: "", codes: ["DUPLICATE", "DUPLICATE"] } } });
+    const created = await expect("/items", 201, { method: "POST", body: payload });
+    assert.equal(created.claimDelivery, undefined);
     await expect("/items", 201, { method: "POST", body: payload });
-    await expect("/items", 201, { method: "POST", body: payload });
+    const draftDetails = await expect(path, 200);
+    assert.deepEqual(draftDetails.claimDelivery, reward);
+    await expect(path, 200, { method: "PUT", body: { ...payload, revision: draftDetails.revision } });
+    assert.doesNotMatch(JSON.stringify(await expect("/items", 200)), /TEST-PRIZE-123|Open a ticket/);
+    assert.doesNotMatch(JSON.stringify(await expect("/audit", 200)), /TEST-PRIZE-123|Open a ticket/);
     await expect("/items", 400, { method: "POST", body: { ...payload, endAt: payload.startAt } });
     await expect(path, 404, { guild: otherGuildId });
     await post("/lifecycle/schedule", 204);
@@ -213,7 +231,9 @@ async function run() {
     await expect(`${path}/appearance`, 200, { method: "PUT", body: {
       revision: active.revision, config: { ...config, winnerCount: 5, footer: "Neue Fußzeile" },
     } });
-    const edited = (await expect(path, 200)).config;
+    const activeDetails = await expect(path, 200);
+    assert.equal(activeDetails.claimDelivery, null);
+    const edited = activeDetails.config;
     assert.equal(edited.winnerCount, 1);
     assert.equal(edited.footer, "Neue Fußzeile");
     const channelMessage = active.messageId!;
@@ -326,6 +346,8 @@ async function run() {
     assert.equal(fake.dm.first().body.flags, MessageFlags.IsComponentsV2);
     assert.match(JSON.stringify(fake.dm.first().body.components), /Congratulations!/);
     assert.match(JSON.stringify(fake.dm.first().body.components), /Decline Prize/);
+    assert.doesNotMatch(JSON.stringify(fake.dm.first().body.components), /TEST-PRIZE-123|Open a ticket/);
+    assert.doesNotMatch(JSON.stringify(fake.sent.last().body.components), /TEST-PRIZE-123|Open a ticket/);
     const claim = await db.giveawayClaim.findUniqueOrThrow({ where: { candidateId: winner.id } });
     const dmInfoId = `gp-gw:dm-info:${winner.id}`;
     assert.match(JSON.stringify(fake.dm.first().body.components), new RegExp(dmInfoId));
@@ -341,8 +363,33 @@ async function run() {
     assert.equal((await db.giveawayClaim.findUniqueOrThrow({ where: { id: claim.id } })).status, "EXPIRED");
     await post(`/claims/${claim.id}/extend`, 204, { deadline: when(day).toISOString() });
     const actor = { id: winner.userId, username: "Winner" };
-    assert.match(await claims.respondToClaim(claim.token, actor, "claim"), /Your claim is confirmed/);
-    assert.match(await claims.respondToClaim(claim.token, actor, "claim"), /already claimed/);
+    const confirmations = await Promise.all([claims.respondToClaim(claim.token, actor, "claim"), claims.respondToClaim(claim.token, actor, "claim")]);
+    assert.equal(confirmations.filter(message => message.includes("Check your DMs")).length, 1);
+    assert.equal(confirmations.filter(message => message.includes("already claimed")).length, 1);
+    assert.equal(fake.dm.size, 1);
+    const deliveryWhere = { kind: "CLAIM_DM", giveawayId };
+    const prizeJob = await db.giveawayJob.findFirstOrThrow({ where: deliveryWhere });
+    assert.equal(await db.giveawayJob.count({ where: deliveryWhere }), 1);
+    assert.deepEqual(JSON.parse(prizeJob.payload), { claimId: claim.id });
+    await post(`/candidates/${winner.id}/replace`, 409, { reason: "Manuelle Korrektur für den Test", policy: "CORRECTION" });
+    fake.blockDms(true);
+    await processJob(discordClient, prizeJob.id);
+    const blockedJob = await db.giveawayJob.findUniqueOrThrow({ where: { id: prizeJob.id } });
+    assert.equal(blockedJob.doneAt, null);
+    assert.match(blockedJob.error ?? "", /blockiert die Direktnachricht/);
+    fake.blockDms(false);
+    await post(`/jobs/${prizeJob.id}/retry`, 204);
+    fake.failNextSend();
+    await processJob(discordClient, prizeJob.id);
+    assert.equal(fake.dm.size, 2);
+    await post(`/jobs/${prizeJob.id}/retry`, 204);
+    await processJob(discordClient, prizeJob.id);
+    assert.equal(fake.dm.size, 2);
+    assert.equal(fake.dmRecipients.at(-1), winner.userId);
+    assert.match(JSON.stringify(fake.dm.last().body.components), /TEST-PRIZE-123/);
+    assert.match(JSON.stringify(fake.dm.last().body.components), /Open a ticket/);
+    assert.equal(await db.giveawayAudit.count({ where: { giveawayId, event: "CLAIM_DM_SENT" } }), 1);
+    assert.doesNotMatch(JSON.stringify(await expect("/audit?event=CLAIM_DM_SENT", 200)), /TEST-PRIZE-123|Open a ticket/);
     await post(`/claims/${claim.id}/fulfill`, 204, { confirmed: true, notes: "Übergabe erfolgt." });
     assert.equal((await row()).status, "COMPLETED");
 
@@ -359,13 +406,16 @@ async function run() {
 
     const automatic = "c".repeat(32);
     const solo = fake.member("solo");
+    const otherWinner = fake.member("other winner");
     await expect("/items", 201, { method: "POST", body: { ...payload, requestId: automatic,
-      config: { ...config, autoFinalize: true, autoReplaceExpired: true, dmWinners: false } } });
+      claimDelivery: { note: "Open a ticket", codes: [] },
+      config: { ...config, winnerCount: 2, autoFinalize: true, autoReplaceExpired: true, dmWinners: false } } });
     await expect(`/items/${automatic}/lifecycle/publish`, 204, {
       method: "POST", body: { revision: (await row(automatic)).revision, confirmed: true },
     });
     await processJob(discordClient, (await db.giveawayJob.findFirstOrThrow({ where: { kind: "ANNOUNCEMENT", giveawayId: automatic } })).id);
     await participate(fake.guild, automatic, (await row(automatic)).messageId!, solo, "join");
+    await participate(fake.guild, automatic, (await row(automatic)).messageId!, otherWinner, "join");
     await db.giveaway.update({ where: { id: automatic }, data: { endAt: when(-1000) } });
     await advanceLifecycle(await row(automatic));
     await buildSnapshot(fake.guild, await row(automatic));
@@ -374,7 +424,13 @@ async function run() {
     assert.equal((await drawing.publishResults(fake.guild, automatic, system, (await row(automatic)).revision)).queued, true);
     await processJob(discordClient, (await db.giveawayJob.findFirstOrThrow({ where: { giveawayId: automatic, kind: "RESULT" } })).id);
     assert.equal(await db.giveawayJob.count({ where: { kind: "DM", giveawayId: automatic } }), 0);
-    const autoClaim = await db.giveawayClaim.findFirstOrThrow({ where: { candidate: { giveawayId: automatic } } });
+    await claims.respondToPublicClaim(guildId, automatic, (await row(automatic)).resultId!, solo);
+    const noteJob = await db.giveawayJob.findFirstOrThrow({ where: { kind: "CLAIM_DM", giveawayId: automatic } });
+    await processJob(discordClient, noteJob.id);
+    assert.equal(fake.dmRecipients.at(-1), solo.id);
+    assert.match(JSON.stringify(fake.dm.last().body.components), /Open a ticket/);
+    assert.doesNotMatch(JSON.stringify(fake.dm.last().body.components), /Redemption code/);
+    const autoClaim = await db.giveawayClaim.findFirstOrThrow({ where: { candidate: { giveawayId: automatic, userId: otherWinner.id } } });
     await db.giveawayClaim.update({ where: { id: autoClaim.id }, data: { deadline: when(-1000) } });
     await claims.expireClaims();
     await processJob(discordClient, (await db.giveawayJob.findFirstOrThrow({ where: { giveawayId: automatic, kind: "EXPIRED_REPLACEMENT" } })).id);

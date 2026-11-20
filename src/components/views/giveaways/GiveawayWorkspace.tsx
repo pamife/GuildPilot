@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { Activity, ArrowLeft, ArrowRight, BarChart3, CalendarClock, Clock3, Copy, FileText, Gift, List, LockKeyhole, Plus, ScrollText, Settings2, Users } from "lucide-react";
 import { api } from "@/lib/api";
-import { checkLabels, GiveawayConfig, GiveawaySettings, newGiveaway } from "@/types/giveaways";
+import { checkLabels, GiveawayClaimDelivery, GiveawayConfig, GiveawaySettings, newGiveaway } from "@/types/giveaways";
 import { button, ConfirmDialog, field, label, muted, panel, primary, requestError } from "../changelog/ui";
 import { AuditList } from "./Actions";
 import { ConfigFields, GiveawayEditor, Section } from "./GiveawayEditor";
@@ -20,7 +20,10 @@ const nav = [
   { id: "audit", name: "Audit-Log", icon: ScrollText }, { id: "settings", name: "Einstellungen", icon: Settings2 },
 ] as const;
 type View = typeof nav[number]["id"];
-type Edit = { config: GiveawayConfig; asTemplate?: boolean; item?: Pick<Item, "id" | "startAt" | "endAt" | "revision">; template?: Template; appearance?: boolean };
+type Edit = {
+  config: GiveawayConfig; asTemplate?: boolean; item?: Pick<Item, "id" | "startAt" | "endAt" | "revision">;
+  template?: Template; appearance?: boolean; claimDelivery?: GiveawayClaimDelivery | null;
+};
 
 function SettingsForm({ path, initial, choices, reload }: { path: string; initial: Settings; choices: Options; reload: () => void }) {
   const [settings, setSettings] = useState<GiveawaySettings>(initial.settings);
@@ -215,7 +218,7 @@ export function GiveawayWorkspace({ path, onBack }: { path: string; guildId: str
         if (id) setSelected(id); else if (!selected) setView("templates");
       }} />
       : selected ? <GiveawayDetail key={selected} path={path} giveawayId={selected} pluginEnabled={plugin.enabled}
-        back={() => setSelected(undefined)} edit={(item, appearance) => setEditor({ item, config: item.config, appearance })}
+        back={() => setSelected(undefined)} edit={(item, appearance) => setEditor({ item, config: item.config, appearance, claimDelivery: item.claimDelivery })}
         duplicate={item => setEditor({ config: item.config })}
         saveTemplate={item => setEditor({ asTemplate: true, config: {
           ...item.config, durationHours: Math.min(8760, Math.max(1, Math.ceil((+new Date(item.endAt) - +new Date(item.startAt)) / 3_600_000))),

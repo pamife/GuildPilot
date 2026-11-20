@@ -43,6 +43,10 @@ Damit lassen sich die Auswahl aus dem gespeicherten Pool und der Abgleich mit de
 
 Aktiviere die Abholung mit einer Frist im Editor. Nach der Veröffentlichung kann jeder bestätigte Gewinner den eigenen Preis über **Claim Prize** in der aktuellen Gewinnerankündigung abholen. **Info** zeigt dem Gewinner dort auch den persönlichen Abholstatus und die Frist. Bei aktivierten DMs enthält die Direktnachricht zusätzlich die Möglichkeit, den Preis abzulehnen.
 
+Im Entwurf kannst du unter **Freigabe, Abholung & Teilnahmehinweise → Private Abhol-DM** eine Notiz wie „Open a ticket“ und optional einen eigenen Code je Gewinnerplatz hinterlegen. Die Codes werden in der Reihenfolge der Gewinnerplätze vergeben. Der Bot sendet den vorbereiteten Inhalt erst nach der bestätigten Abholung direkt an den Gewinner. Für Notizen ohne Code kannst du die Preisübergabe weiterhin manuell bestätigen.
+
+Den Versandstatus findest du unter **Verwaltung → Discord-Zustellung**. Bei blockierten DMs kann der Gewinner Direktnachrichten erlauben. Der Bot versucht die Zustellung automatisch erneut. Einen bereits beanspruchten Code hält der Bot für den ursprünglichen Gewinner reserviert.
+
 Unter **Abholungen** kannst du die Frist verlängern, die Abholung stornieren oder nach einer bestätigten Abholung die Übergabe mit Notiz erfassen. Abgelaufene oder abgelehnte Gewinne lassen sich begründet neu ziehen. Die optionale Einstellung für automatische Ersatzziehungen greift nach Ablauf der Abholfrist. Auch dann gilt der Freigabemodus des Giveaways.
 
 Der **Audit-Log** ist nach Ereignis und Giveaway filterbar. Er hält Akteur, Zeitstempel, Entscheidungen, Begründungen und relevante Änderungen fest. Unter **Analysen** findest du Teilnahmeentwicklung, Abschluss- und Abholquoten sowie fehlgeschlagene Berechtigungsprüfungen aus der Datenbank.
